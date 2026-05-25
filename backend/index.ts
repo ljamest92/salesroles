@@ -9,6 +9,11 @@ import Stripe from 'stripe'
 import nodemailer from 'nodemailer'
 import path from 'path'
 import fs from 'fs'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+const distPath = path.join(__dirname, '..', 'dist')
 
 const app = new Hono()
 app.use('*', cors({ origin: '*' }))
@@ -618,14 +623,13 @@ app.get('/api/company/pending-jobs', async (c) => {
 })
 
 // --- Static file serving (production) ---
+app.use('/assets/*', serveStatic({ root: distPath }))
+app.use('/favicon.svg', serveStatic({ root: distPath }))
+app.use('/*', serveStatic({ root: distPath }))
 
-// Serve static assets from the Vite build output
-app.use('/assets/*', serveStatic({ root: './dist' }))
-
-// SPA catch-all: serve index.html for all unmatched routes
 app.get('*', (c) => {
   try {
-    const html = fs.readFileSync(path.join(process.cwd(), 'dist', 'index.html'), 'utf-8')
+    const html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8')
     return c.html(html)
   } catch {
     return c.text('App not built. Run npm run build first.', 404)
