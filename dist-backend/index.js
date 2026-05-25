@@ -1,14 +1,17 @@
 import { Hono } from 'hono';
 import { cors } from 'hono/cors';
 import { serve } from '@hono/node-server';
-import { serveStatic } from '@hono/node-server/serve-static';
 import mysql from 'mysql2/promise';
 import bcrypt from 'bcryptjs';
 import { SignJWT, jwtVerify } from 'jose';
 import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
-import path from 'path';
-import fs from 'fs';
+import path, { extname } from 'path';
+import { readFileSync, createReadStream, existsSync } from 'fs';
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.join(__dirname, '..', 'dist');
 const app = new Hono();
 app.use('*', cors({ origin: '*' }));
 // --- DB ---
@@ -592,12 +595,38 @@ app.get('/api/company/pending-jobs', async (c) => {
     }
 });
 // --- Static file serving (production) ---
-// Serve static assets from the Vite build output
-app.use('/assets/*', serveStatic({ root: './dist' }));
-// SPA catch-all: serve index.html for all unmatched routes
+const mimeTypes = {
+    '.html': 'text/html',
+    '.js': 'application/javascript',
+    '.css': 'text/css',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.ico': 'image/x-icon',
+    '.json': 'application/json',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+};
+app.get('/assets/*', (c) => {
+    const url = new URL(c.req.url);
+    const filePath = path.join(distPath, url.pathname);
+    if (!existsSync(filePath))
+        return c.notFound();
+    const mime = mimeTypes[extname(filePath)] || 'application/octet-stream';
+    const stream = createReadStream(filePath);
+    return new Response(stream, { headers: { 'Content-Type': mime } });
+});
+app.get('/favicon.svg', (c) => {
+    const filePath = path.join(distPath, 'favicon.svg');
+    if (!existsSync(filePath))
+        return c.notFound();
+    const stream = createReadStream(filePath);
+    return new Response(stream, { headers: { 'Content-Type': 'image/svg+xml' } });
+});
 app.get('*', (c) => {
+    const indexPath = path.join(distPath, 'index.html');
     try {
-        const html = fs.readFileSync(path.join(process.cwd(), 'dist', 'index.html'), 'utf-8');
+        const html = readFileSync(indexPath, 'utf-8');
         return c.html(html);
     }
     catch {

@@ -1,14 +1,13 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { serve } from '@hono/node-server'
-import { serveStatic } from '@hono/node-server/serve-static'
 import mysql from 'mysql2/promise'
 import bcrypt from 'bcryptjs'
 import { SignJWT, jwtVerify } from 'jose'
 import Stripe from 'stripe'
 import nodemailer from 'nodemailer'
-import path from 'path'
-import fs from 'fs'
+import path, { extname } from 'path'
+import { readFileSync, createReadStream, existsSync } from 'fs'
 import { fileURLToPath } from 'url'
 
 const __filename = fileURLToPath(import.meta.url)
@@ -623,13 +622,39 @@ app.get('/api/company/pending-jobs', async (c) => {
 })
 
 // --- Static file serving (production) ---
-app.use('/assets/*', serveStatic({ root: distPath }))
-app.use('/favicon.svg', serveStatic({ root: distPath }))
-app.use('/*', serveStatic({ root: distPath }))
+const mimeTypes: Record<string, string> = {
+  '.html': 'text/html',
+  '.js': 'application/javascript',
+  '.css': 'text/css',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.ico': 'image/x-icon',
+  '.json': 'application/json',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+}
+
+app.get('/assets/*', (c) => {
+  const url = new URL(c.req.url)
+  const filePath = path.join(distPath, url.pathname)
+  if (!existsSync(filePath)) return c.notFound()
+  const mime = mimeTypes[extname(filePath)] || 'application/octet-stream'
+  const stream = createReadStream(filePath)
+  return new Response(stream as any, { headers: { 'Content-Type': mime } })
+})
+
+app.get('/favicon.svg', (c) => {
+  const filePath = path.join(distPath, 'favicon.svg')
+  if (!existsSync(filePath)) return c.notFound()
+  const stream = createReadStream(filePath)
+  return new Response(stream as any, { headers: { 'Content-Type': 'image/svg+xml' } })
+})
 
 app.get('*', (c) => {
+  const indexPath = path.join(distPath, 'index.html')
   try {
-    const html = fs.readFileSync(path.join(distPath, 'index.html'), 'utf-8')
+    const html = readFileSync(indexPath, 'utf-8')
     return c.html(html)
   } catch {
     return c.text('App not built. Run npm run build first.', 404)
