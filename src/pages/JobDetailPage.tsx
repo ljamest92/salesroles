@@ -5,6 +5,7 @@ import { MapPin, Briefcase, DollarSign, Calendar, Share2, ShieldAlert, CheckCirc
 import { ReportModal } from '../components/ReportModal'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
+import { formatSalary } from '../utils/formatSalary'
 
 export function JobDetailPage() {
   const { slug } = useParams({ from: '/jobs/$slug' })
@@ -156,11 +157,11 @@ export function JobDetailPage() {
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
               <div className="space-y-1">
                 <p className="text-xs font-bold text-muted-foreground">Base Salary</p>
-                <p className="text-2xl font-black">{job.base_salary}</p>
+                <p className="text-2xl font-black">{formatSalary(job.base_salary)}</p>
               </div>
               <div className="space-y-1 text-primary">
-                <p className="text-xs font-bold text-muted-foreground">Ote Range</p>
-                <p className="text-2xl font-black">{job.ote}</p>
+                <p className="text-xs font-bold text-muted-foreground">OTE Range</p>
+                <p className="text-2xl font-black">{formatSalary(job.ote)}</p>
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-bold text-muted-foreground">Posted</p>
@@ -187,11 +188,11 @@ export function JobDetailPage() {
                   <ul className="space-y-3">
                     <li className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Base Salary</span>
-                      <span className="font-bold">{job.base_salary}</span>
+                      <span className="font-bold">{formatSalary(job.base_salary)}</span>
                     </li>
                     <li className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">On-Target Earnings (OTE)</span>
-                      <span className="font-bold text-primary">{job.ote}</span>
+                      <span className="font-bold text-primary">{formatSalary(job.ote)}</span>
                     </li>
                     <li className="flex justify-between items-center text-sm">
                       <span className="text-muted-foreground">Commission Structure</span>

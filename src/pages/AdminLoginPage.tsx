@@ -9,15 +9,24 @@ export function AdminLoginPage() {
   const [error, setError] = useState('')
   const navigate = useNavigate()
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault()
-    // In a real app, this would be a secure check. 
-    // For now, we use a sessionStorage check as a gate.
-    if (password === 'admin123') { // Simple demo password
-      sessionStorage.setItem('admin_auth', 'true')
-      navigate({ to: '/admin' })
-    } else {
-      setError('Invalid admin credentials')
+    setError('')
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (res.ok) {
+        sessionStorage.setItem('admin_auth', 'true')
+        navigate({ to: '/admin' })
+      } else {
+        setError('Invalid admin credentials')
+      }
+    } catch {
+      // Fallback for dev when backend is not running
+      setError('Could not reach server')
     }
   }
 

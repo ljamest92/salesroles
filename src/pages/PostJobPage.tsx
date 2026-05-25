@@ -1,45 +1,119 @@
 import React, { useState } from 'react'
 import { Link } from '@tanstack/react-router'
-import { 
-  Button, 
-  Container, 
-  Card, 
-  Badge, 
-  Input, 
-  Textarea, 
-  Select, 
-  SelectTrigger as UISelectTrigger, 
-  SelectValue, 
-  SelectContent as UISelectContent, 
-  SelectItem as UISelectItem, 
-  Separator as UISeparator 
+import {
+  Button,
+  Container,
+  Card,
+  Badge,
+  Select,
+  SelectTrigger as UISelectTrigger,
+  SelectValue,
+  SelectContent as UISelectContent,
+  SelectItem as UISelectItem,
+  Separator as UISeparator
 } from '@blinkdotnew/ui'
 import { CheckCircle2, DollarSign, Rocket, Zap, ShieldCheck, AlertTriangle } from 'lucide-react'
 
-const SelectTrigger = UISelectTrigger as any;
-const SelectContent = UISelectContent as any;
-const SelectItem = UISelectItem as any;
-const Separator = UISeparator as any;
+const SelectTrigger = UISelectTrigger as any
+const SelectContent = UISelectContent as any
+const SelectItem = UISelectItem as any
+const Separator = UISeparator as any
+
+interface FormData {
+  title: string
+  company_name: string
+  company_website: string
+  sector: string
+  location: string
+  work_type: string
+  seniority: string
+  description: string
+  base_salary: string
+  ote: string
+  commission_structure: string
+}
 
 export function PostJobPage() {
   const [step, setStep] = useState(1)
   const [plan, setPlan] = useState<'standard' | 'featured'>('standard')
   const [errors, setErrors] = useState<Record<string, string>>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const validate = () => {
-    const newErrors: Record<string, string> = {}
-    // Simulate validation
-    setStep(2)
+  const [formData, setFormData] = useState<FormData>({
+    title: '',
+    company_name: '',
+    company_website: '',
+    sector: '',
+    location: '',
+    work_type: '',
+    seniority: '',
+    description: '',
+    base_salary: '',
+    ote: '',
+    commission_structure: '',
+  })
+
+  const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setFormData(prev => ({ ...prev, [field]: e.target.value }))
+    if (errors[field]) setErrors(prev => { const n = { ...prev }; delete n[field]; return n })
   }
 
-  const ErrorMessage = ({ message }: { message?: string }) => {
-    if (!message) return null
-    return (
-      <p className="validation-error">
-        <AlertTriangle size={12} className="text-primary" /> {message}
+  const setSelect = (field: keyof FormData) => (val: string) => {
+    setFormData(prev => ({ ...prev, [field]: val }))
+    if (errors[field]) setErrors(prev => { const n = { ...prev }; delete n[field]; return n })
+  }
+
+  const validateStep1 = () => {
+    const e: Record<string, string> = {}
+    if (!formData.title.trim()) e.title = 'Job title is required'
+    if (!formData.company_name.trim()) e.company_name = 'Company name is required'
+    if (!formData.company_website.trim()) e.company_website = 'Company website is required'
+    if (!formData.sector) e.sector = 'Sector is required'
+    if (!formData.location.trim()) e.location = 'Location is required'
+    if (!formData.work_type) e.work_type = 'Work type is required'
+    if (!formData.seniority) e.seniority = 'Seniority is required'
+    if (!formData.description.trim()) e.description = 'Job description is required'
+    if (!formData.base_salary.trim()) e.base_salary = 'Base salary is required'
+    if (!formData.ote.trim()) e.ote = 'OTE is required'
+    setErrors(e)
+    return Object.keys(e).length === 0
+  }
+
+  const handleNextStep = () => {
+    if (validateStep1()) setStep(2)
+    else {
+      const first = document.querySelector('[data-error="true"]')
+      first?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    }
+  }
+
+  const handleCheckout = async () => {
+    setIsSubmitting(true)
+    try {
+      const res = await fetch('/api/payments/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ plan }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || 'Payment setup failed. Please try again.')
+      }
+    } catch {
+      alert('Payment service unavailable. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const Err = ({ field }: { field: string }) =>
+    errors[field] ? (
+      <p className="validation-error flex items-center gap-1 text-xs text-destructive mt-1" data-error="true">
+        <AlertTriangle size={12} /> {errors[field]}
       </p>
-    )
-  }
+    ) : null
 
   return (
     <Container className="pt-20 pb-12 md:py-32 max-w-4xl space-y-20 page-transition">
@@ -65,55 +139,104 @@ export function PostJobPage() {
             <h2 className="text-3xl font-black tracking-tighter">Job Details</h2>
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Job Title</label>
-                <input type="text" placeholder="e.g. Senior Account Executive" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium" />
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Job Title *</label>
+                <input
+                  type="text"
+                  value={formData.title}
+                  onChange={set('title')}
+                  placeholder="e.g. Senior Account Executive"
+                  className={`w-full bg-secondary border rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium ${errors.title ? 'border-destructive/50' : 'border-white/5'}`}
+                />
+                <Err field="title" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Company Name</label>
-                <input type="text" placeholder="e.g. HubSpot" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium" />
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Company Name *</label>
+                <input
+                  type="text"
+                  value={formData.company_name}
+                  onChange={set('company_name')}
+                  placeholder="e.g. HubSpot"
+                  className={`w-full bg-secondary border rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium ${errors.company_name ? 'border-destructive/50' : 'border-white/5'}`}
+                />
+                <Err field="company_name" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Company Website</label>
-                <input type="text" placeholder="e.g. hubspot.com" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium" />
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Company Website *</label>
+                <input
+                  type="text"
+                  value={formData.company_website}
+                  onChange={set('company_website')}
+                  placeholder="e.g. hubspot.com"
+                  className={`w-full bg-secondary border rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium ${errors.company_website ? 'border-destructive/50' : 'border-white/5'}`}
+                />
+                <Err field="company_website" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Sector</label>
-                <Select>
-                  <SelectTrigger className="w-full bg-secondary border-border py-6">
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Sector *</label>
+                <Select value={formData.sector} onValueChange={setSelect('sector')}>
+                  <SelectTrigger className={`w-full bg-secondary py-6 ${errors.sector ? 'border-destructive/50' : 'border-border'}`}>
                     <SelectValue placeholder="Select Sector" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="saas">SaaS</SelectItem>
-                    <SelectItem value="fintech">FinTech</SelectItem>
-                    <SelectItem value="healthtech">HealthTech</SelectItem>
-                    <SelectItem value="adtech">AdTech</SelectItem>
-                    <SelectItem value="hardware">Hardware</SelectItem>
-                    <SelectItem value="cybersecurity">Cybersecurity</SelectItem>
-                    <SelectItem value="martech">MarTech</SelectItem>
-                    <SelectItem value="ecommerce">E-commerce</SelectItem>
-                    <SelectItem value="logistics">Logistics</SelectItem>
-                    <SelectItem value="proptech">PropTech</SelectItem>
-                    <SelectItem value="edtech">EdTech</SelectItem>
-                    <SelectItem value="insurtech">InsurTech</SelectItem>
-                    <SelectItem value="recruitment">Recruitment</SelectItem>
-                    <SelectItem value="consulting">Consulting</SelectItem>
-                    <SelectItem value="telecommunications">Telecommunications</SelectItem>
-                    <SelectItem value="financial-services">Financial Services</SelectItem>
-                    <SelectItem value="retail">Retail</SelectItem>
-                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
-                    <SelectItem value="media">Media</SelectItem>
-                    <SelectItem value="professional-services">Professional Services</SelectItem>
+                    {['SaaS','FinTech','HealthTech','AdTech','Hardware','Cybersecurity','MarTech','E-commerce','Logistics','PropTech','EdTech','InsurTech','Recruitment','Consulting','Telecommunications','Financial Services','Retail','Manufacturing','Media','Professional Services'].map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
+                <Err field="sector" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Location</label>
-                <input type="text" placeholder="e.g. Remote or Boston, MA" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium" />
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Location *</label>
+                <input
+                  type="text"
+                  value={formData.location}
+                  onChange={set('location')}
+                  placeholder="e.g. Remote or Boston, MA"
+                  className={`w-full bg-secondary border rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium ${errors.location ? 'border-destructive/50' : 'border-white/5'}`}
+                />
+                <Err field="location" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Work Type *</label>
+                <Select value={formData.work_type} onValueChange={setSelect('work_type')}>
+                  <SelectTrigger className={`w-full bg-secondary py-6 ${errors.work_type ? 'border-destructive/50' : 'border-border'}`}>
+                    <SelectValue placeholder="Select Work Type" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Remote">Remote</SelectItem>
+                    <SelectItem value="Hybrid">Hybrid</SelectItem>
+                    <SelectItem value="On-site">On-site</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Err field="work_type" />
+              </div>
+              <div className="space-y-2">
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Seniority *</label>
+                <Select value={formData.seniority} onValueChange={setSelect('seniority')}>
+                  <SelectTrigger className={`w-full bg-secondary py-6 ${errors.seniority ? 'border-destructive/50' : 'border-border'}`}>
+                    <SelectValue placeholder="Select Seniority" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Entry Level">Entry Level</SelectItem>
+                    <SelectItem value="Mid-Level">Mid-Level</SelectItem>
+                    <SelectItem value="Senior">Senior</SelectItem>
+                    <SelectItem value="Director">Director</SelectItem>
+                    <SelectItem value="VP / Executive">VP / Executive</SelectItem>
+                  </SelectContent>
+                </Select>
+                <Err field="seniority" />
               </div>
             </div>
             <div className="space-y-2">
-              <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Job Description</label>
-              <textarea rows={6} placeholder="Full job description, responsibilities, requirements..." className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 resize-none transition-all font-medium" />
+              <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Job Description *</label>
+              <textarea
+                rows={6}
+                value={formData.description}
+                onChange={set('description')}
+                placeholder="Full job description, responsibilities, requirements..."
+                className={`w-full bg-secondary border rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 resize-none transition-all font-medium ${errors.description ? 'border-destructive/50' : 'border-white/5'}`}
+              />
+              <Err field="description" />
             </div>
           </div>
 
@@ -125,22 +248,44 @@ export function PostJobPage() {
             </h2>
             <div className="grid md:grid-cols-2 gap-8">
               <div className="space-y-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Base Salary Range</label>
-                <input type="text" placeholder="e.g. $100k - $120k" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium" />
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Base Salary Range *</label>
+                <input
+                  type="text"
+                  value={formData.base_salary}
+                  onChange={set('base_salary')}
+                  placeholder="e.g. $100k - $120k"
+                  className={`w-full bg-secondary border rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium ${errors.base_salary ? 'border-destructive/50' : 'border-white/5'}`}
+                />
+                <Err field="base_salary" />
               </div>
               <div className="space-y-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Ote Range</label>
-                <input type="text" placeholder="e.g. $200k - $240k" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-primary text-primary font-black text-lg" />
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">OTE Range *</label>
+                <input
+                  type="text"
+                  value={formData.ote}
+                  onChange={set('ote')}
+                  placeholder="e.g. $200k - $240k"
+                  className={`w-full bg-secondary border rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-primary text-primary font-black text-lg ${errors.ote ? 'border-destructive/50' : 'border-white/5'}`}
+                />
+                <Err field="ote" />
               </div>
               <div className="space-y-2 col-span-2">
-                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Commission Structure & Quota</label>
-                <textarea rows={3} placeholder="Describe the commission structure, accelerators, and annual quota..." className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 resize-none transition-all font-medium" />
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Commission Structure &amp; Quota</label>
+                <textarea
+                  rows={3}
+                  value={formData.commission_structure}
+                  onChange={set('commission_structure')}
+                  placeholder="Describe the commission structure, accelerators, and annual quota..."
+                  className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 resize-none transition-all font-medium"
+                />
               </div>
             </div>
           </div>
 
           <div className="flex justify-end pt-4">
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-16 h-16 text-lg tracking-tighter cta-glow" onClick={validate}>Next Step →</Button>
+            <Button size="lg" className="bg-primary text-primary-foreground font-black px-16 h-16 text-lg tracking-tighter cta-glow" onClick={handleNextStep}>
+              Next Step →
+            </Button>
           </div>
         </Card>
       )}
@@ -153,7 +298,7 @@ export function PostJobPage() {
           </div>
 
           <div className="grid md:grid-cols-2 gap-8">
-            <Card 
+            <Card
               className={`p-10 border-2 transition-all cursor-pointer relative group rounded-[40px] ${plan === 'standard' ? 'border-primary bg-primary/5 shadow-[0_0_40px_rgba(16,185,129,0.1)]' : 'border-white/5 hover:border-white/10'}`}
               onClick={() => setPlan('standard')}
             >
@@ -168,12 +313,12 @@ export function PostJobPage() {
                 <ul className="space-y-3 text-sm text-muted-foreground">
                   <li className="flex items-center gap-2"><Zap size={16} className="text-primary" /> Active for 30 days</li>
                   <li className="flex items-center gap-2"><Zap size={16} className="text-primary" /> Company logo included</li>
-                  <li className="flex items-center gap-2"><Zap size={16} className="text-primary" /> Syndicated to Indeed & Google</li>
+                  <li className="flex items-center gap-2"><Zap size={16} className="text-primary" /> Syndicated to Indeed &amp; Google</li>
                 </ul>
               </div>
             </Card>
 
-            <Card 
+            <Card
               className={`p-10 border-2 transition-all cursor-pointer relative overflow-hidden group rounded-[40px] ${plan === 'featured' ? 'border-primary bg-primary/5 shadow-[0_0_40px_rgba(16,185,129,0.1)]' : 'border-white/5 hover:border-white/10'}`}
               onClick={() => setPlan('featured')}
             >
@@ -200,13 +345,13 @@ export function PostJobPage() {
             <ShieldCheck className="text-primary shrink-0" size={32} />
             <div className="space-y-1">
               <p className="font-bold text-sm">Full Refund Guarantee</p>
-              <p className="text-xs text-muted-foreground text-balance">If your listing is rejected by our admin team for any reason, you'll receive a 100% refund immediately. Once approved, listings are non-refundable.</p>
+              <p className="text-xs text-muted-foreground text-balance">If your listing is rejected by our admin team for any reason, you will receive a 100% refund immediately. Once approved, listings are non-refundable.</p>
             </div>
           </Card>
 
           <div className="flex justify-between">
-            <Button variant="ghost" className="font-bold" onClick={() => setStep(1)}>← Back</Button>
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-12" onClick={() => setStep(3)}>Continue to Checkout →</Button>
+            <Button variant="ghost" className="font-bold" onClick={() => setStep(1)}>Back</Button>
+            <Button size="lg" className="bg-primary text-primary-foreground font-black px-12" onClick={() => setStep(3)}>Continue to Checkout</Button>
           </div>
         </div>
       )}
@@ -214,13 +359,13 @@ export function PostJobPage() {
       {step === 3 && (
         <Card className="p-12 text-center space-y-8 animate-fade-in border-dashed border-2 border-primary/20 bg-primary/5 rounded-[48px]">
           <div className="mx-auto w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary">
-            < Zap size={40} />
+            <Zap size={40} />
           </div>
           <div className="space-y-2">
             <h2 className="text-3xl font-black tracking-tighter text-primary">Ready to Go Live</h2>
             <p className="text-muted-foreground max-w-md mx-auto text-balance font-medium text-lg">Click the button below to complete your payment securely via Stripe. Your listing will be reviewed by our team within 2 hours.</p>
           </div>
-          
+
           <div className="max-w-xs mx-auto p-6 bg-card rounded-xl border border-border text-left space-y-4">
             <div className="flex justify-between font-bold">
               <span>{plan === 'featured' ? 'Featured Listing' : 'Standard Listing'}</span>
@@ -234,12 +379,19 @@ export function PostJobPage() {
           </div>
 
           <div className="space-y-4 pt-4">
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-20 py-8 text-xl tracking-tighter shadow-[0_0_40px_rgba(34,197,94,0.3)]">Complete Payment</Button>
+            <Button
+              size="lg"
+              disabled={isSubmitting}
+              onClick={handleCheckout}
+              className="bg-primary text-primary-foreground font-black px-20 py-8 text-xl tracking-tighter shadow-[0_0_40px_rgba(34,197,94,0.3)] disabled:opacity-60"
+            >
+              {isSubmitting ? 'Redirecting...' : 'Complete Payment'}
+            </Button>
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-2 font-bold tracking-widest">
-              <ShieldCheck size={14} /> Secure 256-Bit Ssl Encrypted Payment
+              <ShieldCheck size={14} /> Secure 256-Bit SSL Encrypted Payment
             </p>
           </div>
-          
+
           <Button variant="link" className="text-muted-foreground text-sm" onClick={() => setStep(2)}>Change plan</Button>
         </Card>
       )}

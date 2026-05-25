@@ -164,7 +164,9 @@ export function CompanyProfilePage() {
                 <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-[10px]">Verified Team</Badge>
               </div>
               <div className="flex flex-wrap gap-8 text-muted-foreground font-bold text-xs">
-                <span className="flex items-center gap-2.5"><MapPin size={18} className="text-primary" /> Remote First</span>
+                {companyData.location && (
+                  <span className="flex items-center gap-2.5"><MapPin size={18} className="text-primary" /> {companyData.location}</span>
+                )}
                 {companyData.website && (
                   <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-primary transition-colors">
                     <Globe size={18} className="text-primary" /> {companyDomain}
