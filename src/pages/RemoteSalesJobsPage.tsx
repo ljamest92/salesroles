@@ -111,7 +111,7 @@ export function RemoteSalesJobsPage() {
   const activeFilterCount = seniorityFilters.length + sectorFilters.length
 
   return (
-    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in overflow-x-hidden">
+    <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
       <div className="space-y-4">
         <Badge variant="outline" className="px-4 py-1 text-primary border-primary/20 bg-primary/5 text-[10px] font-black">Remote Only</Badge>
         <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">

@@ -350,12 +350,13 @@ app.get('/api/admin/stats', async (c) => {
         return c.json({ liveListings: 0, totalRevenue: 0, candidates: 0, pendingReview: 0 });
     try {
         const [jobs] = await pool.execute("SELECT COUNT(*) as count FROM jobs WHERE status = 'live'");
+        const [pending] = await pool.execute("SELECT COUNT(*) as count FROM jobs WHERE status = 'pending'");
         const [users] = await pool.execute('SELECT COUNT(*) as count FROM users');
         return c.json({
             liveListings: jobs[0]?.count || 0,
             totalRevenue: 0,
             candidates: users[0]?.count || 0,
-            pendingReview: 0,
+            pendingReview: pending[0]?.count || 0,
         });
     }
     catch {
@@ -420,6 +421,7 @@ app.post('/api/subscribe', async (c) => {
         if (!email || !email.includes('@'))
             return c.json({ error: 'Invalid email' }, 400);
         await pool.execute('INSERT IGNORE INTO subscribers (email) VALUES (?)', [email]);
+        sendEmail(email, 'You are on the list. SalesRoles.co Weekly Job Alerts', `<p>Hi,</p><p>You are now subscribed to the SalesRoles.co weekly job alert. Every Monday morning you will get the latest sales roles with full compensation transparency direct to your inbox.</p><p>No spam. Unsubscribe anytime by replying to this email.</p><p>The SalesRoles.co team</p>`);
         return c.json({ ok: true });
     }
     catch {
@@ -491,6 +493,53 @@ app.post('/api/jobs', async (c) => {
     }
     catch (err) {
         return c.json({ error: err.message || 'Failed to create job' }, 500);
+    }
+});
+// --- Admin job moderation ---
+app.get('/api/admin/pending-jobs', async (c) => {
+    if (!pool)
+        return c.json([]);
+    try {
+        const [jobs] = await pool.execute("SELECT * FROM jobs WHERE status = 'pending' ORDER BY created_at DESC");
+        return c.json(jobs);
+    }
+    catch {
+        return c.json([]);
+    }
+});
+app.post('/api/admin/jobs/:id/approve', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const id = c.req.param('id');
+    try {
+        await pool.execute("UPDATE jobs SET status = 'live' WHERE id = ?", [id]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Approve failed' }, 500);
+    }
+});
+app.post('/api/admin/jobs/:id/reject', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const id = c.req.param('id');
+    try {
+        await pool.execute("UPDATE jobs SET status = 'rejected' WHERE id = ?", [id]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Reject failed' }, 500);
+    }
+});
+app.get('/api/admin/candidates', async (c) => {
+    if (!pool)
+        return c.json([]);
+    try {
+        const [users] = await pool.execute('SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC');
+        return c.json(users);
+    }
+    catch {
+        return c.json([]);
     }
 });
 // --- Static file serving (production) ---

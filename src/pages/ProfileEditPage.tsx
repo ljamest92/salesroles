@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, Container, Card } from '@blinkdotnew/ui'
 import { useAuth } from '../hooks/useAuth'
 
@@ -8,6 +8,7 @@ const TOKEN_KEY = 'salesroles_token'
 
 export function ProfileEditPage() {
   const { user, isLoading } = useAuth()
+  const navigate = useNavigate()
   const [name, setName] = useState(user?.displayName || '')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
@@ -37,6 +38,9 @@ export function ProfileEditPage() {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(u))
       }
       setSaved(true)
+      setTimeout(() => {
+        navigate({ to: '/dashboard', search: { mode: 'candidate' } as any })
+      }, 2000)
     } catch (e: any) {
       setError(e.message || 'Update failed')
     } finally {
@@ -52,7 +56,7 @@ export function ProfileEditPage() {
   }
 
   return (
-    <Container className="py-24 flex items-center justify-center min-h-[60vh]">
+    <Container className="pt-12 pb-12 md:pt-16 md:pb-16 flex items-center justify-center min-h-[60vh]">
       <Card className="w-full max-w-md p-12 border border-white/5 bg-card/50 backdrop-blur-xl space-y-8 rounded-[40px]">
         <div className="space-y-2">
           <h2 className="text-3xl font-black tracking-tighter">Edit Profile</h2>

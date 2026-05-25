@@ -48,7 +48,7 @@ export function FAQPage() {
   }
 
   return (
-    <div className="pt-20 pb-20 md:py-24 space-y-24 animate-fade-in">
+    <div className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-24 animate-fade-in">
       <Container className="text-center space-y-8">
         <div className="space-y-4">
           <Badge className="bg-primary/20 text-primary border-primary/20 px-4 py-1 font-black tracking-widest text-[10px]">Help Center</Badge>

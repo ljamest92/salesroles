@@ -18,7 +18,7 @@ export function BlogPage() {
   const filteredPosts = activeCategory === 'All' ? posts : posts.filter(p => p.category === activeCategory)
 
   return (
-    <div className="pt-20 pb-12 md:py-24 space-y-24 page-transition">
+    <div className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-24 page-transition">
       <Container className="space-y-12">
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-12">
           <div className="space-y-6 max-w-2xl text-center md:text-left">

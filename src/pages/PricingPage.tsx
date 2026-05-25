@@ -7,7 +7,7 @@ const Separator = UISeparator as any;
 
 export function PricingPage() {
   return (
-    <div className="pt-20 pb-12 md:py-24 space-y-24">
+    <div className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-24">
       <Container className="text-center space-y-6">
         <h1 className="text-4xl md:text-8xl font-black tracking-tighter leading-none max-w-4xl mx-auto">
           Hire the Top <span className="text-primary">1% of Sales</span> Talent.

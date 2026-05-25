@@ -33,7 +33,7 @@ interface FormData {
   commission_structure: string
 }
 
-const isTestMode = !import.meta.env.VITE_STRIPE_PUBLIC_KEY || import.meta.env.DEV
+const isTestMode = import.meta.env.DEV
 
 export function PostJobPage() {
   const navigate = useNavigate()
@@ -147,7 +147,7 @@ export function PostJobPage() {
     ) : null
 
   return (
-    <Container className="pt-20 pb-12 md:py-32 max-w-4xl space-y-20 page-transition">
+    <Container className="pt-12 pb-12 md:pt-16 md:pb-20 max-w-4xl space-y-20 page-transition">
       <div className="text-center space-y-6">
         <Badge variant="outline" className="px-6 py-2 text-primary border-primary/20 bg-primary/5 tracking-tight text-[10px] font-black">Hire Quality</Badge>
         <h1 className="text-4xl md:text-[84px] font-black tracking-tighter leading-[0.95]">Hire The Best <span className="text-primary underline underline-offset-[16px] decoration-primary/20">Sales Talent.</span></h1>

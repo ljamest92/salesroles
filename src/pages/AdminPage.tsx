@@ -25,6 +25,7 @@ export function AdminPage() {
   const [pendingJobs, setPendingJobs] = useState<any[]>([])
   const [reports, setReports] = useState<any[]>([])
   const [liveJobs, setLiveJobs] = useState<any[]>([])
+  const [candidates, setCandidates] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState('pending')
 
   const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('admin_auth') === 'true'
@@ -43,21 +44,27 @@ export function AdminPage() {
         } catch { return {} }
       }
 
-      const [adminStats, jobsData] = await Promise.all([
+      const [adminStats, jobsData, pendingData, candidatesData] = await Promise.all([
         fetchSafe('/api/admin/stats'),
         fetchSafe('/api/jobs'),
+        fetchSafe('/api/admin/pending-jobs'),
+        fetchSafe('/api/admin/candidates'),
       ])
 
       const allJobs: any[] = jobsData.jobs || []
+      const pendingList: any[] = Array.isArray(pendingData) ? pendingData : []
+      const candidateList: any[] = Array.isArray(candidatesData) ? candidatesData : []
 
       setStats({
         listings: adminStats.liveListings || 0,
         revenue: '$0',
         candidates: adminStats.candidates || 0,
-        pending: 0,
+        pending: pendingList.length,
         reports: 0,
       })
       setLiveJobs(allJobs)
+      setPendingJobs(pendingList)
+      setCandidates(candidateList)
     }
 
     loadData()
@@ -66,6 +73,26 @@ export function AdminPage() {
   const handleLogout = () => {
     sessionStorage.removeItem('admin_auth')
     navigate({ to: '/admin/login' })
+  }
+
+  const handleApproveJob = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/jobs/${id}/approve`, { method: 'POST' })
+      if (res.ok) {
+        setPendingJobs(prev => prev.filter(j => j.id !== id))
+        setStats(prev => ({ ...prev, pending: prev.pending - 1, listings: prev.listings + 1 }))
+      }
+    } catch {}
+  }
+
+  const handleRejectJob = async (id: string) => {
+    try {
+      const res = await fetch(`/api/admin/jobs/${id}/reject`, { method: 'POST' })
+      if (res.ok) {
+        setPendingJobs(prev => prev.filter(j => j.id !== id))
+        setStats(prev => ({ ...prev, pending: prev.pending - 1 }))
+      }
+    } catch {}
   }
 
   const handleRemoveJob = async (id: string) => {
@@ -92,7 +119,7 @@ export function AdminPage() {
   if (!isAuth) return null
 
   return (
-    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in">
+    <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-4">
           <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none flex items-center gap-6">
@@ -194,10 +221,10 @@ export function AdminPage() {
                     </div>
                   </div>
                   <div className="flex gap-3">
-                    <Button size="sm" className="bg-primary text-primary-foreground font-bold gap-2">
+                    <Button size="sm" className="bg-primary text-primary-foreground font-bold gap-2" onClick={() => handleApproveJob(job.id)}>
                       <Check size={16} /> Approve
                     </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive font-bold gap-2 hover:bg-destructive/10">
+                    <Button size="sm" variant="ghost" className="text-destructive font-bold gap-2 hover:bg-destructive/10" onClick={() => handleRejectJob(job.id)}>
                       <X size={16} /> Reject
                     </Button>
                   </div>
@@ -274,9 +301,38 @@ export function AdminPage() {
       )}
 
       {activeTab === 'candidates' && (
-        <Card className="p-16 text-center border-dashed border-white/10">
-          <p className="text-muted-foreground font-medium">Candidate management coming soon.</p>
-        </Card>
+        <div className="space-y-4">
+          {candidates.length === 0 ? (
+            <Card className="p-16 text-center border-dashed border-white/10">
+              <p className="text-muted-foreground font-medium">No candidates registered yet.</p>
+            </Card>
+          ) : (
+            <Card className="p-6 border border-white/5 bg-card/30 overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-left">
+                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Name</th>
+                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Email</th>
+                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Role</th>
+                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Joined</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {candidates.map((c: any) => (
+                    <tr key={c.id} className="hover:bg-white/5 transition-colors">
+                      <td className="py-4 font-bold">{c.name}</td>
+                      <td className="py-4 text-muted-foreground">{c.email}</td>
+                      <td className="py-4">
+                        <Badge variant="outline" className="text-[10px] font-bold capitalize">{c.role}</Badge>
+                      </td>
+                      <td className="py-4 text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </Card>
+          )}
+        </div>
       )}
     </Container>
   )

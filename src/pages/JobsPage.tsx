@@ -157,7 +157,7 @@ export function JobsPage() {
   const activeFilterCount = workTypeFilters.length + seniorityFilters.length + sectorFilters.length
 
   return (
-    <Container className="pt-20 pb-12 md:py-24 space-y-16 animate-fade-in overflow-x-hidden">
+    <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-16 animate-fade-in overflow-x-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">
         <div className="space-y-6 max-w-2xl">
           <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
