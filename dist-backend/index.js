@@ -84,9 +84,10 @@ app.post('/api/auth/register', async (c) => {
         return c.json({ token, user: { id: userId, email, displayName: name, role: role || 'candidate' } });
     }
     catch (err) {
+        console.error('Registration error:', err);
         if (err.code === 'ER_DUP_ENTRY')
             return c.json({ error: 'Email already registered' }, 409);
-        return c.json({ error: 'Registration failed' }, 500);
+        return c.json({ error: 'Registration failed', detail: String(err) }, 500);
     }
 });
 app.post('/api/auth/login', async (c) => {
@@ -250,6 +251,18 @@ app.get('/api/jobs/external', async (c) => {
     catch (e) {
         console.error('Arbeitnow fetch failed:', e);
         return c.json([]);
+    }
+});
+// --- Health check ---
+app.get('/api/health', async (c) => {
+    try {
+        if (!pool)
+            return c.json({ status: 'error', detail: 'No database pool' }, 500);
+        const [rows] = await pool.execute('SELECT 1 as ok');
+        return c.json({ status: 'ok', db: 'connected' });
+    }
+    catch (error) {
+        return c.json({ status: 'error', detail: String(error) }, 500);
     }
 });
 // --- Static file serving (production) ---
