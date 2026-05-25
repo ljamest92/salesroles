@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react'
 import { Link, Outlet, useLocation } from '@tanstack/react-router'
-import { Button, Navbar, NavbarBrand, NavbarContent, NavbarItem, Toaster } from '@blinkdotnew/ui'
+import { Button, Navbar, NavbarBrand, NavbarContent, NavbarItem } from '@blinkdotnew/ui'
 import { useAuth } from '../hooks/useAuth'
 import { Briefcase, User, LogOut, Menu, ArrowRight } from 'lucide-react'
 import { CookieConsent } from '../components/CookieConsent'
@@ -78,7 +78,6 @@ export function AppLayout() {
       </main>
 
       <CookieConsent />
-
       <footer className="footer-weight bg-card/30">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-20">
@@ -137,7 +136,6 @@ export function AppLayout() {
           </div>
         </div>
       </footer>
-      <Toaster />
     </div>
   )
 }

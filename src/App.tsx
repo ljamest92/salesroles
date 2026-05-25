@@ -1,6 +1,5 @@
 import React from 'react'
 import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet } from '@tanstack/react-router'
-import { Toaster } from '@blinkdotnew/ui'
 import { AppLayout } from './layouts/AppLayout'
 import { HomePage } from './pages/HomePage'
 import { JobsPage } from './pages/JobsPage'
@@ -23,12 +22,7 @@ import { CompanyProfilePage } from './pages/CompanyProfilePage'
 import { RegistrationPage } from './pages/RegistrationPage'
 
 const rootRoute = createRootRoute({
-  component: () => (
-    <>
-      <AppLayout />
-      <Toaster position="top-right" />
-    </>
-  ),
+  component: () => <AppLayout />,
 })
 
 const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: HomePage })

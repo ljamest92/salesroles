@@ -249,7 +249,7 @@ export function HomePage() {
                   <div className="flex flex-col md:flex-row justify-between gap-8">
                     <div className="flex gap-6">
                       <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/50 overflow-hidden relative">
-                        <CompanyLogo domain={job.domain} name={job.company} imgClassName="grayscale group-hover:grayscale-0 transition-all duration-700" />
+                        <CompanyLogo domain={job.domain} name={job.company} />
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -389,7 +389,7 @@ export function HomePage() {
                     <div className="bg-card p-10 rounded-[32px] border border-white/5 text-center space-y-6 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_50px_rgba(16,185,129,0.12)] relative overflow-hidden h-full">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
                       <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground border border-white/5 group-hover:border-primary/30 transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden relative">
-                        <CompanyLogo domain={company.domain} name={company.name} imgClassName="grayscale group-hover:grayscale-0 transition-all duration-700" />
+                        <CompanyLogo domain={company.domain} name={company.name} />
                       </div>
                       <div>
                         <h3 className="font-black group-hover:text-primary transition-colors text-xl tracking-tight leading-none">{company.name}</h3>

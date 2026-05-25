@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
-import { Button, Container, Card, Badge, toast, Toaster, Skeleton } from '@blinkdotnew/ui'
+import { Button, Container, Card, Badge, toast, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Briefcase, DollarSign, Calendar, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight } from 'lucide-react'
 import { ReportModal } from '../components/ReportModal'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
@@ -127,7 +127,7 @@ export function JobDetailPage() {
             <div className="flex flex-col md:flex-row justify-between items-start gap-8">
               <div className="flex gap-6">
                 <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
-                  <CompanyLogo domain={job.domain} name={job.company} imgClassName="grayscale transition-all duration-700" />
+                  <CompanyLogo domain={job.domain} name={job.company} />
                 </div>
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
@@ -242,7 +242,7 @@ export function JobDetailPage() {
               <h4 className="text-[10px] font-black text-muted-foreground/50">Company Profile</h4>
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-lg overflow-hidden">
-                  <CompanyLogo domain={job.domain} name={job.company} imgClassName="grayscale transition-all duration-700" />
+                  <CompanyLogo domain={job.domain} name={job.company} />
                 </div>
                 <div>
                   <p className="font-bold text-lg">{job.company}</p>
@@ -336,7 +336,6 @@ export function JobDetailPage() {
         isOpen={isReportModalOpen}
         onOpenChange={setIsReportModalOpen}
       />
-      <Toaster />
     </Container>
   )
 }

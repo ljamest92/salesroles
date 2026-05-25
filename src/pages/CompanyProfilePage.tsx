@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from '@tanstack/react-router'
-import { Button, Container, Card, Badge, StatGroup, Stat, Toaster, toast, Skeleton } from '@blinkdotnew/ui'
+import { Button, Container, Card, Badge, StatGroup, Stat, toast, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Globe, Briefcase, Users, Building2, ExternalLink, Check, Copy } from 'lucide-react'
 import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
@@ -155,7 +155,7 @@ export function CompanyProfilePage() {
       <Container>
         <div className="flex flex-col md:flex-row gap-12 items-start animate-fade-in">
           <div className="w-32 h-32 rounded-[32px] bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative group">
-            <CompanyLogo domain={companyDomain} name={companyData.name} imgClassName="grayscale group-hover:grayscale-0 transition-all duration-700" />
+            <CompanyLogo domain={companyDomain} name={companyData.name} />
           </div>
           <div className="space-y-8 flex-1">
             <div className="space-y-4">
@@ -264,7 +264,6 @@ export function CompanyProfilePage() {
           </Card>
         </div>
       </Container>
-      <Toaster />
     </div>
   )
 }
