@@ -32,6 +32,28 @@ try {
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => { });
+    pool.execute(`
+    CREATE TABLE IF NOT EXISTS jobs (
+      id VARCHAR(100) PRIMARY KEY,
+      title VARCHAR(255) NOT NULL,
+      company_name VARCHAR(255) NOT NULL,
+      company_website VARCHAR(500),
+      location VARCHAR(255),
+      work_type VARCHAR(50) DEFAULT 'Remote',
+      seniority VARCHAR(100),
+      sector VARCHAR(100),
+      description TEXT,
+      base_salary VARCHAR(100),
+      ote VARCHAR(100),
+      commission_structure TEXT,
+      currency VARCHAR(10) DEFAULT 'USD',
+      application_url VARCHAR(500),
+      contact_email VARCHAR(255),
+      featured TINYINT(1) DEFAULT 0,
+      status VARCHAR(20) DEFAULT 'live',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => { });
 }
 catch { }
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'salesroles-dev-secret-change-in-prod');
@@ -84,10 +106,9 @@ app.post('/api/auth/register', async (c) => {
         return c.json({ token, user: { id: userId, email, displayName: name, role: role || 'candidate' } });
     }
     catch (err) {
-        console.error('Registration error:', err);
         if (err.code === 'ER_DUP_ENTRY')
             return c.json({ error: 'Email already registered' }, 409);
-        return c.json({ error: 'Registration failed', detail: String(err) }, 500);
+        return c.json({ error: 'Registration failed' }, 500);
     }
 });
 app.post('/api/auth/login', async (c) => {
@@ -147,7 +168,7 @@ app.post('/api/admin/login', async (c) => {
 // --- Payments ---
 app.post('/api/payments/create-checkout-session', async (c) => {
     if (!process.env.STRIPE_SECRET_KEY) {
-        return c.json({ error: 'Stripe not configured on server.' }, 503);
+        return c.json({ error: 'Stripe not configured. Contact info@salesroles.co to post your job.' }, 503);
     }
     if (!stripe)
         return c.json({ error: 'Stripe not configured' }, 503);
@@ -185,6 +206,7 @@ app.post('/api/payments/create-checkout-session', async (c) => {
 });
 // --- Jobs ---
 const SALES_KEYWORDS = ['sales', 'account executive', 'sdr', 'bdr', 'business development', 'account manager', 'revenue', 'closing', 'customer success', 'representative'];
+const LANG_SUFFIX = /\s*-\s*(English|German|French|Spanish|Dutch|Italian|Portuguese|Polish|Czech|Romanian|Hungarian|Turkish|Arabic|Japanese|Korean|Chinese)$/i;
 function extractDomain(url) {
     try {
         return new URL(url.startsWith('http') ? url : `https://${url}`).hostname.replace('www.', '');
@@ -194,23 +216,19 @@ function extractDomain(url) {
     }
 }
 app.get('/api/jobs', async (c) => {
+    if (!pool)
+        return c.json({ jobs: [] });
     try {
-        const response = await fetch('https://arbeitnow.com/api/job-board-api');
-        const result = await response.json();
-        const salesJobs = result.data
-            .filter((job) => SALES_KEYWORDS.some(kw => job.title.toLowerCase().includes(kw)))
-            .map((job) => ({
-            id: job.slug,
-            title: job.title,
-            company: job.company_name,
-            location: job.location,
-            job_type: job.remote ? 'Remote' : 'On-site',
-            description: job.description,
-            url: job.url,
-            created_at: job.created_at,
+        const [rows] = await pool.execute("SELECT * FROM jobs WHERE status = 'live' ORDER BY featured DESC, created_at DESC");
+        const jobs = rows.map(row => ({
+            ...row,
+            company: row.company_name,
+            job_type: row.work_type,
+            application_url: row.application_url || '',
+            contact_email: row.contact_email || '',
+            featured: !!row.featured,
         }));
-        const uniqueJobs = Array.from(new Map(salesJobs.map((j) => [j.id, j])).values());
-        return c.json({ jobs: uniqueJobs });
+        return c.json({ jobs });
     }
     catch {
         return c.json({ jobs: [] });
@@ -231,15 +249,15 @@ app.get('/api/jobs/external', async (c) => {
             return {
                 id: `arbeitnow-${job.slug}`,
                 title: job.title,
-                company_name: job.company_name,
+                company_name: job.company_name.replace(LANG_SUFFIX, '').trim(),
                 company_website: domain ? `https://${domain}` : '',
                 location: job.location || 'Remote',
                 work_type: job.remote ? 'Remote' : 'On-site',
                 sector: 'Sales',
                 seniority: 'Mid-Level',
                 description: job.description,
-                base_salary: job.salary || 'Salary Not Disclosed',
-                ote: job.ote || 'Salary Not Disclosed',
+                base_salary: null,
+                ote: null,
                 apply_url: job.url,
                 via_partner: true,
                 created_at: job.created_at,
@@ -251,6 +269,63 @@ app.get('/api/jobs/external', async (c) => {
     catch (e) {
         console.error('Arbeitnow fetch failed:', e);
         return c.json([]);
+    }
+});
+app.get('/api/jobs/:id', async (c) => {
+    const id = c.req.param('id');
+    if (id.startsWith('arbeitnow-')) {
+        const slug = id.replace('arbeitnow-', '');
+        try {
+            const res = await fetch('https://arbeitnow.com/api/job-board-api');
+            const data = await res.json();
+            const job = data.data.find((j) => j.slug === slug);
+            if (!job)
+                return c.json({ error: 'Job not found' }, 404);
+            let domain = '';
+            try {
+                domain = new URL(job.url).hostname.replace('www.', '');
+            }
+            catch { }
+            const cleanName = job.company_name.replace(LANG_SUFFIX, '').trim();
+            return c.json({ job: {
+                    id: `arbeitnow-${job.slug}`,
+                    title: job.title,
+                    company: cleanName,
+                    company_name: cleanName,
+                    company_website: domain ? `https://${domain}` : '',
+                    location: job.location || 'Remote',
+                    job_type: job.remote ? 'Remote' : 'On-site',
+                    work_type: job.remote ? 'Remote' : 'On-site',
+                    description: job.description,
+                    application_url: job.url,
+                    base_salary: null,
+                    ote: null,
+                    via_partner: true,
+                    created_at: job.created_at,
+                    domain,
+                    sector: 'Sales',
+                    seniority: 'Mid-Level',
+                    currency: null,
+                    commission_structure: null,
+                    status: 'live',
+                    featured: false,
+                } });
+        }
+        catch {
+            return c.json({ error: 'Failed to fetch job' }, 500);
+        }
+    }
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    try {
+        const [rows] = await pool.execute('SELECT * FROM jobs WHERE id = ?', [id]);
+        const row = rows[0];
+        if (!row)
+            return c.json({ error: 'Job not found' }, 404);
+        return c.json({ job: { ...row, company: row.company_name, job_type: row.work_type, featured: !!row.featured } });
+    }
+    catch {
+        return c.json({ error: 'Failed to fetch job' }, 500);
     }
 });
 // --- Dashboard ---
@@ -284,18 +359,6 @@ app.put('/api/auth/profile', async (c) => {
     }
     catch {
         return c.json({ error: 'Update failed' }, 500);
-    }
-});
-// --- Health check ---
-app.get('/api/health', async (c) => {
-    try {
-        if (!pool)
-            return c.json({ status: 'error', detail: 'No database pool' }, 500);
-        const [rows] = await pool.execute('SELECT 1 as ok');
-        return c.json({ status: 'ok', db: 'connected' });
-    }
-    catch (error) {
-        return c.json({ status: 'error', detail: String(error) }, 500);
     }
 });
 // --- Static file serving (production) ---

@@ -155,24 +155,41 @@ export function JobDetailPage() {
 
             <div className="h-px bg-border" />
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-muted-foreground">Base Salary</p>
-                <p className="text-2xl font-black">{formatSalary(job.base_salary)}</p>
+            {(job.via_partner || job.is_partner) && !job.base_salary && !job.ote ? (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div className="space-y-1 col-span-2">
+                  <p className="text-xs font-bold text-muted-foreground">Compensation</p>
+                  <span className="text-white/40 text-sm">Salary not disclosed</span>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground">Posted</p>
+                  <p className="text-2xl font-black">{new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground">Type</p>
+                  <p className="text-2xl font-black">{job.job_type}</p>
+                </div>
               </div>
-              <div className="space-y-1 text-primary">
-                <p className="text-xs font-bold text-muted-foreground">OTE Range</p>
-                <p className="text-2xl font-black">{formatSalary(job.ote)}</p>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground">Base Salary</p>
+                  <p className="text-2xl font-black">{formatSalary(job.base_salary)}</p>
+                </div>
+                <div className="space-y-1 text-primary">
+                  <p className="text-xs font-bold text-muted-foreground">OTE Range</p>
+                  <p className="text-2xl font-black">{formatSalary(job.ote)}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground">Posted</p>
+                  <p className="text-2xl font-black">{new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs font-bold text-muted-foreground">Currency</p>
+                  <p className="text-2xl font-black">{job.currency}</p>
+                </div>
               </div>
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-muted-foreground">Posted</p>
-                <p className="text-2xl font-black">{new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-              </div>
-              <div className="space-y-1">
-                <p className="text-xs font-bold text-muted-foreground">Currency</p>
-                <p className="text-2xl font-black">{job.currency}</p>
-              </div>
-            </div>
+            )}
           </div>
 
           <div className="prose prose-invert max-w-none">
@@ -180,6 +197,7 @@ export function JobDetailPage() {
             <div className="text-muted-foreground leading-relaxed space-y-4" dangerouslySetInnerHTML={{ __html: job.description }} />
           </div>
 
+          {!((job.via_partner || job.is_partner) && !job.base_salary && !job.ote) && (
           <div className="space-y-6">
             <h2 className="text-2xl font-black tracking-tighter">Compensation & Benefits</h2>
             <Card className="p-8 border-primary/20 bg-primary/5 space-y-6">
@@ -218,6 +236,7 @@ export function JobDetailPage() {
               </div>
             </Card>
           </div>
+          )}
         </div>
 
         {/* Sidebar */}

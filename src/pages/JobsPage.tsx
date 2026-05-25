@@ -355,9 +355,17 @@ export function JobsPage() {
                         </div>
                         <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-2 text-right">
                           <div>
-                            <p className="text-[10px] text-muted-foreground font-black tracking-[0.25em] mb-2 opacity-50">On-Target Earnings</p>
-                            <p className="text-4xl font-black text-foreground tabular-nums tracking-tighter group-hover:text-primary transition-colors">{job.ote}</p>
-                            <p className="text-[11px] text-primary font-black tracking-[0.2em] mt-2 underline underline-offset-4">Base: {job.base_salary}</p>
+                            {(job.via_partner || job.is_partner) && (!job.ote || job.ote === 'Salary Not Disclosed') ? (
+                              <span className="text-white/40 text-sm">Salary not disclosed</span>
+                            ) : (
+                              <>
+                                <p className="text-[10px] text-muted-foreground font-black tracking-[0.25em] mb-2 opacity-50">On-Target Earnings</p>
+                                <p className="text-4xl font-black text-foreground tabular-nums tracking-tighter group-hover:text-primary transition-colors">{job.ote}</p>
+                                {job.base_salary && job.base_salary !== 'Salary Not Disclosed' && (
+                                  <p className="text-[11px] text-primary font-black tracking-[0.2em] mt-2 underline underline-offset-4">Base: {job.base_salary}</p>
+                                )}
+                              </>
+                            )}
                           </div>
                         </div>
                       </div>
