@@ -166,21 +166,6 @@ app.get('/api/auth/me', async (c) => {
 
 // --- Admin ---
 
-app.post('/api/admin/seed', async (c) => {
-  if (!pool) return c.json({ error: 'Database not configured' }, 503)
-  try {
-    const { password } = await c.req.json()
-    if (password !== (process.env.ADMIN_PASSWORD || 'admin123')) {
-      return c.json({ error: 'Unauthorized' }, 401)
-    }
-    const { seedJobs } = await import('./seed-jobs.js')
-    const result = await seedJobs(pool)
-    return c.json({ ok: true, message: `Seed complete. ${result.inserted}/${result.total} jobs inserted.` })
-  } catch (error) {
-    return c.json({ error: String(error) }, 500)
-  }
-})
-
 app.post('/api/admin/login', async (c) => {
   try {
     const { password } = await c.req.json()
