@@ -31,6 +31,7 @@ interface FormData {
   base_salary: string
   ote: string
   commission_structure: string
+  screening_questions: string[]
 }
 
 const isTestMode = import.meta.env.DEV
@@ -55,7 +56,24 @@ export function PostJobPage() {
     base_salary: '',
     ote: '',
     commission_structure: '',
+    screening_questions: [''],
   })
+
+  const addQuestion = () => {
+    if (formData.screening_questions.length < 5) {
+      setFormData(prev => ({ ...prev, screening_questions: [...prev.screening_questions, ''] }))
+    }
+  }
+
+  const updateQuestion = (index: number, value: string) => {
+    const updated = [...formData.screening_questions]
+    updated[index] = value
+    setFormData(prev => ({ ...prev, screening_questions: updated }))
+  }
+
+  const removeQuestion = (index: number) => {
+    setFormData(prev => ({ ...prev, screening_questions: prev.screening_questions.filter((_, i) => i !== index) }))
+  }
 
   const set = (field: keyof FormData) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setFormData(prev => ({ ...prev, [field]: e.target.value }))
@@ -326,6 +344,45 @@ export function PostJobPage() {
                   className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 resize-none transition-all font-medium"
                 />
               </div>
+            </div>
+          </div>
+
+          <Separator className="bg-border" />
+
+          <div className="space-y-6">
+            <div className="space-y-1">
+              <h2 className="text-2xl font-black tracking-tighter">Screening Questions <span className="text-muted-foreground font-medium text-base">(optional)</span></h2>
+              <p className="text-sm text-muted-foreground">Candidates will answer these when they apply. Max 5 questions.</p>
+            </div>
+            <div className="space-y-4">
+              {formData.screening_questions.map((q, i) => (
+                <div key={i} className="flex gap-3">
+                  <input
+                    type="text"
+                    value={q}
+                    onChange={e => updateQuestion(i, e.target.value)}
+                    placeholder={`Question ${i + 1}, e.g. What is your current quota?`}
+                    className="flex-1 bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium"
+                  />
+                  {formData.screening_questions.length > 1 && (
+                    <button
+                      type="button"
+                      onClick={() => removeQuestion(i)}
+                      className="px-3 py-2 text-destructive border border-destructive/20 rounded-xl hover:bg-destructive/10 transition-colors text-sm font-bold"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+              <button
+                type="button"
+                onClick={addQuestion}
+                disabled={formData.screening_questions.length >= 5}
+                className="text-sm font-bold text-primary border border-primary/20 px-4 py-2 rounded-xl hover:bg-primary/5 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+              >
+                + Add Question
+              </button>
             </div>
           </div>
 

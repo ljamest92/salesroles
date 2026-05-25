@@ -74,10 +74,12 @@ try {
       featured TINYINT(1) DEFAULT 0,
       status VARCHAR(20) DEFAULT 'live',
       company_id INT DEFAULT NULL,
+      screening_questions TEXT,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => {})
   pool.execute(`ALTER TABLE jobs ADD COLUMN company_id INT DEFAULT NULL`).catch(() => {})
+  pool.execute(`ALTER TABLE jobs ADD COLUMN screening_questions TEXT`).catch(() => {})
   pool.execute(`
     CREATE TABLE IF NOT EXISTS applications (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -87,10 +89,12 @@ try {
       candidate_email VARCHAR(255),
       cover_note TEXT,
       cv_filename VARCHAR(255),
+      screening_answers TEXT,
       status VARCHAR(50) DEFAULT 'new',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => {})
+  pool.execute(`ALTER TABLE applications ADD COLUMN screening_answers TEXT`).catch(() => {})
 } catch {}
 
 const JWT_SECRET = new TextEncoder().encode(
@@ -495,6 +499,11 @@ app.post('/api/subscribe', async (c) => {
       'You are on the list. SalesRoles.co Weekly Job Alerts',
       `<p>Hi,</p><p>You are now subscribed to the SalesRoles.co weekly job alert. Every Monday morning you will get the latest sales roles with full compensation transparency direct to your inbox.</p><p>No spam. Unsubscribe anytime by replying to this email.</p><p>The SalesRoles.co team</p>`
     )
+    sendEmail(
+      'info@salesroles.co',
+      'New subscriber on SalesRoles.co',
+      `<p>New subscriber: <strong>${email}</strong></p><p>Subscribed at: ${new Date().toISOString()}</p>`
+    )
     return c.json({ ok: true })
   } catch {
     return c.json({ error: 'Subscribe failed' }, 500)
@@ -565,9 +574,9 @@ app.post('/api/jobs', async (c) => {
     const id = `job-${Date.now()}`
     const status = job.status || 'pending'
     await pool.execute(
-      `INSERT INTO jobs (id, title, company_name, company_website, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, company_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [id, job.title, job.company_name, job.company_website, job.location, job.work_type, job.seniority, job.sector, job.description, job.base_salary, job.ote, job.commission_structure || '', job.currency || 'USD', status, userId]
+      `INSERT INTO jobs (id, title, company_name, company_website, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, company_id, screening_questions, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [id, job.title, job.company_name, job.company_website, job.location, job.work_type, job.seniority, job.sector, job.description, job.base_salary, job.ote, job.commission_structure || '', job.currency || 'USD', status, userId, JSON.stringify(job.screening_questions?.filter(Boolean) || [])]
     )
     return c.json({ ok: true, id })
   } catch (err: any) {
@@ -615,9 +624,24 @@ app.get('/api/admin/candidates', async (c) => {
   if (!pool) return c.json([])
   try {
     const [users] = await pool.execute(
-      'SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC'
+      `SELECT u.id, u.name, u.email, u.role, u.created_at,
+        (SELECT company_name FROM jobs WHERE company_id = u.id LIMIT 1) as company_name
+       FROM users u
+       ORDER BY u.created_at DESC`
     ) as any[]
     return c.json(users)
+  } catch {
+    return c.json([])
+  }
+})
+
+app.get('/api/admin/subscribers', async (c) => {
+  if (!pool) return c.json([])
+  try {
+    const [rows] = await pool.execute(
+      'SELECT email, created_at FROM subscribers ORDER BY created_at DESC'
+    ) as any[]
+    return c.json(rows)
   } catch {
     return c.json([])
   }
@@ -657,7 +681,12 @@ app.post('/api/applications', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
   try {
-    const { jobId, coverNote } = await c.req.json()
+    const formData = await c.req.formData()
+    const jobId = formData.get('jobId') as string
+    const coverLetter = (formData.get('coverLetter') as string) || ''
+    const answers = (formData.get('answers') as string) || '[]'
+    const cvFile = formData.get('cv') as File | null
+    const cvFilename = cvFile ? cvFile.name : null
 
     const [userRows] = await pool.execute('SELECT name FROM users WHERE id = ?', [userId]) as any[]
     const userName = (userRows as any[])[0]?.name || ''
@@ -671,8 +700,8 @@ app.post('/api/applications', async (c) => {
     }
 
     await pool.execute(
-      'INSERT INTO applications (job_id, candidate_id, candidate_name, candidate_email, cover_note) VALUES (?, ?, ?, ?, ?)',
-      [jobId, userId, userName, userEmail, coverNote || '']
+      'INSERT INTO applications (job_id, candidate_id, candidate_name, candidate_email, cover_note, cv_filename, screening_answers) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      [jobId, userId, userName, userEmail, coverLetter, cvFilename, answers]
     )
 
     const [jobRows] = await pool.execute(
@@ -684,7 +713,7 @@ app.post('/api/applications', async (c) => {
       sendEmail(
         jobInfo.company_email,
         `New application for ${jobInfo.title}`,
-        `<p>Hi ${jobInfo.company_name},</p><p>You have a new application for <strong>${jobInfo.title}</strong> on SalesRoles.co.</p><p><strong>Applicant:</strong> ${userName} (${userEmail})</p>${coverNote ? `<p><strong>Cover note:</strong> ${coverNote}</p>` : ''}<p><a href="https://salesroles.co/dashboard">View all applications in your dashboard</a></p><p>The SalesRoles.co team</p>`
+        `<p>Hi ${jobInfo.company_name},</p><p>New application for <strong>${jobInfo.title}</strong>.</p><p><strong>Applicant:</strong> ${userName} (${userEmail})</p>${coverLetter ? `<p><strong>Cover letter:</strong> ${coverLetter}</p>` : ''}<p><a href="https://salesroles.co/dashboard">View in dashboard</a></p><p>The SalesRoles.co team</p>`
       )
     }
 

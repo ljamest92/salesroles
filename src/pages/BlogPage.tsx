@@ -6,6 +6,31 @@ import { motion } from 'framer-motion'
 
 export function BlogPage() {
   const [activeCategory, setActiveCategory] = useState('All')
+  const [subEmail, setSubEmail] = useState('')
+  const [subSuccess, setSubSuccess] = useState(false)
+  const [subError, setSubError] = useState('')
+
+  const handleSubscribe = async () => {
+    if (!subEmail || !subEmail.includes('@')) {
+      setSubError('Enter a valid email address.')
+      return
+    }
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: subEmail }),
+      })
+      if (res.ok) {
+        setSubSuccess(true)
+        setSubError('')
+      } else {
+        setSubError('Something went wrong. Try again.')
+      }
+    } catch {
+      setSubError('Something went wrong. Try again.')
+    }
+  }
   const categories = ['All', 'Salary Guides', 'Career Advice', 'Industry News', 'Interview Tips']
 
   const posts = [
@@ -96,13 +121,26 @@ export function BlogPage() {
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Join the <span className="text-primary">Inner Circle.</span></h2>
             <p className="text-lg md:text-xl text-muted-foreground max-w-xl font-medium">Weekly Monday morning insights delivered directly to your inbox. No spam, just high-signal sales strategy.</p>
           </div>
-          <div className="flex w-full md:w-auto gap-3 relative z-10">
-            <input 
-              type="email" 
-              placeholder="alex@example.com" 
-              className="flex-1 md:w-80 bg-card/80 backdrop-blur-md border border-white/5 rounded-2xl px-6 py-5 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
-            />
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-10 h-16 tracking-widest text-xs cta-glow">Subscribe</Button>
+          <div className="flex flex-col w-full md:w-auto gap-3 relative z-10">
+            {subSuccess ? (
+              <div className="bg-primary/20 border border-primary/30 rounded-2xl px-6 py-5 text-primary font-bold text-sm">
+                You are on the list. See you Monday morning.
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-3">
+                  <input
+                    type="email"
+                    value={subEmail}
+                    onChange={e => setSubEmail(e.target.value)}
+                    placeholder="alex@example.com"
+                    className="flex-1 md:w-80 bg-card/80 backdrop-blur-md border border-white/5 rounded-2xl px-6 py-5 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
+                  />
+                  <Button size="lg" onClick={handleSubscribe} className="bg-primary text-primary-foreground font-black px-10 h-16 tracking-widest text-xs cta-glow">Subscribe</Button>
+                </div>
+                {subError && <p className="text-red-400 text-xs pl-2">{subError}</p>}
+              </>
+            )}
           </div>
         </Card>
       </Container>

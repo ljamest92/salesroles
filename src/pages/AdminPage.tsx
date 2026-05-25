@@ -25,8 +25,11 @@ export function AdminPage() {
   const [pendingJobs, setPendingJobs] = useState<any[]>([])
   const [reports, setReports] = useState<any[]>([])
   const [liveJobs, setLiveJobs] = useState<any[]>([])
-  const [candidates, setCandidates] = useState<any[]>([])
+  const [users, setUsers] = useState<any[]>([])
+  const [subscribers, setSubscribers] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState('pending')
+  const [userSubTab, setUserSubTab] = useState<'candidates' | 'companies'>('candidates')
+  const [blinded, setBlinded] = useState(false)
 
   const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('admin_auth') === 'true'
 
@@ -44,7 +47,7 @@ export function AdminPage() {
         } catch { return {} }
       }
 
-      const [adminStats, jobsData, pendingData, candidatesData] = await Promise.all([
+      const [adminStats, jobsData, pendingData, usersData] = await Promise.all([
         fetchSafe('/api/admin/stats'),
         fetchSafe('/api/jobs'),
         fetchSafe('/api/admin/pending-jobs'),
@@ -53,7 +56,7 @@ export function AdminPage() {
 
       const allJobs: any[] = jobsData.jobs || []
       const pendingList: any[] = Array.isArray(pendingData) ? pendingData : []
-      const candidateList: any[] = Array.isArray(candidatesData) ? candidatesData : []
+      const userList: any[] = Array.isArray(usersData) ? usersData : []
 
       setStats({
         listings: adminStats.liveListings || 0,
@@ -64,7 +67,7 @@ export function AdminPage() {
       })
       setLiveJobs(allJobs)
       setPendingJobs(pendingList)
-      setCandidates(candidateList)
+      setUsers(userList)
     }
 
     loadData()
@@ -85,11 +88,19 @@ export function AdminPage() {
     } catch {}
   }
 
-  const fetchCandidates = async () => {
+  const fetchUsers = async () => {
     try {
       const r = await fetch('/api/admin/candidates')
       const data = r.ok ? await r.json() : []
-      setCandidates(Array.isArray(data) ? data : [])
+      setUsers(Array.isArray(data) ? data : [])
+    } catch {}
+  }
+
+  const fetchSubscribers = async () => {
+    try {
+      const r = await fetch('/api/admin/subscribers')
+      const data = r.ok ? await r.json() : []
+      setSubscribers(Array.isArray(data) ? data : [])
     } catch {}
   }
 
@@ -104,8 +115,54 @@ export function AdminPage() {
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
     if (tab === 'pending') fetchPendingJobs()
-    if (tab === 'candidates') fetchCandidates()
+    if (tab === 'users') fetchUsers()
+    if (tab === 'subscribers') fetchSubscribers()
     if (tab === 'jobs') fetchLiveJobs()
+  }
+
+  const downloadCSV = (type: 'candidates' | 'companies', isBlinded: boolean) => {
+    const data = type === 'candidates'
+      ? users.filter(u => u.role === 'candidate')
+      : users.filter(u => u.role === 'company')
+    const headers = type === 'candidates'
+      ? ['Name', 'Email', 'Joined']
+      : ['Name', 'Email', 'Company', 'Joined']
+    const rows = data.map((u, i) => {
+      if (type === 'candidates') {
+        return [
+          isBlinded ? `Candidate ${i + 1}` : u.name,
+          isBlinded ? `candidate${i + 1}@hidden.com` : u.email,
+          new Date(u.created_at).toLocaleDateString('en-GB'),
+        ]
+      }
+      return [
+        isBlinded ? `Company ${i + 1}` : u.name,
+        isBlinded ? `company${i + 1}@hidden.com` : u.email,
+        isBlinded ? 'Hidden' : (u.company_name || ''),
+        new Date(u.created_at).toLocaleDateString('en-GB'),
+      ]
+    })
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${type}-${isBlinded ? 'blinded-' : ''}${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const downloadSubscribersCSV = () => {
+    const headers = ['Email', 'Subscribed Date']
+    const rows = subscribers.map(s => [s.email, new Date(s.created_at).toLocaleDateString('en-GB')])
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `subscribers-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
   }
 
   const handleApproveJob = async (id: string) => {
@@ -211,7 +268,8 @@ export function AdminPage() {
         {[
           { key: 'pending', label: `Pending Approval (${pendingJobs.length})` },
           { key: 'jobs', label: `All Live Jobs (${stats.listings})` },
-          { key: 'candidates', label: 'Candidates' },
+          { key: 'users', label: `Users (${users.length})` },
+          { key: 'subscribers', label: `Subscribers (${subscribers.length})` },
           { key: 'reports', label: `Reports (${stats.reports})`, danger: true },
         ].map(tab => (
           <button
@@ -335,32 +393,112 @@ export function AdminPage() {
         </div>
       )}
 
-      {activeTab === 'candidates' && (
+      {activeTab === 'users' && (
+        <div className="space-y-6">
+          {/* Sub-tabs */}
+          <div className="flex gap-2">
+            {(['candidates', 'companies'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setUserSubTab(t)}
+                className={`px-5 py-2 rounded-xl font-black text-[11px] capitalize transition-all ${userSubTab === t ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
+              >
+                {t} ({users.filter(u => t === 'candidates' ? u.role === 'candidate' : u.role === 'company').length})
+              </button>
+            ))}
+          </div>
+
+          {/* Blinded view toggle + downloads */}
+          <div className="flex flex-wrap items-center gap-4">
+            <label className="flex items-center gap-2 cursor-pointer">
+              <div
+                onClick={() => setBlinded(b => !b)}
+                className={`w-10 h-6 rounded-full transition-colors relative ${blinded ? 'bg-primary' : 'bg-white/10'}`}
+              >
+                <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-transform ${blinded ? 'translate-x-5' : 'translate-x-1'}`} />
+              </div>
+              <span className="text-sm font-medium text-muted-foreground">Blinded View (for client presentations)</span>
+            </label>
+            <button
+              onClick={() => downloadCSV('candidates', blinded)}
+              className="text-xs font-bold border border-white/20 text-white/60 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Download Candidates CSV
+            </button>
+            <button
+              onClick={() => downloadCSV('companies', blinded)}
+              className="text-xs font-bold border border-white/20 text-white/60 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Download Companies CSV
+            </button>
+          </div>
+
+          {/* Table */}
+          {(() => {
+            const filtered = users.filter(u => userSubTab === 'candidates' ? u.role === 'candidate' : u.role === 'company')
+            if (filtered.length === 0) {
+              return (
+                <Card className="p-16 text-center border-dashed border-white/10">
+                  <p className="text-muted-foreground font-medium">No {userSubTab} registered yet.</p>
+                </Card>
+              )
+            }
+            return (
+              <Card className="p-6 border border-white/5 bg-card/30 overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-white/10 text-left">
+                      <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Name</th>
+                      <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Email</th>
+                      {userSubTab === 'companies' && <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Company</th>}
+                      <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Joined</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/5">
+                    {filtered.map((u: any, i: number) => (
+                      <tr key={u.id} className="hover:bg-white/5 transition-colors">
+                        <td className="py-4 font-bold">{blinded ? (userSubTab === 'candidates' ? `Candidate ${i + 1}` : `Company ${i + 1}`) : u.name}</td>
+                        <td className="py-4 text-muted-foreground">{blinded ? (userSubTab === 'candidates' ? `candidate${i + 1}@hidden.com` : `company${i + 1}@hidden.com`) : u.email}</td>
+                        {userSubTab === 'companies' && <td className="py-4 text-muted-foreground">{blinded ? 'Hidden' : (u.company_name || '—')}</td>}
+                        <td className="py-4 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('en-GB')}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </Card>
+            )
+          })()}
+        </div>
+      )}
+
+      {activeTab === 'subscribers' && (
         <div className="space-y-4">
-          {candidates.length === 0 ? (
+          <div className="flex justify-end">
+            <button
+              onClick={downloadSubscribersCSV}
+              className="text-xs font-bold border border-white/20 text-white/60 hover:text-white px-3 py-1.5 rounded-lg transition-colors"
+            >
+              Download CSV
+            </button>
+          </div>
+          {subscribers.length === 0 ? (
             <Card className="p-16 text-center border-dashed border-white/10">
-              <p className="text-muted-foreground font-medium">No candidates registered yet.</p>
+              <p className="text-muted-foreground font-medium">No subscribers yet.</p>
             </Card>
           ) : (
             <Card className="p-6 border border-white/5 bg-card/30 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-white/10 text-left">
-                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Name</th>
                     <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Email</th>
-                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Role</th>
-                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Joined</th>
+                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Subscribed Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
-                  {candidates.map((c: any) => (
-                    <tr key={c.id} className="hover:bg-white/5 transition-colors">
-                      <td className="py-4 font-bold">{c.name}</td>
-                      <td className="py-4 text-muted-foreground">{c.email}</td>
-                      <td className="py-4">
-                        <Badge variant="outline" className="text-[10px] font-bold capitalize">{c.role}</Badge>
-                      </td>
-                      <td className="py-4 text-muted-foreground">{new Date(c.created_at).toLocaleDateString()}</td>
+                  {subscribers.map((s: any, i: number) => (
+                    <tr key={i} className="hover:bg-white/5 transition-colors">
+                      <td className="py-4 font-medium">{s.email}</td>
+                      <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString('en-GB')}</td>
                     </tr>
                   ))}
                 </tbody>
