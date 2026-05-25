@@ -21,7 +21,6 @@ import { Search, MapPin, Briefcase, DollarSign, Filter, SlidersHorizontal, Arrow
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { motion } from 'framer-motion'
 import { ReportModal } from '../components/ReportModal'
-import { blink } from '../lib/blink'
 
 const SelectTrigger = UISelectTrigger as any;
 const SelectContent = UISelectContent as any;
@@ -47,7 +46,18 @@ export function JobsPage() {
     const loadData = async () => {
       try {
         const pJobs = await fetchPartnerJobs()
-        const dbJobs = await blink.db.jobs.list({ where: { status: 'live' } }).catch(() => [])
+        let dbJobs: Job[] = []
+        try {
+          const res = await fetch('/api/jobs?status=live')
+          if (res.ok) {
+            const data = await res.json()
+            dbJobs = (data.jobs || []).map((j: any) => ({
+              ...j,
+              company: j.companyName || j.company,
+              is_partner: false
+            }))
+          }
+        } catch {}
 
         const mappedDbJobs: Job[] = dbJobs.map((job: any) => ({
           ...job,

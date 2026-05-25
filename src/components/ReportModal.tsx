@@ -1,7 +1,6 @@
 import React, { useState } from 'react'
 import { Button, Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, toast } from '@blinkdotnew/ui'
 import { ShieldAlert, CheckCircle, ChevronDown } from 'lucide-react'
-import { blink } from '../lib/blink'
 
 interface ReportModalProps {
   jobId: string
@@ -28,11 +27,11 @@ export function ReportModal({ jobId, isOpen, onOpenChange }: ReportModalProps) {
 
     setIsSubmitting(true)
     try {
-      await blink.db.reportedListings.create({
-        jobId,
-        reason,
-        status: 'open'
-      })
+      await fetch('/api/reports', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jobId, reason, status: 'open' })
+      }).catch(() => {})
       setIsSuccess(true)
 
       setTimeout(() => {

@@ -9,7 +9,6 @@ import {
   Stat,
 } from '@blinkdotnew/ui'
 import { ShieldCheck, ShieldAlert, Users, Briefcase, DollarSign, Eye, Search, Check, X, AlertTriangle, Building2, LogOut } from 'lucide-react'
-import { blink } from '../lib/blink'
 
 export function AdminPage() {
   const navigate = useNavigate()
@@ -33,29 +32,38 @@ export function AdminPage() {
     }
 
     const loadData = async () => {
-      try {
-        const [allJobs, allCandidates, allPayments, allReports, pendingList] = await Promise.all([
-          blink.db.jobs.list({ where: { status: 'live' } }),
-          blink.db.candidates.list({}),
-          blink.db.payments.list({}),
-          blink.db.reportedListings.list({ where: { status: 'open' } }),
-          blink.db.jobs.list({ where: { status: 'pending' } })
-        ])
-
-        const totalRevenue = allPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
-
-        setStats({
-          listings: allJobs.length,
-          revenue: `$${totalRevenue.toLocaleString()}`,
-          candidates: allCandidates.length,
-          pending: pendingList.length,
-          reports: allReports.length
-        })
-        setPendingJobs(pendingList)
-        setReports(allReports)
-      } catch (error) {
-        // silently handle load errors
+      const fetchSafe = async (url: string) => {
+        try {
+          const r = await fetch(url)
+          return r.ok ? r.json() : {}
+        } catch { return {} }
       }
+
+      const [jobsData, candidatesData, paymentsData, reportsData, pendingData] = await Promise.all([
+        fetchSafe('/api/jobs?status=live'),
+        fetchSafe('/api/candidates'),
+        fetchSafe('/api/payments'),
+        fetchSafe('/api/reports?status=open'),
+        fetchSafe('/api/jobs?status=pending')
+      ])
+
+      const allJobs = jobsData.jobs || []
+      const allCandidates = candidatesData.candidates || []
+      const allPayments = paymentsData.payments || []
+      const allReports = reportsData.reports || []
+      const pendingList = pendingData.jobs || []
+
+      const totalRevenue = allPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+
+      setStats({
+        listings: allJobs.length,
+        revenue: `$${totalRevenue.toLocaleString()}`,
+        candidates: allCandidates.length,
+        pending: pendingList.length,
+        reports: allReports.length
+      })
+      setPendingJobs(pendingList)
+      setReports(allReports)
     }
 
     loadData()

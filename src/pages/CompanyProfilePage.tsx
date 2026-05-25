@@ -2,10 +2,18 @@ import React, { useEffect, useState } from 'react'
 import { useParams, Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, StatGroup, Stat, Toaster, toast, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Globe, Briefcase, Users, Building2, ExternalLink, Check, Copy } from 'lucide-react'
-import { fetchPartnerJobs, type Job } from '../lib/jobs'
+import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
 import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
-import { blink } from '../lib/blink'
+
+const FOLLOWS_KEY = 'salesroles_followed_companies'
+
+function getFollowed(): string[] {
+  try { return JSON.parse(localStorage.getItem(FOLLOWS_KEY) || '[]') } catch { return [] }
+}
+function saveFollowed(list: string[]) {
+  localStorage.setItem(FOLLOWS_KEY, JSON.stringify(list))
+}
 
 export function CompanyProfilePage() {
   const { id } = useParams({ from: '/company/$id' })
@@ -21,37 +29,53 @@ export function CompanyProfilePage() {
     return `https://ui-avatars.com/api/?name=${letter}&background=0D0D0D&color=10B981&size=128&font-size=0.5&bold=true`;
   };
 
+  // Resolve the correct domain for Clearbit — seed map first, then generic fallback
+  const companyDomain = SEED_COMPANY_DOMAINS[id.toLowerCase()] || `${id}.com`
+
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [allPartnerJobs, dbCompanies, dbJobs] = await Promise.all([
-          fetchPartnerJobs(),
-          blink.db.companies.list({ where: { name: id } }), // This might need better matching
-          blink.db.jobs.list({ where: { status: 'live' } })
-        ]);
+        const allPartnerJobs = await fetchPartnerJobs()
 
-        const mappedDbJobs: Job[] = dbJobs.map((job: any) => ({
-          ...job,
-          company: job.companyName || job.company,
-          is_partner: false
-        }));
+        // Try to load DB jobs; fail silently
+        let dbJobs: Job[] = []
+        try {
+          const res = await fetch('/api/jobs?status=live')
+          if (res.ok) {
+            const data = await res.json()
+            dbJobs = (data.jobs || []).map((j: any) => ({
+              ...j,
+              company: j.companyName || j.company,
+              is_partner: false
+            }))
+          }
+        } catch {}
 
-        const allJobs = [...mappedDbJobs, ...allPartnerJobs];
-        const companyJobs = allJobs.filter(j => j.company.toLowerCase().replace(/[^a-z0-9]/g, '') === id.toLowerCase());
-        
-        setJobs(companyJobs);
+        const allJobs = [...dbJobs, ...allPartnerJobs]
+        const companyJobs = allJobs.filter(
+          j => j.company.toLowerCase().replace(/[^a-z0-9]/g, '') === id.toLowerCase()
+        )
+        setJobs(companyJobs)
 
-        let companyInfo = dbCompanies.find((c: any) => c.name.toLowerCase().replace(/[^a-z0-9]/g, '') === id.toLowerCase());
-        
+        // Try DB for a company record; use seed job data as fallback
+        let companyInfo: any = null
+        try {
+          const res = await fetch(`/api/companies?slug=${id}`)
+          if (res.ok) {
+            const data = await res.json()
+            companyInfo = data.company || null
+          }
+        } catch {}
+
         if (!companyInfo && companyJobs.length > 0) {
           companyInfo = {
             name: companyJobs[0].company,
-            website: null,
+            website: companyJobs[0].domain ? `https://${companyJobs[0].domain}` : null,
             employees: null,
-            description: companyJobs[0].company_description || `Leading the way in sales efficiency and compensation transparency. ${companyJobs[0].company} is building the future of revenue operations and looking for top-tier talent to join our mission-driven team.`,
+            description: companyJobs[0].company_description || `${companyJobs[0].company} is building the future of their industry and looking for top-tier sales talent.`,
             hires: null,
             timeToHire: null
-          };
+          }
         } else if (!companyInfo) {
           companyInfo = {
             name: id.charAt(0).toUpperCase() + id.slice(1),
@@ -60,27 +84,20 @@ export function CompanyProfilePage() {
             description: 'Company profile is being updated.',
             hires: null,
             timeToHire: null
-          };
+          }
         }
 
-        setCompanyData(companyInfo);
-
-        if (user) {
-          const followed = await blink.db.table('followed_companies').list({
-            where: { candidateId: user.id, companyId: id }
-          });
-          setIsFollowed(followed.length > 0);
-        }
-
-        setIsLoading(false);
+        setCompanyData(companyInfo)
+        setIsFollowed(getFollowed().includes(id))
+        setIsLoading(false)
       } catch (error) {
-        console.error('Error loading company data:', error);
-        setIsLoading(false);
+        console.error('Error loading company data:', error)
+        setIsLoading(false)
       }
-    };
+    }
 
-    loadData();
-  }, [id, user])
+    loadData()
+  }, [id])
 
   const getWebsiteUrl = (url: string) =>
     url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
@@ -104,33 +121,24 @@ export function CompanyProfilePage() {
     toast.success('Badge code copied', { description: 'Paste this into your website to show you are hiring.' })
   }
 
-  const handleFollow = async () => {
+  const handleFollow = () => {
     if (!user) {
-      toast('Login required', { 
+      toast('Login required', {
         description: 'Please sign in to follow companies and get alerts.',
         action: { label: 'Register', onClick: () => window.location.href = '/register' }
       })
       return
     }
 
-    try {
-      if (isFollowed) {
-        await blink.db.table('followed_companies').deleteMany({
-          where: { candidateId: user.id, companyId: id }
-        });
-        setIsFollowed(false);
-        toast.success('Unfollowed', { description: `You will no longer receive alerts for ${companyData.name}` });
-      } else {
-        await blink.db.table('followed_companies').create({
-          candidateId: user.id,
-          companyId: id
-        });
-        setIsFollowed(true);
-        toast.success('Following company', { description: `We'll alert you when ${companyData.name} posts a new role.` });
-      }
-    } catch (error) {
-      console.error('Error following/unfollowing company:', error);
-      toast.error('Operation failed', { description: 'Please try again later.' });
+    const followed = getFollowed()
+    if (isFollowed) {
+      saveFollowed(followed.filter(i => i !== id))
+      setIsFollowed(false)
+      toast.success('Unfollowed', { description: `You will no longer receive alerts for ${companyData.name}` })
+    } else {
+      saveFollowed([...followed, id])
+      setIsFollowed(true)
+      toast.success('Following company', { description: `We'll alert you when ${companyData.name} posts a new role.` })
     }
   }
 
@@ -151,14 +159,14 @@ export function CompanyProfilePage() {
       <Container>
         <div className="flex flex-col md:flex-row gap-12 items-start animate-fade-in">
           <div className="w-32 h-32 rounded-[32px] bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative group">
-             <img 
-               src={`https://logo.clearbit.com/${id}.com`} 
-               alt={companyData.name} 
-               className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-               onError={(e) => {
-                 e.currentTarget.src = getFallbackLogo(companyData.name);
-               }}
-             />
+            <img
+              src={`https://logo.clearbit.com/${companyDomain}`}
+              alt={companyData.name}
+              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
+              onError={(e) => {
+                e.currentTarget.src = getFallbackLogo(companyData.name)
+              }}
+            />
             <Building2 size={64} className="absolute z-[-1]" />
           </div>
           <div className="space-y-8 flex-1">
@@ -171,7 +179,7 @@ export function CompanyProfilePage() {
                 <span className="flex items-center gap-2.5"><MapPin size={18} className="text-primary" /> Remote First</span>
                 {companyData.website && (
                   <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-primary transition-colors">
-                    <Globe size={18} className="text-primary" /> {id}.com
+                    <Globe size={18} className="text-primary" /> {companyDomain}
                   </a>
                 )}
                 {companyData.employees && (

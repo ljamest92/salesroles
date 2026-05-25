@@ -4,7 +4,6 @@ import { Button, StatGroup, Stat, Input, Card, Badge, Container } from '@blinkdo
 import { Search, MapPin, Briefcase, DollarSign, TrendingUp, Building2, Quote, Star } from 'lucide-react'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { motion } from 'framer-motion'
-import { blink } from '../lib/blink'
 
 export function HomePage() {
   const [partnerJobs, setPartnerJobs] = useState<Job[]>([])
@@ -27,7 +26,18 @@ export function HomePage() {
     const loadData = async () => {
       try {
         const pJobs = await fetchPartnerJobs()
-        const dbJobs = await blink.db.jobs.list({ where: { status: 'live' } }).catch(() => [])
+        let dbJobs: Job[] = []
+        try {
+          const res = await fetch('/api/jobs?status=live')
+          if (res.ok) {
+            const data = await res.json()
+            dbJobs = (data.jobs || []).map((j: any) => ({
+              ...j,
+              company: j.companyName || j.company,
+              is_partner: false
+            }))
+          }
+        } catch {}
 
         const mappedDbJobs: Job[] = dbJobs.map((job: any) => ({
           ...job,

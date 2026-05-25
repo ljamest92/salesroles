@@ -3,7 +3,6 @@ import { Link, useParams } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, toast, Toaster, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Briefcase, DollarSign, Calendar, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight } from 'lucide-react'
 import { ReportModal } from '../components/ReportModal'
-import { blink } from '../lib/blink'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 
 export function JobDetailPage() {
@@ -21,42 +20,34 @@ export function JobDetailPage() {
     return `https://ui-avatars.com/api/?name=${letter}&background=0D0D0D&color=10B981&size=128&font-size=0.5&bold=true`
   }
 
-  const getDomainFromCompany = (company: string) => {
-    return company.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com'
-  }
-
   useEffect(() => {
     const loadJob = async () => {
       try {
-        const [pJobs, dbJobs] = await Promise.all([
-          fetchPartnerJobs(),
-          blink.db.jobs.list({ where: { id: slug } })
-        ])
+        // Load seed/partner jobs first — these always work
+        const pJobs = await fetchPartnerJobs()
 
-        let foundJob = dbJobs[0]
-
-        if (!foundJob) {
-          foundJob = pJobs.find(j => j.id === slug)
-        } else {
-          foundJob = {
-            ...foundJob,
-            company: (foundJob as any).companyName || foundJob.company,
-            is_partner: false
+        // Try the API for any DB-posted jobs; fall back silently
+        let dbJob: Job | null = null
+        try {
+          const res = await fetch(`/api/jobs/${slug}`)
+          if (res.ok) {
+            const data = await res.json()
+            if (data.job) {
+              dbJob = {
+                ...data.job,
+                company: data.job.companyName || data.job.company,
+                is_partner: false
+              }
+            }
           }
-        }
+        } catch {}
 
-        setJob(foundJob || null)
+        const foundJob = dbJob || pJobs.find(j => j.id === slug) || null
+        setJob(foundJob)
 
-        // Related jobs: 3 different jobs, deduplicated by id, excluding current
-        const allJobs = [...dbJobs.map((j: any) => ({ ...j, company: j.companyName || j.company })), ...pJobs]
-        const seen = new Set<string>()
-        const related = allJobs
-          .filter(j => {
-            if (j.id === slug || seen.has(j.id)) return false
-            seen.add(j.id)
-            return true
-          })
-          .slice(0, 3)
+        // Related: 3 other jobs from the combined pool
+        const pool = dbJob ? [dbJob, ...pJobs] : pJobs
+        const related = pool.filter(j => j.id !== slug).slice(0, 3)
         setRelatedJobs(related)
 
         setIsLoading(false)
@@ -78,7 +69,6 @@ export function JobDetailPage() {
     try {
       await navigator.clipboard.writeText(window.location.href)
     } catch {
-      // Fallback for non-HTTPS or restricted contexts
       const ta = document.createElement('textarea')
       ta.value = window.location.href
       ta.style.position = 'fixed'
@@ -142,7 +132,7 @@ export function JobDetailPage() {
               <div className="flex gap-6">
                 <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
                   <img
-                    src={job.logo_url || `https://logo.clearbit.com/${getDomainFromCompany(job.company)}`}
+                    src={job.logo_url}
                     alt={job.company}
                     className="w-full h-full object-cover grayscale transition-all duration-700"
                     onError={(e) => {
@@ -264,7 +254,7 @@ export function JobDetailPage() {
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-lg overflow-hidden">
                   <img
-                    src={job.logo_url || `https://logo.clearbit.com/${getDomainFromCompany(job.company)}`}
+                    src={job.logo_url}
                     alt={job.company}
                     className="w-full h-full object-cover grayscale transition-all duration-700"
                     onError={(e) => {
@@ -328,7 +318,7 @@ export function JobDetailPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground border border-border/50 overflow-hidden">
                     <img
-                      src={`https://logo.clearbit.com/${getDomainFromCompany(relJob.company)}`}
+                      src={relJob.logo_url}
                       alt={relJob.company}
                       className="w-full h-full object-cover"
                       onError={(e) => { e.currentTarget.src = getFallbackLogo(relJob.company) }}

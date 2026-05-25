@@ -1,21 +1,35 @@
 import { useEffect, useState } from 'react'
-import { blink } from '../lib/blink'
-import type { BlinkUser } from '@blinkdotnew/sdk'
+
+export interface AuthUser {
+  id: string
+  email: string
+  displayName: string
+  role?: 'candidate' | 'company'
+}
+
+const STORAGE_KEY = 'salesroles_user'
 
 export function useAuth() {
-  const [user, setUser] = useState<BlinkUser | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
   useEffect(() => {
-    const unsubscribe = blink.auth.onAuthStateChanged((state) => {
-      setUser(state.user)
-      if (!state.isLoading) setIsLoading(false)
-    })
-    return unsubscribe
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY)
+      if (stored) setUser(JSON.parse(stored))
+    } catch {}
+    setIsLoading(false)
   }, [])
 
-  const login = (redirectUrl?: string) => blink.auth.login(redirectUrl)
-  const logout = () => blink.auth.logout()
+  const login = (_redirectUrl?: string) => {
+    window.location.href = '/register'
+  }
+
+  const logout = () => {
+    localStorage.removeItem(STORAGE_KEY)
+    setUser(null)
+    window.location.href = '/'
+  }
 
   return { user, isLoading, login, logout, isAuthenticated: !!user }
 }

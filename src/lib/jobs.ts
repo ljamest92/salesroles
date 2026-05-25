@@ -3,6 +3,7 @@ export interface Job {
   title: string
   company: string
   logo_url?: string
+  domain?: string
   location: string
   job_type: string
   sector: string
@@ -26,11 +27,26 @@ export interface Job {
 const CACHE_KEY = 'salesroles_jobs_cache_v2'
 const CACHE_DURATION = 6 * 60 * 60 * 1000 // 6 hours
 
-const SEED_JOBS: Job[] = [
+// Canonical domains keyed by lowercase company slug (for Clearbit logo lookup)
+export const SEED_COMPANY_DOMAINS: Record<string, string> = {
+  salesforce: 'salesforce.com',
+  hubspot: 'hubspot.com',
+  stripe: 'stripe.com',
+  gong: 'gong.io',
+  snowflake: 'snowflake.com',
+  zendesk: 'zendesk.com',
+  datadog: 'datadog.com',
+  okta: 'okta.com',
+  intercom: 'intercom.com',
+  linear: 'linear.app',
+}
+
+export const SEED_JOBS: Job[] = [
   {
     id: 'seed-ent-ae-salesforce',
     title: 'Enterprise Account Executive',
     company: 'Salesforce',
+    domain: 'salesforce.com',
     logo_url: 'https://logo.clearbit.com/salesforce.com',
     location: 'San Francisco, CA',
     job_type: 'Hybrid',
@@ -55,6 +71,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-sdr-hubspot-remote',
     title: 'Sales Development Representative',
     company: 'HubSpot',
+    domain: 'hubspot.com',
     logo_url: 'https://logo.clearbit.com/hubspot.com',
     location: 'Remote (US)',
     job_type: 'Remote',
@@ -79,6 +96,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-am-stripe-nyc',
     title: 'Strategic Account Manager',
     company: 'Stripe',
+    domain: 'stripe.com',
     logo_url: 'https://logo.clearbit.com/stripe.com',
     location: 'New York, NY',
     job_type: 'Hybrid',
@@ -103,6 +121,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-bdm-gong-chicago',
     title: 'Business Development Manager',
     company: 'Gong',
+    domain: 'gong.io',
     logo_url: 'https://logo.clearbit.com/gong.io',
     location: 'Chicago, IL',
     job_type: 'Hybrid',
@@ -127,6 +146,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-rsm-snowflake-austin',
     title: 'Regional Sales Manager',
     company: 'Snowflake',
+    domain: 'snowflake.com',
     logo_url: 'https://logo.clearbit.com/snowflake.com',
     location: 'Austin, TX',
     job_type: 'Hybrid',
@@ -151,6 +171,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-ise-zendesk-boston',
     title: 'Inside Sales Executive',
     company: 'Zendesk',
+    domain: 'zendesk.com',
     logo_url: 'https://logo.clearbit.com/zendesk.com',
     location: 'Boston, MA',
     job_type: 'On-site',
@@ -175,7 +196,8 @@ const SEED_JOBS: Job[] = [
     id: 'seed-ae-datadog-london',
     title: 'Account Executive — EMEA',
     company: 'Datadog',
-    logo_url: 'https://logo.clearbit.com/datadoghq.com',
+    domain: 'datadog.com',
+    logo_url: 'https://logo.clearbit.com/datadog.com',
     location: 'London, UK',
     job_type: 'Hybrid',
     sector: 'SaaS',
@@ -199,6 +221,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-se-okta-remote',
     title: 'Sales Engineer',
     company: 'Okta',
+    domain: 'okta.com',
     logo_url: 'https://logo.clearbit.com/okta.com',
     location: 'Remote (US)',
     job_type: 'Remote',
@@ -222,6 +245,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-csd-intercom-dublin',
     title: 'Customer Success Director',
     company: 'Intercom',
+    domain: 'intercom.com',
     logo_url: 'https://logo.clearbit.com/intercom.com',
     location: 'Dublin, Ireland',
     job_type: 'Hybrid',
@@ -246,6 +270,7 @@ const SEED_JOBS: Job[] = [
     id: 'seed-vp-sales-linear-remote',
     title: 'VP of Sales',
     company: 'Linear',
+    domain: 'linear.app',
     logo_url: 'https://logo.clearbit.com/linear.app',
     location: 'Remote (Global)',
     job_type: 'Remote',
@@ -284,15 +309,12 @@ function extractDomain(companyName: string): string {
 
 export function parseOteValue(oteString: string): number {
   if (!oteString || oteString === 'Salary Not Disclosed') return 0
-  // Take only the first number in the range, handling k/K suffix
   const match = oteString.match(/[\$€£]?\s*(\d[\d,]*)\s*k?/i)
   if (!match) return 0
   const num = parseFloat(match[1].replace(/,/g, ''))
-  // If the number looks like it's already in thousands (e.g. 200000), convert
-  // If it has a 'k' after it, it's already in thousands format
   const hasK = oteString.toLowerCase().includes('k')
-  if (hasK) return num // already in k format (200 = $200k)
-  if (num > 10000) return Math.round(num / 1000) // convert raw number to k
+  if (hasK) return num
+  if (num > 10000) return Math.round(num / 1000)
   return num
 }
 
@@ -306,7 +328,6 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
       }
     }
 
-    // Fetch live jobs from Arbeitnow, merged with always-present seed jobs
     let apiJobs: Job[] = []
     try {
       const response = await fetch('https://arbeitnow.com/api/job-board-api')
@@ -325,6 +346,7 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
             id: job.slug,
             title: toTitleCase(job.title),
             company: toTitleCase(job.company_name),
+            domain,
             logo_url: `https://logo.clearbit.com/${domain}`,
             location: toTitleCase(job.location),
             job_type: job.remote ? 'Remote' : 'On-site',
@@ -347,7 +369,6 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
       console.warn('Partner API unavailable — seed data only')
     }
 
-    // Seed jobs always appear; API jobs are additional. Deduplicate by ID then title-company.
     const combined = [...SEED_JOBS, ...apiJobs]
 
     const uniqueById = new Map<string, Job>()
