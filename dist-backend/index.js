@@ -106,7 +106,7 @@ async function sendEmail(to, subject, html) {
         return; // Skip if SMTP not configured
     try {
         await transporter.sendMail({
-            from: process.env.SMTP_FROM || 'info@salesroles.co',
+            from: `"SalesRoles.co" <${process.env.SMTP_FROM || 'info@salesroles.co'}>`,
             to,
             subject,
             html,
@@ -161,7 +161,12 @@ app.post('/api/auth/register', async (c) => {
             .setExpirationTime('7d')
             .sign(JWT_SECRET);
         // Welcome email (fire and forget)
-        sendEmail(email, 'Welcome to SalesRoles.co', `<p>Hi ${name},</p><p>Welcome to SalesRoles.co. Every role. Full transparency.</p><p><a href="https://salesroles.co/jobs">Browse Jobs</a></p><p>The SalesRoles team</p>`);
+        if (role === 'company') {
+            sendEmail(email, 'Welcome to SalesRoles.co — Start Hiring Top Sales Talent', `<p>Hi ${name},</p><p>Welcome to SalesRoles.co. You are now set up to post sales roles with full compensation transparency.</p><p>Here is how to get started:</p><ul><li>Post your first job listing in minutes</li><li>Every listing shows base salary, OTE, and commission upfront</li><li>Attract serious candidates who already know the deal</li></ul><p><a href="https://salesroles.co/post-job">Post Your First Job</a></p><p>Questions? Reply to this email and we will get back to you within 1 business day.</p><p>The SalesRoles.co team</p>`);
+        }
+        else {
+            sendEmail(email, 'Welcome to SalesRoles.co', `<p>Hi ${name},</p><p>Welcome to SalesRoles.co. Every role. Full transparency.</p><p>Browse sales roles with base salary, OTE, and commission shown upfront. No more guessing.</p><p><a href="https://salesroles.co/jobs">Browse Jobs</a></p><p>The SalesRoles.co team</p>`);
+        }
         return c.json({ token, user: { id: userId, email, displayName: name, role: role || 'candidate' } });
     }
     catch (err) {
