@@ -33,6 +33,13 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => { });
     pool.execute(`
+    CREATE TABLE IF NOT EXISTS subscribers (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      email VARCHAR(255) NOT NULL UNIQUE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => { });
+    pool.execute(`
     CREATE TABLE IF NOT EXISTS saved_jobs (
       id INT AUTO_INCREMENT PRIMARY KEY,
       user_id INT NOT NULL,
@@ -404,7 +411,42 @@ app.put('/api/auth/profile', async (c) => {
         return c.json({ error: 'Update failed' }, 500);
     }
 });
-// --- Saved Jobs (FIX 8) ---
+// --- Subscribe ---
+app.post('/api/subscribe', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    try {
+        const { email } = await c.req.json();
+        if (!email || !email.includes('@'))
+            return c.json({ error: 'Invalid email' }, 400);
+        await pool.execute('INSERT IGNORE INTO subscribers (email) VALUES (?)', [email]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Subscribe failed' }, 500);
+    }
+});
+// --- Saved Jobs ---
+app.get('/api/saved-jobs', async (c) => {
+    if (!pool)
+        return c.json({ jobs: [] });
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const [rows] = await pool.execute(`SELECT j.*, j.company_name AS company, j.work_type AS job_type
+       FROM jobs j
+       INNER JOIN saved_jobs s ON j.id = s.job_id
+       WHERE s.user_id = ?
+       ORDER BY s.created_at DESC`, [userId]);
+        return c.json({ jobs: rows });
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
 app.post('/api/saved-jobs', async (c) => {
     if (!pool)
         return c.json({ error: 'Database not configured' }, 503);

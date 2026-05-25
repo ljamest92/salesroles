@@ -82,7 +82,7 @@ export function ProfileEditPage() {
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </Button>
-          <Link to="/dashboard">
+          <Link to="/dashboard" search={{ mode: 'candidate' } as any}>
             <Button variant="outline" className="font-black h-12 border-white/10 text-xs tracking-widest">
               Back
             </Button>

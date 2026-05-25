@@ -21,6 +21,8 @@ import { AdminLoginPage } from './pages/AdminLoginPage'
 import { CompanyProfilePage } from './pages/CompanyProfilePage'
 import { RegistrationPage } from './pages/RegistrationPage'
 import { ProfileEditPage } from './pages/ProfileEditPage'
+import { PostJobSuccessPage } from './pages/PostJobSuccessPage'
+import { RemoteSalesJobsPage } from './pages/RemoteSalesJobsPage'
 
 const rootRoute = createRootRoute({
   component: () => <AppLayout />,
@@ -36,6 +38,7 @@ const dashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/da
 const companyDashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/company/dashboard', component: DashboardPage })
 const candidateDashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/candidate/dashboard', component: DashboardPage })
 const profileEditRoute = createRoute({ getParentRoute: () => rootRoute, path: '/dashboard/profile', component: ProfileEditPage })
+const postJobSuccessRoute = createRoute({ getParentRoute: () => rootRoute, path: '/post-job/success', component: PostJobSuccessPage })
 const adminRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin', component: AdminPage })
 const adminLoginRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin/login', component: AdminLoginPage })
 const blogRoute = createRoute({ getParentRoute: () => rootRoute, path: '/blog', component: BlogPage })
@@ -49,10 +52,10 @@ const cookiesRoute = createRoute({ getParentRoute: () => rootRoute, path: '/cook
 const salaryInsightsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/salary-insights', component: SalaryInsightsPage })
 
 // SEO Routes
-const remoteJobsRoute = createRoute({ 
-  getParentRoute: () => rootRoute, 
-  path: '/remote-sales-jobs', 
-  component: () => <SEOLandingPage title="Remote Sales Jobs" keyword="Remote" description="Find the best work-from-anywhere sales opportunities with full OTE transparency." /> 
+const remoteJobsRoute = createRoute({
+  getParentRoute: () => rootRoute,
+  path: '/remote-sales-jobs',
+  component: RemoteSalesJobsPage
 })
 const aeJobsRoute = createRoute({ 
   getParentRoute: () => rootRoute, 
@@ -96,6 +99,7 @@ const routeTree = rootRoute.addChildren([
   companyDashboardRoute,
   candidateDashboardRoute,
   profileEditRoute,
+  postJobSuccessRoute,
   adminRoute, 
   adminLoginRoute,
   blogRoute, 

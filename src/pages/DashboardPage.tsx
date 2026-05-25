@@ -14,14 +14,14 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, User, CheckCircle2, Building2 } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, User, CheckCircle2, Building2, MapPin } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
-const Separator = UISeparator as any;
-const Tabs = UITabs as any;
-const TabsList = UITabsList as any;
-const TabsTrigger = UITabsTrigger as any;
-const TabsContent = UITabsContent as any;
+const Separator = UISeparator as any
+const Tabs = UITabs as any
+const TabsList = UITabsList as any
+const TabsTrigger = UITabsTrigger as any
+const TabsContent = UITabsContent as any
 
 interface DashboardStats {
   liveJobs: number
@@ -30,13 +30,47 @@ interface DashboardStats {
   avgCtr: number
 }
 
+interface SavedJob {
+  id: string
+  title: string
+  company_name: string
+  location: string
+  ote: string
+  base_salary: string
+  work_type: string
+}
+
 export function DashboardPage() {
   const { user, isLoading } = useAuth()
-  const [role, setRole] = useState<'candidate' | 'company'>(() => {
-    const params = new URLSearchParams(window.location.search)
-    return params.get('mode') === 'candidate' ? 'candidate' : 'company'
-  })
+  // FIX 2: default to candidate; set from user.role or URL param once user loads
+  const [role, setRole] = useState<'candidate' | 'company'>('candidate')
   const [stats, setStats] = useState<DashboardStats>({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 })
+  const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
+  const [savedLoading, setSavedLoading] = useState(false)
+
+  // FIX 2: once user loads, derive role from URL param first, then user.role
+  useEffect(() => {
+    if (!user) return
+    const params = new URLSearchParams(window.location.search)
+    const mode = params.get('mode')
+    if (mode === 'candidate' || mode === 'company') {
+      setRole(mode)
+    } else {
+      setRole(user.role === 'company' ? 'company' : 'candidate')
+    }
+  }, [user])
+
+  // FIX 1: fetch saved jobs for candidate view
+  useEffect(() => {
+    if (!user || role !== 'candidate') return
+    setSavedLoading(true)
+    const token = localStorage.getItem('salesroles_token')
+    fetch('/api/saved-jobs', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => { if (!data.error) setSavedJobs(data.jobs || []) })
+      .catch(() => {})
+      .finally(() => setSavedLoading(false))
+  }, [user, role])
 
   useEffect(() => {
     const token = localStorage.getItem('salesroles_token')
@@ -91,9 +125,7 @@ export function DashboardPage() {
           <p className="text-muted-foreground font-medium text-lg">Welcome back, {user.displayName || 'Sales Professional'}.</p>
         </div>
         <div className="flex gap-4">
-          <Button variant="outline" size="sm" onClick={() => setRole(role === 'candidate' ? 'company' : 'candidate')}>
-            Switch to {role === 'candidate' ? 'Company' : 'Candidate'}
-          </Button>
+          {/* FIX 2: no switch button — role comes from user.role */}
           {role === 'company' ? (
             <Link to="/post-job">
               <Button size="sm" className="bg-primary text-primary-foreground font-bold">Post New Job</Button>
@@ -138,14 +170,10 @@ export function DashboardPage() {
                 icon={<Briefcase size={40} />}
                 title="No Active Listings"
                 description="You haven't posted any job listings yet. Start hiring the top 1% of sales talent today."
-                action={{
-                  label: "Post Your First Job",
-                  onClick: () => { window.location.href = '/post-job' }
-                }}
+                action={{ label: "Post Your First Job", onClick: () => { window.location.href = '/post-job' } }}
                 className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
               />
             </TabsContent>
-
             <TabsContent value="expired" className="mt-8">
               <EmptyState
                 icon={<Building2 size={40} />}
@@ -154,7 +182,6 @@ export function DashboardPage() {
                 className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
               />
             </TabsContent>
-
             <TabsContent value="billing" className="mt-8">
               <EmptyState
                 icon={<CheckCircle2 size={40} />}
@@ -184,7 +211,8 @@ export function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Settings size={18} className="text-primary" />
-                  <Link to="/dashboard/profile" className="text-sm font-bold text-primary hover:underline">Edit Profile</Link>
+                  {/* FIX 8: pass mode=candidate so back button returns to correct view */}
+                  <Link to="/dashboard/profile" search={{ mode: 'candidate' } as any} className="text-sm font-bold text-primary hover:underline">Edit Profile</Link>
                 </div>
               </div>
             </Card>
@@ -192,16 +220,40 @@ export function DashboardPage() {
             <div className="md:col-span-2 space-y-8">
               <h3 className="text-2xl font-black tracking-tighter">Saved Opportunities</h3>
               <div className="grid gap-4">
-                <EmptyState
-                  icon={<Briefcase size={40} />}
-                  title="No Saved Opportunities Yet"
-                  description="Browse jobs to save roles you like."
-                  action={{
-                    label: "Browse Jobs",
-                    onClick: () => { window.location.href = '/jobs' }
-                  }}
-                  className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
-                />
+                {savedLoading ? (
+                  Array(2).fill(0).map((_, i) => (
+                    <Card key={i} className="p-6 h-24 animate-pulse bg-card/20 rounded-2xl" />
+                  ))
+                ) : savedJobs.length === 0 ? (
+                  <EmptyState
+                    icon={<Briefcase size={40} />}
+                    title="No Saved Opportunities Yet"
+                    description="Browse jobs and click Save to add roles here."
+                    action={{ label: "Browse Jobs", onClick: () => { window.location.href = '/jobs' } }}
+                    className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
+                  />
+                ) : (
+                  savedJobs.map(job => (
+                    <Link key={job.id} to={`/jobs/${job.id}`}>
+                      <Card className="job-card-hover p-6 border border-white/5 group rounded-2xl">
+                        <div className="flex flex-col sm:flex-row justify-between gap-4">
+                          <div className="space-y-1">
+                            <h4 className="font-bold group-hover:text-primary transition-colors">{job.title}</h4>
+                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground font-medium">
+                              <span className="flex items-center gap-1"><Briefcase size={12} className="text-primary" /> {job.company_name}</span>
+                              <span className="flex items-center gap-1"><MapPin size={12} className="text-primary" /> {job.location}</span>
+                              <Badge variant="outline" className="text-[10px] border-white/10">{job.work_type}</Badge>
+                            </div>
+                          </div>
+                          <div className="shrink-0 text-right">
+                            <p className="text-xs text-muted-foreground font-bold">OTE</p>
+                            <p className="font-black text-primary">{job.ote || '—'}</p>
+                          </div>
+                        </div>
+                      </Card>
+                    </Link>
+                  ))
+                )}
               </div>
             </div>
           </div>

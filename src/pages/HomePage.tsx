@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import { Button, Card, Badge, Container } from '@blinkdotnew/ui'
-import { Search, MapPin, Briefcase, DollarSign, TrendingUp, Quote, Star } from 'lucide-react'
+import { Briefcase, DollarSign, TrendingUp, Quote, Star, MapPin } from 'lucide-react'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
@@ -44,14 +44,9 @@ const testimonials = [
 export function HomePage() {
   const [partnerJobs, setPartnerJobs] = useState<Job[]>([])
   const [topCompanies, setTopCompanies] = useState<{name: string, count: number, domain: string | null}[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
-  const [locationQuery, setLocationQuery] = useState('')
-  const navigate = useNavigate()
-  const [stats, setStats] = useState({
-    liveRoles: 0,
-    companies: 0,
-    avgOte: '$0'
-  })
+  const [stats, setStats] = useState({ liveRoles: 0, companies: 0, avgOte: '$0' })
+  const [subscribeEmail, setSubscribeEmail] = useState('')
+  const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
   useEffect(() => {
     const loadData = async () => {
@@ -74,9 +69,9 @@ export function HomePage() {
           ...job,
           company: job.companyName || job.company,
           is_partner: false
-        }));
+        }))
 
-        const allJobs = [...mappedDbJobs, ...pJobs];
+        const allJobs = [...mappedDbJobs, ...pJobs]
         setPartnerJobs(allJobs.slice(0, 5))
 
         const statsCompanyMap = new Map<string, number>()
@@ -95,14 +90,14 @@ export function HomePage() {
           const rawMatch = oteStr.match(/(\d[\d,]+)/)
           if (rawMatch) {
             const val = parseFloat(rawMatch[1].replace(/,/g, ''))
-            if (!isNaN(val) && val > 500) {
-              return sum + Math.round(val / 1000)
-            }
+            if (!isNaN(val) && val > 500) return sum + Math.round(val / 1000)
             if (!isNaN(val)) return sum + val
           }
           return sum
-        }, 0);
-        const avgOteVal = allJobs.length > 0 ? `$${Math.round(totalOte / allJobs.length)}k` : '$0';
+        }, 0)
+        const avgOteVal = allJobs.length > 0 ? `$${Math.round(totalOte / allJobs.length)}k` : '$0'
+
+        console.log(`[HomePage] Live roles fetched: ${allJobs.length}`)
 
         setStats({
           liveRoles: allJobs.length,
@@ -132,10 +127,7 @@ export function HomePage() {
               .map(([name, { count, domain }]) => ({ name, count, domain }))
               .sort((a, b) => b.count - a.count)
               .slice(0, 6)
-            if (top6.length > 0) {
-              setTopCompanies(top6)
-              companiesSet = true
-            }
+            if (top6.length > 0) { setTopCompanies(top6); companiesSet = true }
           }
         } catch {}
 
@@ -156,21 +148,37 @@ export function HomePage() {
           setTopCompanies(fallback6)
         }
       } catch (error) {
-        console.error('Error loading homepage data:', error);
+        console.error('Error loading homepage data:', error)
       }
-    };
-
-    loadData();
+    }
+    loadData()
   }, [])
 
-  const handleSearch = (e: React.FormEvent) => {
+  const handleSubscribe = async (e: React.FormEvent) => {
     e.preventDefault()
-    navigate({ to: '/jobs', search: { q: searchQuery, location: locationQuery } as any })
+    if (!subscribeEmail) return
+    setSubscribeStatus('loading')
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: subscribeEmail }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setSubscribeStatus('success')
+        setSubscribeEmail('')
+      } else {
+        setSubscribeStatus('error')
+      }
+    } catch {
+      setSubscribeStatus('error')
+    }
   }
 
   return (
     <div className="flex flex-col page-transition overflow-x-hidden">
-      {/* Hero Section — FIX 1: reduced top padding */}
+      {/* Hero Section */}
       <section className="relative pt-8 pb-24 md:pt-16 md:pb-48 hero-glow overflow-hidden">
         <Container className="text-center space-y-10 md:space-y-16 relative z-10">
           <motion.div
@@ -192,37 +200,23 @@ export function HomePage() {
             </p>
           </motion.div>
 
-          <motion.form
-            onSubmit={handleSearch}
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="max-w-4xl mx-auto bg-card/50 backdrop-blur-2xl p-3 rounded-[32px] border border-white/10 shadow-[0_40px_100px_rgba(0,0,0,0.5)] flex flex-col md:flex-row gap-2"
+            className="flex flex-col sm:flex-row gap-4 justify-center"
           >
-            <div className="flex-[1.2] flex items-center px-6 gap-4 border-b md:border-b-0 md:border-r border-white/5 pb-4 md:pb-0">
-              <Search className="text-primary/50" size={24} />
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Job title or sector..."
-                className="bg-transparent border-none outline-none w-full text-foreground py-4 font-bold text-lg placeholder:text-muted-foreground/30"
-              />
-            </div>
-            <div className="flex-1 flex items-center px-6 gap-4">
-              <MapPin className="text-primary/50" size={24} />
-              <input
-                type="text"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                placeholder="Remote or City..."
-                className="bg-transparent border-none outline-none w-full text-foreground py-4 font-bold text-lg placeholder:text-muted-foreground/30"
-              />
-            </div>
-            <Button type="submit" size="lg" className="bg-primary text-primary-foreground font-black px-12 tracking-widest text-[11px] h-16 rounded-2xl cta-glow">
-              Find My Next Role
-            </Button>
-          </motion.form>
+            <Link to="/jobs">
+              <Button size="lg" className="bg-primary text-primary-foreground font-black px-12 tracking-widest text-[11px] h-16 rounded-2xl cta-glow w-full sm:w-auto">
+                Find My Next Role
+              </Button>
+            </Link>
+            <Link to="/post-job">
+              <Button size="lg" variant="outline" className="font-black px-12 tracking-widest text-[11px] h-16 rounded-2xl border-white/10 hover:bg-white/5 w-full sm:w-auto">
+                Post a Job
+              </Button>
+            </Link>
+          </motion.div>
 
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -234,12 +228,12 @@ export function HomePage() {
             <Link to="/jobs" search={{ q: 'Account Executive' } as any} className="hover:text-primary">Account Executive</Link>
             <Link to="/jobs" search={{ q: 'SDR' } as any} className="hover:text-primary">SDR</Link>
             <Link to="/jobs" search={{ q: 'Business Development' } as any} className="hover:text-primary">Business Development</Link>
-            <Link to="/jobs" search={{ q: 'Remote' } as any} className="hover:text-primary">Remote</Link>
+            <Link to="/remote-sales-jobs" className="hover:text-primary">Remote</Link>
           </motion.div>
         </Container>
       </section>
 
-      {/* Stats Bar — FIX 2: stacks vertically on mobile */}
+      {/* Stats Bar */}
       <section className="bg-card border-y border-border py-8 md:py-12">
         <Container>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -262,7 +256,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* Latest Openings — FIX 3: cards are clickable, FIX 9: full-width on mobile */}
+      {/* Latest Openings */}
       <section className="py-20 md:py-32 bg-background">
         <Container className="space-y-16">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 text-center md:text-left">
@@ -297,12 +291,10 @@ export function HomePage() {
                           <div className="flex items-center gap-2 flex-wrap">
                             <h3 className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors">{job.title}</h3>
                             {job.featured && <Badge className="bg-primary/20 text-primary border-primary/20 shrink-0">Featured</Badge>}
-                            {job.is_partner && <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground border-muted-foreground/30 shrink-0">Via Partner</Badge>}
                           </div>
                           <div className="flex flex-wrap gap-3 md:gap-4 text-sm text-muted-foreground">
                             <span className="flex items-center gap-1.5 font-bold text-foreground"><Briefcase size={14} /> {job.company}</span>
-                            <span className="flex items-center gap-1.5"><MapPin size={14} /> {job.location} ({job.job_type})</span>
-                            <span className="text-primary font-medium">High Commission</span>
+                            <span className="flex items-center gap-1.5"><MapPin size={14} /> {job.location}</span>
                           </div>
                         </div>
                       </div>
@@ -311,7 +303,6 @@ export function HomePage() {
                           <p className="text-sm text-muted-foreground tracking-wider font-bold">OTE Range</p>
                           <p className="text-xl md:text-2xl font-black text-foreground">{job.ote}</p>
                         </div>
-                        <Button variant="outline" size="sm" className="hidden md:flex">View Details</Button>
                       </div>
                     </div>
                   </Card>
@@ -322,7 +313,7 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* Trusted Companies Marquee — FIX 4 */}
+      {/* Trusted Companies Marquee */}
       <section className="py-16 md:py-24 bg-card/50 border-y border-border">
         <Container className="text-center space-y-10">
           <h2 className="text-sm font-bold tracking-[0.1em] text-muted-foreground">Trusted by the best sales teams</h2>
@@ -341,6 +332,42 @@ export function HomePage() {
         </Container>
       </section>
 
+      {/* Subscribe — FIX 6 */}
+      <section className="py-16 md:py-24 bg-background border-b border-border">
+        <Container className="max-w-2xl text-center space-y-8">
+          <div className="space-y-3">
+            <h2 className="text-3xl md:text-4xl font-black tracking-tighter">Get Weekly Job Alerts</h2>
+            <p className="text-muted-foreground font-medium">New roles every Monday morning. Full OTE, no noise. Unsubscribe anytime.</p>
+          </div>
+          {subscribeStatus === 'success' ? (
+            <div className="p-6 bg-primary/10 border border-primary/20 rounded-2xl">
+              <p className="text-primary font-bold">You're subscribed. See you Monday.</p>
+            </div>
+          ) : (
+            <form onSubmit={handleSubscribe} className="flex flex-col sm:flex-row gap-3">
+              <input
+                type="email"
+                required
+                value={subscribeEmail}
+                onChange={e => setSubscribeEmail(e.target.value)}
+                placeholder="your@email.com"
+                className="flex-1 bg-card border border-border rounded-xl px-5 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
+              />
+              <Button
+                type="submit"
+                disabled={subscribeStatus === 'loading'}
+                className="bg-primary text-primary-foreground font-black px-8 h-14 cta-glow whitespace-nowrap"
+              >
+                {subscribeStatus === 'loading' ? 'Subscribing...' : 'Subscribe Free'}
+              </Button>
+            </form>
+          )}
+          {subscribeStatus === 'error' && (
+            <p className="text-destructive text-sm font-medium">Something went wrong. Please try again.</p>
+          )}
+        </Container>
+      </section>
+
       {/* Companies to Watch */}
       <section className="py-20 md:py-32 bg-background">
         <Container className="space-y-16">
@@ -350,11 +377,11 @@ export function HomePage() {
           </div>
 
           {topCompanies.length === 0 ? (
-             <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
-               <Card className="p-16 text-center border-dashed border-white/10 bg-card/10 rounded-[40px]">
-                  <p className="text-muted-foreground font-medium text-lg">Hiring data is being benchmarked. Check back soon.</p>
-               </Card>
-             </motion.div>
+            <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
+              <Card className="p-16 text-center border-dashed border-white/10 bg-card/10 rounded-[40px]">
+                <p className="text-muted-foreground font-medium text-lg">Hiring data is being benchmarked. Check back soon.</p>
+              </Card>
+            </motion.div>
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
               {topCompanies.map((company, i) => (
@@ -384,16 +411,14 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* Testimonials — FIX 5: single section, no duplicates */}
+      {/* Testimonials */}
       <section className="py-20 md:py-32 bg-card/20 border-y border-white/5 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-
         <Container className="space-y-20 relative z-10">
           <div className="text-center space-y-4">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">The standard for <span className="text-primary underline underline-offset-[12px] decoration-primary/30">modern</span> sales hiring.</h2>
             <p className="text-muted-foreground text-xl font-medium max-w-2xl mx-auto leading-relaxed">Trusted by thousands of professionals and high-growth companies worldwide.</p>
           </div>
-
           <div className="grid md:grid-cols-3 gap-8">
             {testimonials.map((t, i) => (
               <motion.div
