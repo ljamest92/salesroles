@@ -113,8 +113,8 @@ export function JobsPage() {
           <p className="text-muted-foreground text-lg md:text-xl font-medium leading-relaxed">Browse {stats.liveRoles} verified live sales roles with mandatory transparent compensation.</p>
         </div>
         
-        <Card className="p-8 bg-card/50 border border-white/5 backdrop-blur-xl w-full md:w-auto shadow-2xl relative overflow-hidden group">
-          <div className="absolute top-0 left-0 w-1 h-full bg-primary" />
+        <Card className="p-8 bg-card/50 border border-white/5 backdrop-blur-xl w-full md:w-auto min-w-[260px] shrink-0 shadow-2xl relative group">
+          <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-full" />
           <StatGroup className="flex gap-12">
             <Stat label="Live Roles" value={stats.liveRoles.toString()} />
             <Stat label="Average OTE" value={stats.avgOte} />
@@ -159,7 +159,7 @@ export function JobsPage() {
 
             <div className="space-y-3">
               <label className="text-xs font-bold tracking-wider text-muted-foreground">Sector</label>
-              <div className="grid grid-cols-1 gap-2">
+              <div className="grid grid-cols-1 gap-2 max-h-52 overflow-y-auto pr-1 scrollbar-thin">
                 {['SaaS', 'FinTech', 'HealthTech', 'AdTech', 'Hardware', 'Cybersecurity', 'MarTech', 'E-commerce', 'Logistics', 'PropTech', 'EdTech', 'InsurTech', 'Recruitment', 'Consulting', 'Telecommunications', 'Financial Services', 'Retail', 'Manufacturing', 'Media', 'Professional Services'].map(sector => (
                   <label key={sector} className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary transition-colors">
                     <input type="checkbox" className="rounded border-border bg-secondary text-primary focus:ring-primary" />

@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { 
-  Button, 
-  Container, 
-  Card, 
-  Badge, 
-  Tabs as UITabs, 
-  TabsList as UITabsList, 
-  TabsTrigger as UITabsTrigger, 
-  TabsContent as UITabsContent, 
-  StatGroup, 
-  Stat, 
+import React, { useState } from 'react'
+import { Link } from '@tanstack/react-router'
+import {
+  Button,
+  Container,
+  Card,
+  Badge,
+  Tabs as UITabs,
+  TabsList as UITabsList,
+  TabsTrigger as UITabsTrigger,
+  TabsContent as UITabsContent,
+  StatGroup,
+  Stat,
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
@@ -24,20 +24,13 @@ const TabsTrigger = UITabsTrigger as any;
 const TabsContent = UITabsContent as any;
 
 export function DashboardPage() {
-  const { user, isLoading } = useAuth()
-  const navigate = useNavigate()
+  const { user, isLoading, login } = useAuth()
   const [role, setRole] = useState<'candidate' | 'company'>(() => {
     const params = new URLSearchParams(window.location.search)
     return params.get('mode') === 'candidate' ? 'candidate' : 'company'
   })
   const [hasJobs, setHasJobs] = useState(true)
   const [hasSavedJobs, setHasSavedJobs] = useState(true)
-
-  useEffect(() => {
-    if (!isLoading && !user) {
-      navigate({ to: '/register' })
-    }
-  }, [user, isLoading, navigate])
 
   if (isLoading) {
     return (
@@ -50,7 +43,28 @@ export function DashboardPage() {
     )
   }
 
-  if (!user) return null
+  if (!user) {
+    return (
+      <Container className="py-24 flex items-center justify-center min-h-[60vh]">
+        <Card className="w-full max-w-md p-12 border border-white/5 bg-card/50 backdrop-blur-xl text-center space-y-8 rounded-[40px]">
+          <div className="space-y-3">
+            <h2 className="text-3xl font-black tracking-tighter">Sign In Required</h2>
+            <p className="text-muted-foreground font-medium">Please sign in to access your dashboard.</p>
+          </div>
+          <div className="flex flex-col gap-4">
+            <Button onClick={() => login()} className="w-full bg-primary text-primary-foreground font-black h-14 cta-glow text-xs tracking-widest">
+              Sign In
+            </Button>
+            <Link to="/register">
+              <Button variant="outline" className="w-full font-black h-12 border-white/10 text-xs tracking-widest">
+                Create Account
+              </Button>
+            </Link>
+          </div>
+        </Card>
+      </Container>
+    )
+  }
 
   return (
     <Container className="py-12 md:py-24 space-y-12 animate-fade-in">

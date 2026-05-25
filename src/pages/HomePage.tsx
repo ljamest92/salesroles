@@ -41,22 +41,10 @@ export function HomePage() {
         setPartnerJobs(allJobs.slice(0, 5))
         
         // Calculate real stats from actual database + API feed
-        const companyMap = new Map<string, { count: number; logo_url: string }>()
+        const statsCompanyMap = new Map<string, number>()
         allJobs.forEach(j => {
-          const existing = companyMap.get(j.company)
-          if (existing) {
-            companyMap.set(j.company, { count: existing.count + 1, logo_url: existing.logo_url || j.logo_url || '' })
-          } else {
-            companyMap.set(j.company, { count: 1, logo_url: j.logo_url || '' })
-          }
+          statsCompanyMap.set(j.company, (statsCompanyMap.get(j.company) || 0) + 1)
         })
-
-        const sortedCompanies = Array.from(companyMap.entries())
-          .map(([name, { count, logo_url }]) => ({ name, count, logo_url }))
-          .sort((a, b) => b.count - a.count)
-          .slice(0, 4)
-
-        setTopCompanies(sortedCompanies)
 
         const totalOte = allJobs.reduce((sum, job) => {
           const oteStr = String(job.ote || '')
@@ -82,9 +70,42 @@ export function HomePage() {
 
         setStats({
           liveRoles: allJobs.length,
-          companies: companyMap.size,
+          companies: statsCompanyMap.size,
           avgOte: avgOteVal
         })
+
+        // Fetch Companies to Watch directly from Arbeitnow — no keyword filter
+        // so we get the broadest set of companies with the most open roles
+        try {
+          const arbRes = await fetch('https://arbeitnow.com/api/job-board-api')
+          if (arbRes.ok) {
+            const arbData = await arbRes.json()
+            const cMap = new Map<string, { count: number; domain: string }>()
+            arbData.data.forEach((j: any) => {
+              const name = (j.company_name || '').trim()
+              if (!name) return
+              const slug = name.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
+              const domain = `${slug}.com`
+              const existing = cMap.get(name)
+              if (existing) {
+                cMap.set(name, { count: existing.count + 1, domain: existing.domain })
+              } else {
+                cMap.set(name, { count: 1, domain })
+              }
+            })
+            const top6 = Array.from(cMap.entries())
+              .map(([name, { count, domain }]) => ({
+                name,
+                count,
+                logo_url: `https://logo.clearbit.com/${domain}`
+              }))
+              .sort((a, b) => b.count - a.count)
+              .slice(0, 6)
+            setTopCompanies(top6)
+          }
+        } catch {
+          // silently fail — empty state placeholder handles it
+        }
       } catch (error) {
         console.error('Error loading homepage data:', error);
       }
@@ -343,7 +364,7 @@ export function HomePage() {
                </Card>
              </motion.div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
               {topCompanies.map((company, i) => (
                 <motion.div 
                   key={company.name}

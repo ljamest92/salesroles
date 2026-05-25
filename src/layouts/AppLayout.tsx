@@ -38,7 +38,7 @@ export function AppLayout() {
           <NavbarContent className="flex items-center gap-6">
             {user ? (
               <>
-                <Link to={user.role === 'company' ? '/company/dashboard' : '/candidate/dashboard'}>
+                <Link to="/dashboard" search={{ mode: (user as any).role === 'company' ? 'company' : 'candidate' } as any}>
                   <Button variant="ghost" size="sm" className="gap-2 font-black tracking-widest text-[10px] h-10 px-4 border border-white/5 hover:bg-white/5">
                     <User size={14} className="text-primary" />
                     <span>Dashboard</span>
