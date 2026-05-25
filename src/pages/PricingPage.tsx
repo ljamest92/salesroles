@@ -93,7 +93,9 @@ export function PricingPage() {
             </div>
             <p className="text-lg text-muted-foreground max-w-xl">Post 3 listings for the price of 2. Use them anytime within 12 months. Save $99 on your hiring budget.</p>
           </div>
-          <Button size="lg" className="bg-primary text-primary-foreground font-black px-12 tracking-tighter h-16 text-lg">Buy 3-Pack for $198</Button>
+          <Link to="/post-job" search={{ plan: 'bundle' } as any}>
+            <Button size="lg" className="bg-primary text-primary-foreground font-black px-12 tracking-tighter h-16 text-lg">Buy 3-Pack for $198</Button>
+          </Link>
         </Card>
       </Container>
 

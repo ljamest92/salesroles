@@ -26,10 +26,8 @@ export function HomePage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [pJobs, dbJobs] = await Promise.all([
-          fetchPartnerJobs(),
-          blink.db.jobs.list({ where: { status: 'live' } })
-        ]);
+        const pJobs = await fetchPartnerJobs()
+        const dbJobs = await blink.db.jobs.list({ where: { status: 'live' } }).catch(() => [])
 
         const mappedDbJobs: Job[] = dbJobs.map((job: any) => ({
           ...job,
@@ -74,8 +72,8 @@ export function HomePage() {
           avgOte: avgOteVal
         })
 
-        // Fetch Companies to Watch directly from Arbeitnow — no keyword filter
-        // so we get the broadest set of companies with the most open roles
+        // Fetch Companies to Watch — try Arbeitnow first, fall back to seed companies
+        let companiesSet = false
         try {
           const arbRes = await fetch('https://arbeitnow.com/api/job-board-api')
           if (arbRes.ok) {
@@ -101,10 +99,30 @@ export function HomePage() {
               }))
               .sort((a, b) => b.count - a.count)
               .slice(0, 6)
-            setTopCompanies(top6)
+            if (top6.length > 0) {
+              setTopCompanies(top6)
+              companiesSet = true
+            }
           }
         } catch {
-          // silently fail — empty state placeholder handles it
+          // fall through to seed fallback below
+        }
+
+        if (!companiesSet) {
+          const seedMap = new Map<string, { count: number; logo_url: string }>()
+          allJobs.forEach(j => {
+            const existing = seedMap.get(j.company)
+            if (existing) {
+              seedMap.set(j.company, { count: existing.count + 1, logo_url: existing.logo_url })
+            } else {
+              seedMap.set(j.company, { count: 1, logo_url: j.logo_url || `https://logo.clearbit.com/${j.company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` })
+            }
+          })
+          const fallback6 = Array.from(seedMap.entries())
+            .map(([name, { count, logo_url }]) => ({ name, count, logo_url }))
+            .sort((a, b) => b.count - a.count)
+            .slice(0, 6)
+          setTopCompanies(fallback6)
         }
       } catch (error) {
         console.error('Error loading homepage data:', error);

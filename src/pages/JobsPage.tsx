@@ -46,10 +46,8 @@ export function JobsPage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const [pJobs, dbJobs] = await Promise.all([
-          fetchPartnerJobs(),
-          blink.db.jobs.list({ where: { status: 'live' } })
-        ]);
+        const pJobs = await fetchPartnerJobs()
+        const dbJobs = await blink.db.jobs.list({ where: { status: 'live' } }).catch(() => [])
 
         const mappedDbJobs: Job[] = dbJobs.map((job: any) => ({
           ...job,
