@@ -14,6 +14,7 @@ export function JobDetailPage() {
   const [email, setEmail] = useState('')
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
+  const [copied, setCopied] = useState(false)
 
   const getFallbackLogo = (name: string) => {
     const letter = name.charAt(0).toUpperCase()
@@ -46,9 +47,16 @@ export function JobDetailPage() {
 
         setJob(foundJob || null)
 
-        // Related jobs: 3 different jobs, not the same as current
+        // Related jobs: 3 different jobs, deduplicated by id, excluding current
         const allJobs = [...dbJobs.map((j: any) => ({ ...j, company: j.companyName || j.company })), ...pJobs]
-        const related = allJobs.filter(j => j.id !== slug).slice(0, 3)
+        const seen = new Set<string>()
+        const related = allJobs
+          .filter(j => {
+            if (j.id === slug || seen.has(j.id)) return false
+            seen.add(j.id)
+            return true
+          })
+          .slice(0, 3)
         setRelatedJobs(related)
 
         setIsLoading(false)
@@ -66,9 +74,22 @@ export function JobDetailPage() {
     if (email) setIsSubscribed(true)
   }
 
-  const handleShare = () => {
-    navigator.clipboard.writeText(window.location.href)
-    toast.success('Link copied', { description: 'The job URL is now in your clipboard.' })
+  const handleShare = async () => {
+    try {
+      await navigator.clipboard.writeText(window.location.href)
+    } catch {
+      // Fallback for non-HTTPS or restricted contexts
+      const ta = document.createElement('textarea')
+      ta.value = window.location.href
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
   }
 
   if (isLoading) {
@@ -142,8 +163,8 @@ export function JobDetailPage() {
                 </div>
               </div>
               <div className="flex gap-3 w-full md:w-auto relative z-10">
-                <Button onClick={handleShare} variant="outline" className="flex-1 md:flex-none gap-2.5 font-bold text-xs h-12 border-white/10 hover:bg-white/5">
-                  <Share2 size={16} /> Share
+                <Button onClick={handleShare} variant="outline" className="flex-1 md:flex-none gap-2.5 font-bold text-xs h-12 border-white/10 hover:bg-white/5 transition-all">
+                  <Share2 size={16} /> {copied ? 'Copied!' : 'Share'}
                 </Button>
                 <Button onClick={() => setIsReportModalOpen(true)} variant="outline" className="flex-1 md:flex-none gap-2.5 font-bold text-xs h-12 text-destructive border-destructive/20 hover:bg-destructive/10">
                   <ShieldAlert size={16} /> Report
