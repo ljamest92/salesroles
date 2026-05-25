@@ -33,7 +33,7 @@ interface FormData {
   commission_structure: string
 }
 
-const isTestMode = import.meta.env.DEV || !import.meta.env.VITE_STRIPE_KEY
+const isTestMode = !import.meta.env.VITE_STRIPE_PUBLIC_KEY || import.meta.env.DEV
 
 export function PostJobPage() {
   const navigate = useNavigate()
