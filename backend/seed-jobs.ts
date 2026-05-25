@@ -1,36 +1,4 @@
-import mysql from 'mysql2/promise'
-
-const pool = await mysql.createPool({
-  host: process.env.DB_HOST || 'localhost',
-  user: process.env.DB_USER || 'root',
-  password: process.env.DB_PASS || '',
-  database: process.env.DB_NAME || 'salesroles',
-  waitForConnections: true,
-  connectionLimit: 5,
-})
-
-await pool.execute(`
-  CREATE TABLE IF NOT EXISTS jobs (
-    id VARCHAR(100) PRIMARY KEY,
-    title VARCHAR(255) NOT NULL,
-    company_name VARCHAR(255) NOT NULL,
-    company_website VARCHAR(500),
-    location VARCHAR(255),
-    work_type VARCHAR(50) DEFAULT 'Remote',
-    seniority VARCHAR(100),
-    sector VARCHAR(100),
-    description TEXT,
-    base_salary VARCHAR(100),
-    ote VARCHAR(100),
-    commission_structure TEXT,
-    currency VARCHAR(10) DEFAULT 'USD',
-    application_url VARCHAR(500),
-    contact_email VARCHAR(255),
-    featured TINYINT(1) DEFAULT 0,
-    status VARCHAR(20) DEFAULT 'live',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-  ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-`)
+import type mysql from 'mysql2/promise'
 
 const jobs = [
   // --- Account Executive (10) ---
@@ -948,29 +916,28 @@ const jobs = [
   },
 ]
 
-let inserted = 0
-for (const job of jobs) {
-  try {
-    await pool.execute(
-      `INSERT INTO jobs
-        (id, title, company_name, company_website, location, work_type, seniority, sector,
-         description, base_salary, ote, commission_structure, currency, application_url,
-         contact_email, featured, status)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')
-       ON DUPLICATE KEY UPDATE title = VALUES(title)`,
-      [
-        job.id, job.title, job.company_name, job.company_website, job.location,
-        job.work_type, job.seniority, job.sector, job.description, job.base_salary,
-        job.ote, job.commission_structure, job.currency, job.application_url,
-        job.contact_email, job.featured,
-      ]
-    )
-    console.log(`  OK  ${job.id}`)
-    inserted++
-  } catch (err) {
-    console.error(`  ERR ${job.id}:`, err)
+export async function seedJobs(pool: mysql.Pool): Promise<{ inserted: number; total: number }> {
+  let inserted = 0
+  for (const job of jobs) {
+    try {
+      await pool.execute(
+        `INSERT INTO jobs
+          (id, title, company_name, company_website, location, work_type, seniority, sector,
+           description, base_salary, ote, commission_structure, currency, application_url,
+           contact_email, featured, status)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'live')
+         ON DUPLICATE KEY UPDATE title = VALUES(title)`,
+        [
+          job.id, job.title, job.company_name, job.company_website, job.location,
+          job.work_type, job.seniority, job.sector, job.description, job.base_salary,
+          job.ote, job.commission_structure, job.currency, job.application_url,
+          job.contact_email, job.featured,
+        ]
+      )
+      inserted++
+    } catch (err) {
+      console.error(`  seed ERR ${job.id}:`, err)
+    }
   }
+  return { inserted, total: jobs.length }
 }
-
-console.log(`\nDone. ${inserted}/${jobs.length} jobs inserted.`)
-await pool.end()
