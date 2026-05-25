@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Container, Card, Badge, Button } from '@blinkdotnew/ui'
+import { Container, Card, Badge } from '@blinkdotnew/ui'
 import { Link } from '@tanstack/react-router'
 import { MapPin, Briefcase, Search, Building2, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
@@ -96,7 +96,7 @@ export function SEOLandingPage({ title, description, keyword }: SEOLandingPagePr
                         <p className="text-[10px] text-muted-foreground font-black mb-2 opacity-50">On-Target Earnings</p>
                         <p className="text-4xl font-black text-foreground tabular-nums tracking-tighter group-hover:text-primary transition-colors">{job.ote}</p>
                       </div>
-                      <Button variant="outline" className="font-black text-[9px] h-11 px-8 border-white/10 group-hover:border-primary/50 transition-all">Details</Button>
+                      <span className="inline-flex items-center justify-center font-black text-[9px] h-11 px-8 border border-white/10 group-hover:border-primary/50 transition-all rounded-md">Details</span>
                     </div>
                   </Card>
                 </Link>

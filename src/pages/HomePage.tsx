@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, StatGroup, Stat, Input, Card, Badge, Container } from '@blinkdotnew/ui'
-import { Search, MapPin, Briefcase, DollarSign, TrendingUp, CheckCircle2, Building2, Quote, Star } from 'lucide-react'
+import { Search, MapPin, Briefcase, DollarSign, TrendingUp, Building2, Quote, Star } from 'lucide-react'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { motion } from 'framer-motion'
 import { blink } from '../lib/blink'
@@ -15,8 +15,7 @@ export function HomePage() {
   const [stats, setStats] = useState({
     liveRoles: 0,
     companies: 0,
-    avgOte: '$185k',
-    totalHires: 4829
+    avgOte: '$0'
   })
 
   const getFallbackLogo = (name: string) => {
@@ -74,13 +73,12 @@ export function HomePage() {
           }
           return sum
         }, 0);
-        const avgOteVal = allJobs.length > 0 ? `$${Math.round(totalOte / allJobs.length)}k` : '$185k';
+        const avgOteVal = allJobs.length > 0 ? `$${Math.round(totalOte / allJobs.length)}k` : '$0';
 
         setStats({
           liveRoles: allJobs.length,
           companies: companyMap.size,
-          avgOte: avgOteVal,
-          totalHires: Math.floor(allJobs.length * 3.4) + 4000
+          avgOte: avgOteVal
         })
       } catch (error) {
         console.error('Error loading homepage data:', error);
@@ -169,11 +167,10 @@ export function HomePage() {
       {/* Stats Bar */}
       <section className="bg-card border-y border-border py-12">
         <Container>
-          <StatGroup className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+          <StatGroup className="grid grid-cols-3 gap-8 text-center">
             <Stat label="Live Roles" value={stats.liveRoles.toLocaleString()} icon={<Briefcase className="text-primary" />} />
             <Stat label="Companies Hiring" value={stats.companies.toLocaleString()} icon={<TrendingUp className="text-primary" />} />
             <Stat label="Average OTE" value={stats.avgOte} icon={<DollarSign className="text-primary" />} />
-            <Stat label="Total Hires" value={stats.totalHires.toLocaleString()} icon={<CheckCircle2 className="text-primary" />} />
           </StatGroup>
         </Container>
       </section>
