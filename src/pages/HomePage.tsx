@@ -1,11 +1,45 @@
 import React, { useEffect, useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
-import { Button, StatGroup, Stat, Input, Card, Badge, Container } from '@blinkdotnew/ui'
-import { Search, MapPin, Briefcase, DollarSign, TrendingUp, Building2, Quote, Star } from 'lucide-react'
+import { Button, Card, Badge, Container } from '@blinkdotnew/ui'
+import { Search, MapPin, Briefcase, DollarSign, TrendingUp, Quote, Star } from 'lucide-react'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
 import { getDomain } from '../utils/getDomain'
+
+const marqueeCompanies = [
+  { name: 'Salesforce', domain: 'salesforce.com' },
+  { name: 'HubSpot', domain: 'hubspot.com' },
+  { name: 'Stripe', domain: 'stripe.com' },
+  { name: 'Gong', domain: 'gong.io' },
+  { name: 'Vercel', domain: 'vercel.com' },
+  { name: 'Linear', domain: 'linear.app' },
+  { name: 'Workday', domain: 'workday.com' },
+  { name: 'Zendesk', domain: 'zendesk.com' },
+  { name: 'Notion', domain: 'notion.so' },
+  { name: 'Figma', domain: 'figma.com' },
+]
+
+const testimonials = [
+  {
+    quote: "The only job board where I actually know what I'm going to make before the first interview. A total game changer for sales pros.",
+    name: "Alex Rivera",
+    title: "Enterprise AE at Vercel",
+    initials: "AR"
+  },
+  {
+    quote: "We found our top three SDRs through SalesRoles.co. The quality of candidates here is significantly higher than LinkedIn.",
+    name: "Sarah Chen",
+    title: "VP Sales at Gong",
+    initials: "SC"
+  },
+  {
+    quote: "Finally a job board that respects sales professionals enough to show the full comp package upfront. I won't use anything else.",
+    name: "Marcus Williams",
+    title: "Regional Sales Manager at HubSpot",
+    initials: "MW"
+  }
+]
 
 export function HomePage() {
   const [partnerJobs, setPartnerJobs] = useState<Job[]>([])
@@ -44,8 +78,7 @@ export function HomePage() {
 
         const allJobs = [...mappedDbJobs, ...pJobs];
         setPartnerJobs(allJobs.slice(0, 5))
-        
-        // Calculate real stats from actual database + API feed
+
         const statsCompanyMap = new Map<string, number>()
         allJobs.forEach(j => {
           statsCompanyMap.set(j.company, (statsCompanyMap.get(j.company) || 0) + 1)
@@ -54,18 +87,16 @@ export function HomePage() {
         const totalOte = allJobs.reduce((sum, job) => {
           const oteStr = String(job.ote || '')
           if (!oteStr || oteStr === 'Salary Not Disclosed') return sum
-          // Extract first number in range, handle k suffix
           const match = oteStr.match(/(\d[\d,]*)\s*k/i)
           if (match) {
             const val = parseFloat(match[1].replace(/,/g, ''))
             return isNaN(val) ? sum : sum + val
           }
-          // If no k suffix, it might be a raw number like 200000
           const rawMatch = oteStr.match(/(\d[\d,]+)/)
           if (rawMatch) {
             const val = parseFloat(rawMatch[1].replace(/,/g, ''))
             if (!isNaN(val) && val > 500) {
-              return sum + Math.round(val / 1000) // Convert to k
+              return sum + Math.round(val / 1000)
             }
             if (!isNaN(val)) return sum + val
           }
@@ -79,7 +110,6 @@ export function HomePage() {
           avgOte: avgOteVal
         })
 
-        // Fetch Companies to Watch — try Arbeitnow first, fall back to seed companies
         let companiesSet = false
         try {
           const arbRes = await fetch('https://arbeitnow.com/api/job-board-api')
@@ -107,9 +137,7 @@ export function HomePage() {
               companiesSet = true
             }
           }
-        } catch {
-          // fall through to seed fallback below
-        }
+        } catch {}
 
         if (!companiesSet) {
           const seedMap = new Map<string, { count: number; domain: string | null }>()
@@ -141,15 +169,15 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex flex-col page-transition">
-      {/* Hero Section */}
-      <section className="relative pt-32 pb-48 hero-glow overflow-hidden">
-        <Container className="text-center space-y-16 relative z-10">
-          <motion.div 
+    <div className="flex flex-col page-transition overflow-x-hidden">
+      {/* Hero Section — FIX 1: reduced top padding */}
+      <section className="relative pt-8 pb-24 md:pt-16 md:pb-48 hero-glow overflow-hidden">
+        <Container className="text-center space-y-10 md:space-y-16 relative z-10">
+          <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, ease: [0.21, 0.47, 0.32, 0.98] }}
-            className="space-y-8"
+            className="space-y-6 md:space-y-8"
           >
             <Badge variant="outline" className="px-6 py-2 text-primary border-primary/20 bg-primary/5 tracking-tight text-[10px] font-black shadow-[0_0_20px_rgba(16,185,129,0.1)]">
               Premium Job Board for Sales Professionals
@@ -158,13 +186,13 @@ export function HomePage() {
               We Only Do <span className="text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Sales.</span><br />
               With Full <span className="text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Transparency.</span>
             </h1>
-            <p className="text-xl md:text-3xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed opacity-80">
-              Find global remote and on-site sales roles with mandatory compensation transparency. 
+            <p className="text-lg md:text-3xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed opacity-80">
+              Find global remote and on-site sales roles with mandatory compensation transparency.
               No more guessing base, OTE, or commission.
             </p>
           </motion.div>
 
-          <motion.form 
+          <motion.form
             onSubmit={handleSearch}
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -173,21 +201,21 @@ export function HomePage() {
           >
             <div className="flex-[1.2] flex items-center px-6 gap-4 border-b md:border-b-0 md:border-r border-white/5 pb-4 md:pb-0">
               <Search className="text-primary/50" size={24} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Job title or sector..." 
+                placeholder="Job title or sector..."
                 className="bg-transparent border-none outline-none w-full text-foreground py-4 font-bold text-lg placeholder:text-muted-foreground/30"
               />
             </div>
             <div className="flex-1 flex items-center px-6 gap-4">
               <MapPin className="text-primary/50" size={24} />
-              <input 
-                type="text" 
+              <input
+                type="text"
                 value={locationQuery}
                 onChange={(e) => setLocationQuery(e.target.value)}
-                placeholder="Remote or City..." 
+                placeholder="Remote or City..."
                 className="bg-transparent border-none outline-none w-full text-foreground py-4 font-bold text-lg placeholder:text-muted-foreground/30"
               />
             </div>
@@ -196,34 +224,46 @@ export function HomePage() {
             </Button>
           </motion.form>
 
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             className="flex flex-wrap justify-center gap-4 text-sm text-muted-foreground pt-4"
           >
             <span>Popular:</span>
-            <Link to="/jobs" search={{ q: 'Account Executive' }} className="hover:text-primary">Account Executive</Link>
-            <Link to="/jobs" search={{ q: 'SDR' }} className="hover:text-primary">SDR</Link>
-            <Link to="/jobs" search={{ q: 'Business Development' }} className="hover:text-primary">Business Development</Link>
-            <Link to="/jobs" search={{ q: 'Remote' }} className="hover:text-primary">Remote</Link>
+            <Link to="/jobs" search={{ q: 'Account Executive' } as any} className="hover:text-primary">Account Executive</Link>
+            <Link to="/jobs" search={{ q: 'SDR' } as any} className="hover:text-primary">SDR</Link>
+            <Link to="/jobs" search={{ q: 'Business Development' } as any} className="hover:text-primary">Business Development</Link>
+            <Link to="/jobs" search={{ q: 'Remote' } as any} className="hover:text-primary">Remote</Link>
           </motion.div>
         </Container>
       </section>
 
-      {/* Stats Bar */}
-      <section className="bg-card border-y border-border py-12">
+      {/* Stats Bar — FIX 2: stacks vertically on mobile */}
+      <section className="bg-card border-y border-border py-8 md:py-12">
         <Container>
-          <StatGroup className="grid grid-cols-3 gap-8 text-center">
-            <Stat label="Live Roles" value={stats.liveRoles.toLocaleString()} icon={<Briefcase className="text-primary" />} />
-            <Stat label="Companies Hiring" value={stats.companies.toLocaleString()} icon={<TrendingUp className="text-primary" />} />
-            <Stat label="Average OTE" value={stats.avgOte} icon={<DollarSign className="text-primary" />} />
-          </StatGroup>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-card/50 border border-border text-center">
+              <Briefcase className="text-primary mb-3" size={28} />
+              <p className="text-4xl font-black tracking-tighter">{stats.liveRoles.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground font-bold mt-1">Live Roles</p>
+            </div>
+            <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-card/50 border border-border text-center">
+              <TrendingUp className="text-primary mb-3" size={28} />
+              <p className="text-4xl font-black tracking-tighter">{stats.companies.toLocaleString()}</p>
+              <p className="text-sm text-muted-foreground font-bold mt-1">Companies Hiring</p>
+            </div>
+            <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-card/50 border border-border text-center">
+              <DollarSign className="text-primary mb-3" size={28} />
+              <p className="text-4xl font-black tracking-tighter">{stats.avgOte}</p>
+              <p className="text-sm text-muted-foreground font-bold mt-1">Average OTE</p>
+            </div>
+          </div>
         </Container>
       </section>
 
-      {/* Featured Jobs */}
-      <section className="py-32 bg-background">
+      {/* Latest Openings — FIX 3: cards are clickable, FIX 9: full-width on mobile */}
+      <section className="py-20 md:py-32 bg-background">
         <Container className="space-y-16">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 text-center md:text-left">
             <div className="space-y-2">
@@ -246,130 +286,69 @@ export function HomePage() {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: i * 0.1 }}
               >
-                <Card className="job-card-hover p-8 border border-white/5 group relative overflow-hidden">
-                  <div className="flex flex-col md:flex-row justify-between gap-8">
-                    <div className="flex gap-6">
-                      <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/50 overflow-hidden relative">
-                        <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
-                      </div>
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <h3 className="text-xl font-bold group-hover:text-primary transition-colors line-clamp-1">{job.title}</h3>
-                          {job.featured && <Badge className="bg-primary/20 text-primary border-primary/20">Featured</Badge>}
-                          {job.is_partner && <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground border-muted-foreground/30">Via Partner</Badge>}
+                <Link to={`/jobs/${job.id}`} className="block hover:opacity-90 transition-opacity cursor-pointer">
+                  <Card className="job-card-hover p-6 md:p-8 border border-white/5 group relative overflow-hidden w-full">
+                    <div className="flex flex-col md:flex-row justify-between gap-6 md:gap-8">
+                      <div className="flex gap-4 md:gap-6 min-w-0">
+                        <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/50 overflow-hidden relative">
+                          <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
                         </div>
-                        <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1.5 font-bold text-foreground"><Briefcase size={14} /> {job.company}</span>
-                          <span className="flex items-center gap-1.5"><MapPin size={14} /> {job.location} ({job.job_type})</span>
-                          <span className="text-primary font-medium">High Commission</span>
+                        <div className="space-y-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <h3 className="text-lg md:text-xl font-bold group-hover:text-primary transition-colors">{job.title}</h3>
+                            {job.featured && <Badge className="bg-primary/20 text-primary border-primary/20 shrink-0">Featured</Badge>}
+                            {job.is_partner && <Badge variant="outline" className="text-[10px] font-bold text-muted-foreground border-muted-foreground/30 shrink-0">Via Partner</Badge>}
+                          </div>
+                          <div className="flex flex-wrap gap-3 md:gap-4 text-sm text-muted-foreground">
+                            <span className="flex items-center gap-1.5 font-bold text-foreground"><Briefcase size={14} /> {job.company}</span>
+                            <span className="flex items-center gap-1.5"><MapPin size={14} /> {job.location} ({job.job_type})</span>
+                            <span className="text-primary font-medium">High Commission</span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-2">
-                      <div className="text-right">
-                        <p className="text-sm text-muted-foreground tracking-wider font-bold">OTE Range</p>
-                        <p className="text-2xl font-black text-foreground">{job.ote}</p>
-                      </div>
-                      <Link to={`/jobs/${job.id}`}>
+                      <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-center gap-2 shrink-0">
+                        <div className="text-left md:text-right">
+                          <p className="text-sm text-muted-foreground tracking-wider font-bold">OTE Range</p>
+                          <p className="text-xl md:text-2xl font-black text-foreground">{job.ote}</p>
+                        </div>
                         <Button variant="outline" size="sm" className="hidden md:flex">View Details</Button>
-                      </Link>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </Card>
+                </Link>
               </motion.div>
             ))}
           </div>
         </Container>
       </section>
 
-      {/* Social Proof */}
-      <section className="py-24 bg-card/50 border-y border-border">
-        <Container className="text-center space-y-16">
+      {/* Trusted Companies Marquee — FIX 4 */}
+      <section className="py-16 md:py-24 bg-card/50 border-y border-border">
+        <Container className="text-center space-y-10">
           <h2 className="text-sm font-bold tracking-[0.1em] text-muted-foreground">Trusted by the best sales teams</h2>
-          <div className="flex flex-wrap justify-center gap-12 grayscale opacity-50">
-            {['Salesforce', 'HubSpot', 'Stripe', 'Gong', 'Vercel', 'Linear'].map(logo => (
-              <span key={logo} className="text-2xl font-black tracking-tighter">{logo}</span>
-            ))}
-          </div>
-          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto pt-8">
-            <Card className="bg-card p-10 rounded-2xl border border-white/5 text-left space-y-6 relative overflow-hidden group hover:border-primary/20 transition-all duration-500">
-              <Quote className="text-primary/20 absolute -top-4 -left-4 w-24 h-24 rotate-12 group-hover:rotate-0 transition-all duration-700" />
-              <div className="relative z-10 space-y-6">
-                <div className="flex gap-1 text-primary">
-                  {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" />)}
-                </div>
-                <p className="italic text-xl leading-relaxed text-foreground/90 font-medium">"The only job board where I actually know what I'm going to make before the first interview. A total game changer for sales pros."</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center font-bold text-primary">AR</div>
-                  <div>
-                    <p className="font-bold">Alex Rivera</p>
-                    <p className="text-xs text-muted-foreground tracking-widest font-bold">Enterprise AE @ Vercel</p>
+          <div className="overflow-hidden relative">
+            <div className="marquee-track">
+              {[...marqueeCompanies, ...marqueeCompanies].map((company, i) => (
+                <div key={i} className="flex items-center gap-3 mx-10 shrink-0">
+                  <div className="w-8 h-8 rounded-lg bg-secondary flex items-center justify-center overflow-hidden border border-white/10">
+                    <CompanyLogo domain={company.domain} name={company.name} />
                   </div>
+                  <span className="text-lg font-black tracking-tight text-white">{company.name}</span>
                 </div>
-              </div>
-            </Card>
-            <Card className="bg-card p-10 rounded-2xl border border-white/5 text-left space-y-6 relative overflow-hidden group hover:border-primary/20 transition-all duration-500">
-              <Quote className="text-primary/20 absolute -top-4 -left-4 w-24 h-24 rotate-12 group-hover:rotate-0 transition-all duration-700" />
-              <div className="relative z-10 space-y-6">
-                <div className="flex gap-1 text-primary">
-                  {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" />)}
-                </div>
-                <p className="italic text-xl leading-relaxed text-foreground/90 font-medium">"We found our top three SDRs through SalesRoles.co. The quality of candidates here is significantly higher than LinkedIn."</p>
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-full bg-secondary flex items-center justify-center font-bold text-primary">SC</div>
-                  <div>
-                    <p className="font-bold">Sarah Chen</p>
-                    <p className="text-xs text-muted-foreground tracking-widest font-bold">VP Sales @ Gong</p>
-                  </div>
-                </div>
-              </div>
-            </Card>
-          </div>
-        </Container>
-      </section>
-
-      {/* Social Proof Placeholder Section */}
-      <section className="py-32 bg-background">
-        <Container className="space-y-16">
-          <div className="text-center space-y-4">
-            <h2 className="text-4xl md:text-5xl font-black tracking-tighter">Trusted by Leaders</h2>
-            <p className="text-muted-foreground text-lg">What candidates and companies say about us.</p>
-          </div>
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { name: "James Wilson", role: "Sales Director @ HubSpot", quote: "High intent candidates who care about the business mission, not just a paycheck." },
-              { name: "Maria Garcia", role: "Senior BDR @ Snowflake", quote: "I love the compensation transparency. It saved me weeks of wasted time." },
-              { name: "Tom Baker", role: "VP Revenue @ Stripe", quote: "The best place to find top-tier sales talent. Period." }
-            ].map((item, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, scale: 0.95 }}
-                whileInView={{ opacity: 1, scale: 1 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5, delay: i * 0.1 }}
-              >
-                <Card className="p-8 border border-white/5 bg-card/30 space-y-6 hover:border-primary/30 transition-all group">
-                  <Quote className="text-primary w-8 h-8 opacity-50 group-hover:opacity-100 transition-opacity" />
-                  <p className="text-muted-foreground leading-relaxed">"{item.quote}"</p>
-                  <div className="pt-4 border-t border-white/5">
-                    <p className="font-bold">{item.name}</p>
-                    <p className="text-xs text-muted-foreground font-medium tracking-wider">{item.role}</p>
-                  </div>
-                </Card>
-              </motion.div>
-            ))}
+              ))}
+            </div>
           </div>
         </Container>
       </section>
 
       {/* Companies to Watch */}
-      <section className="py-32 bg-background">
+      <section className="py-20 md:py-32 bg-background">
         <Container className="space-y-16">
           <div className="text-center space-y-4">
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-none">Companies to Watch</h2>
             <p className="text-muted-foreground text-lg font-medium leading-relaxed">High-growth teams hiring aggressively this month.</p>
           </div>
-          
+
           {topCompanies.length === 0 ? (
              <motion.div initial={{ opacity: 0 }} whileInView={{ opacity: 1 }}>
                <Card className="p-16 text-center border-dashed border-white/10 bg-card/10 rounded-[40px]">
@@ -379,7 +358,7 @@ export function HomePage() {
           ) : (
             <div className="grid grid-cols-2 md:grid-cols-3 gap-8">
               {topCompanies.map((company, i) => (
-                <motion.div 
+                <motion.div
                   key={company.name}
                   initial={{ opacity: 0, scale: 0.95 }}
                   whileInView={{ opacity: 1, scale: 1 }}
@@ -405,10 +384,10 @@ export function HomePage() {
         </Container>
       </section>
 
-      {/* Social Proof (Candidate & Company Testimonials) */}
-      <section className="py-32 bg-card/20 border-y border-white/5 relative overflow-hidden">
+      {/* Testimonials — FIX 5: single section, no duplicates */}
+      <section className="py-20 md:py-32 bg-card/20 border-y border-white/5 relative overflow-hidden">
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-primary/5 rounded-full blur-[120px] pointer-events-none" />
-        
+
         <Container className="space-y-20 relative z-10">
           <div className="text-center space-y-4">
             <h2 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">The standard for <span className="text-primary underline underline-offset-[12px] decoration-primary/30">modern</span> sales hiring.</h2>
@@ -416,26 +395,7 @@ export function HomePage() {
           </div>
 
           <div className="grid md:grid-cols-3 gap-8">
-            {[
-              { 
-                quote: "The only job board where I actually know what I'm going to make before the first interview. A total game changer for sales pros.",
-                author: "Alex Rivera",
-                role: "Enterprise AE @ Vercel",
-                initials: "AR"
-              },
-              { 
-                quote: "We found our top three SDRs through SalesRoles.co. The quality of candidates here is significantly higher than LinkedIn.",
-                author: "Sarah Chen",
-                role: "VP Sales @ Gong",
-                initials: "SC"
-              },
-              { 
-                quote: "Transparency is the ultimate efficiency. SalesRoles.co has cut our time-to-hire by over 40% while increasing lead quality.",
-                author: "Marcus Thorne",
-                role: "Head of Revenue @ Stripe",
-                initials: "MT"
-              }
-            ].map((t, i) => (
+            {testimonials.map((t, i) => (
               <motion.div
                 key={i}
                 initial={{ opacity: 0, y: 20 }}
@@ -445,6 +405,9 @@ export function HomePage() {
               >
                 <Card className="p-10 border border-white/5 bg-card/50 backdrop-blur-xl h-full flex flex-col justify-between rounded-[32px] hover:border-primary/30 transition-all duration-500 group">
                   <div className="space-y-6">
+                    <div className="flex gap-1 text-primary">
+                      {[1, 2, 3, 4, 5].map(i => <Star key={i} size={14} fill="currentColor" />)}
+                    </div>
                     <Quote className="text-primary w-10 h-10 opacity-50 group-hover:scale-110 transition-transform duration-500" />
                     <p className="text-lg leading-relaxed text-foreground font-medium">"{t.quote}"</p>
                   </div>
@@ -453,8 +416,8 @@ export function HomePage() {
                       {t.initials}
                     </div>
                     <div>
-                      <p className="font-black tracking-widest text-[11px] text-foreground">{t.author}</p>
-                      <p className="text-[10px] text-muted-foreground font-bold tracking-widest mt-0.5">{t.role}</p>
+                      <p className="font-black tracking-widest text-[11px] text-foreground">{t.name}</p>
+                      <p className="text-[10px] text-muted-foreground font-bold tracking-widest mt-0.5">{t.title}</p>
                     </div>
                   </div>
                 </Card>

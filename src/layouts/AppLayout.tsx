@@ -11,7 +11,7 @@ export function AppLayout() {
   const location = useLocation()
 
   return (
-    <div className="min-h-screen flex flex-col font-sans selection:bg-primary/30 selection:text-primary-foreground">
+    <div className="min-h-screen flex flex-col font-sans selection:bg-primary/30 selection:text-primary-foreground overflow-x-hidden">
       <header className="glass">
         <Navbar className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between bg-transparent border-none">
           <NavbarBrand>

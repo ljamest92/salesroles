@@ -38,6 +38,7 @@ export function JobsPage() {
   const [stats, setStats] = useState({ liveRoles: 0, avgOte: '$0' })
   const [reportingJobId, setReportingJobId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('latest')
+  const [showFilters, setShowFilters] = useState(false)
 
   useEffect(() => {
     const fetchAllJobs = async () => {
@@ -156,7 +157,7 @@ export function JobsPage() {
   const activeFilterCount = workTypeFilters.length + seniorityFilters.length + sectorFilters.length
 
   return (
-    <Container className="pt-20 pb-12 md:py-24 space-y-16 animate-fade-in">
+    <Container className="pt-20 pb-12 md:py-24 space-y-16 animate-fade-in overflow-x-hidden">
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">
         <div className="space-y-6 max-w-2xl">
           <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
@@ -175,9 +176,25 @@ export function JobsPage() {
         </Card>
       </div>
 
+      {/* Mobile filter toggle */}
+      <div className="flex lg:hidden">
+        <Button
+          variant="outline"
+          size="sm"
+          className="gap-2 font-bold"
+          onClick={() => setShowFilters(v => !v)}
+        >
+          <SlidersHorizontal size={16} className="text-primary" />
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="bg-primary text-primary-foreground text-[10px] font-black rounded-full px-2 py-0.5 ml-1">{activeFilterCount}</span>
+          )}
+        </Button>
+      </div>
+
       <div className="flex flex-col lg:flex-row gap-16">
-        {/* Filters Sidebar */}
-        <aside className="lg:w-72 space-y-8">
+        {/* Filters Sidebar — hidden on mobile until toggled */}
+        <aside className={`lg:w-72 space-y-8 ${showFilters ? 'block' : 'hidden lg:block'}`}>
           <div className="flex items-center justify-between">
             <h3 className="font-bold tracking-wider text-sm flex items-center gap-2">
               <SlidersHorizontal size={16} className="text-primary" /> Filters

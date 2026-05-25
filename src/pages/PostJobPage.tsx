@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   Button,
   Container,
@@ -33,7 +33,10 @@ interface FormData {
   commission_structure: string
 }
 
+const isTestMode = import.meta.env.DEV || !import.meta.env.VITE_STRIPE_KEY
+
 export function PostJobPage() {
+  const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [plan, setPlan] = useState<'standard' | 'featured'>('standard')
   const [errors, setErrors] = useState<Record<string, string>>({})
@@ -105,6 +108,32 @@ export function PostJobPage() {
       }
     } catch {
       setPaymentError('Payment is not available right now. Please contact info@salesroles.co to post your job.')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  const handleTestSubmit = async () => {
+    setIsSubmitting(true)
+    setPaymentError('')
+    try {
+      const token = localStorage.getItem('salesroles_token')
+      const res = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
+        body: JSON.stringify(formData),
+      })
+      const data = await res.json()
+      if (res.ok && data.ok) {
+        navigate({ to: '/post-job/success' } as any)
+      } else {
+        setPaymentError(data.error || 'Submission failed. Please try again.')
+      }
+    } catch {
+      setPaymentError('Submission failed. Please try again.')
     } finally {
       setIsSubmitting(false)
     }
@@ -394,6 +423,20 @@ export function PostJobPage() {
             </p>
             {paymentError && (
               <p className="text-red-400 text-sm text-center mt-3">{paymentError}</p>
+            )}
+            {isTestMode && (
+              <div className="mt-6 pt-6 border-t border-white/5 space-y-3">
+                <p className="text-xs text-muted-foreground font-bold tracking-widest text-center">TEST MODE</p>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  disabled={isSubmitting}
+                  onClick={handleTestSubmit}
+                  className="w-full border-yellow-500/40 text-yellow-400 hover:bg-yellow-500/10 font-bold"
+                >
+                  Submit Without Payment (Test Mode)
+                </Button>
+              </div>
             )}
           </div>
 

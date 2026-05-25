@@ -25,7 +25,7 @@ export function SalaryInsightsPage() {
         </StatGroup>
       </Container>
 
-      <Container className="grid md:grid-cols-2 gap-16">
+      <Container className="grid md:grid-cols-2 gap-12 md:gap-16">
         <div className="space-y-8">
           <h2 className="text-4xl font-black tracking-tighter underline underline-offset-[12px] decoration-primary/30 decoration-4">By Role Type</h2>
           <div className="space-y-4">
@@ -51,18 +51,26 @@ export function SalaryInsightsPage() {
           <h2 className="text-4xl font-black tracking-tighter underline underline-offset-[12px] decoration-primary/30 decoration-4">By Sector</h2>
           <div className="space-y-4">
             {[
-              { sector: "B2B SaaS", growth: "+12%", avgOte: "$195k" },
-              { sector: "FinTech", growth: "+8%", avgOte: "$210k" },
-              { sector: "HealthTech", growth: "+15%", avgOte: "$185k" },
-              { sector: "AdTech", growth: "+5%", avgOte: "$165k" }
+              { sector: 'B2B SaaS', avgOTE: 195000, growth: '+12%' },
+              { sector: 'FinTech', avgOTE: 210000, growth: '+8%' },
+              { sector: 'HealthTech', avgOTE: 185000, growth: '+15%' },
+              { sector: 'AdTech', avgOTE: 165000, growth: '+5%' },
+              { sector: 'CyberSecurity', avgOTE: 220000, growth: '+18%' },
+              { sector: 'Cloud Infrastructure', avgOTE: 230000, growth: '+14%' },
+              { sector: 'HR Tech', avgOTE: 160000, growth: '+7%' },
+              { sector: 'MarTech', avgOTE: 170000, growth: '+6%' },
+              { sector: 'Legal Tech', avgOTE: 175000, growth: '+9%' },
+              { sector: 'PropTech', avgOTE: 155000, growth: '+4%' },
+              { sector: 'InsurTech', avgOTE: 165000, growth: '+6%' },
+              { sector: 'EdTech', avgOTE: 145000, growth: '+3%' },
             ].map((item, i) => (
               <Card key={i} className="job-card-hover p-8 border border-white/5 bg-card/30 flex justify-between items-center group overflow-hidden relative rounded-[24px]">
                 <div className="absolute top-0 left-0 w-1 h-full bg-primary transform -translate-x-full group-hover:translate-x-0 transition-transform duration-500" />
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <div className="font-bold text-lg">{item.sector}</div>
                   <Badge className="bg-primary/20 text-primary border-primary/20 text-[10px]">{item.growth}</Badge>
                 </div>
-                <div className="font-black text-xl">{item.avgOte}</div>
+                <div className="font-black text-xl shrink-0">${Math.round(item.avgOTE / 1000)}k</div>
               </Card>
             ))}
           </div>

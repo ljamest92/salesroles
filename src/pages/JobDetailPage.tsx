@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, toast, Skeleton } from '@blinkdotnew/ui'
-import { MapPin, Briefcase, DollarSign, Calendar, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight } from 'lucide-react'
+import { MapPin, Briefcase, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight, Bookmark, BookmarkCheck } from 'lucide-react'
 import { ReportModal } from '../components/ReportModal'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { formatSalary } from '../utils/formatSalary'
 import { getDomain } from '../utils/getDomain'
+import { useAuth } from '../hooks/useAuth'
 
 export function JobDetailPage() {
   const { slug } = useParams({ from: '/jobs/$slug' })
+  const { user } = useAuth()
   const [job, setJob] = useState<Job | null>(null)
   const [relatedJobs, setRelatedJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -17,14 +19,14 @@ export function JobDetailPage() {
   const [isSubscribed, setIsSubscribed] = useState(false)
   const [isReportModalOpen, setIsReportModalOpen] = useState(false)
   const [copied, setCopied] = useState(false)
+  const [isSaved, setIsSaved] = useState(false)
+  const [saveMessage, setSaveMessage] = useState('')
 
   useEffect(() => {
     const loadJob = async () => {
       try {
-        // Load seed/partner jobs first — these always work
         const pJobs = await fetchPartnerJobs()
 
-        // Try the API for any DB-posted jobs; fall back silently
         let dbJob: Job | null = null
         try {
           const res = await fetch(`/api/jobs/${slug}`)
@@ -43,7 +45,6 @@ export function JobDetailPage() {
         const foundJob = dbJob || pJobs.find(j => j.id === slug) || null
         setJob(foundJob)
 
-        // Related: 3 other jobs from the combined pool
         const pool = dbJob ? [dbJob, ...pJobs] : pJobs
         const related = pool.filter(j => j.id !== slug).slice(0, 3)
         setRelatedJobs(related)
@@ -80,6 +81,27 @@ export function JobDetailPage() {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const handleSave = async () => {
+    if (!user) {
+      setSaveMessage('sign-in')
+      return
+    }
+    try {
+      const token = localStorage.getItem('salesroles_token')
+      const res = await fetch('/api/saved-jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobId: slug }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setIsSaved(data.saved)
+      }
+    } catch {
+      setSaveMessage('error')
+    }
+  }
+
   if (isLoading) {
     return (
       <Container className="pt-20 pb-12 md:py-24 space-y-12">
@@ -112,7 +134,7 @@ export function JobDetailPage() {
   const applyUrl = job.application_url
 
   return (
-    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in">
+    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in overflow-x-hidden">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-primary transition-colors font-medium">Home</Link>
@@ -122,28 +144,29 @@ export function JobDetailPage() {
         <span className="text-foreground font-bold truncate max-w-[200px]">{job.title}</span>
       </nav>
 
-      <div className="flex flex-col lg:flex-row gap-16">
+      {/* FIX 9: On mobile sidebar moves below job header — flex-col reverses naturally */}
+      <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
         {/* Main Content */}
-        <div className="flex-1 space-y-12">
+        <div className="flex-1 space-y-12 min-w-0">
           <div className="space-y-6">
             <div className="flex flex-col md:flex-row justify-between items-start gap-8">
-              <div className="flex gap-6">
-                <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
+              <div className="flex gap-4 md:gap-6 min-w-0">
+                <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
                   <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
                 </div>
-                <div className="space-y-3">
+                <div className="space-y-3 min-w-0">
                   <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-3xl md:text-6xl font-black tracking-tighter leading-[0.9]">{job.title}</h1>
+                    <h1 className="text-2xl md:text-6xl font-black tracking-tighter leading-[0.9]">{job.title}</h1>
                     {job.featured && <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-[10px]">Featured</Badge>}
                   </div>
-                  <div className="flex flex-wrap gap-6 text-muted-foreground font-bold text-sm">
+                  <div className="flex flex-wrap gap-4 md:gap-6 text-muted-foreground font-bold text-sm">
                     <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
                     <span className="flex items-center gap-2"><MapPin size={18} className="text-primary" /> {job.location}</span>
                     <span className="flex items-center gap-2"><Briefcase size={18} className="text-primary" /> {job.sector}</span>
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3 w-full md:w-auto relative z-10">
+              <div className="flex gap-3 w-full md:w-auto relative z-10 shrink-0">
                 <Button onClick={handleShare} variant="outline" className="flex-1 md:flex-none gap-2.5 font-bold text-xs h-12 border-white/10 hover:bg-white/5 transition-all">
                   <Share2 size={16} /> {copied ? 'Copied!' : 'Share'}
                 </Button>
@@ -155,38 +178,39 @@ export function JobDetailPage() {
 
             <div className="h-px bg-border" />
 
+            {/* FIX 9: Comp stats stack 2x2 on mobile */}
             {(job.via_partner || job.is_partner) && !job.base_salary && !job.ote ? (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              <div className="grid grid-cols-2 gap-6 md:gap-8">
                 <div className="space-y-1 col-span-2">
                   <p className="text-xs font-bold text-muted-foreground">Compensation</p>
                   <span className="text-white/40 text-sm">Salary not disclosed</span>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground">Posted</p>
-                  <p className="text-2xl font-black">{new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  <p className="text-xl md:text-2xl font-black">{new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground">Type</p>
-                  <p className="text-2xl font-black">{job.job_type}</p>
+                  <p className="text-xl md:text-2xl font-black">{job.job_type}</p>
                 </div>
               </div>
             ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground">Base Salary</p>
-                  <p className="text-2xl font-black">{formatSalary(job.base_salary)}</p>
+                  <p className="text-xl md:text-2xl font-black">{formatSalary(job.base_salary)}</p>
                 </div>
                 <div className="space-y-1 text-primary">
                   <p className="text-xs font-bold text-muted-foreground">OTE Range</p>
-                  <p className="text-2xl font-black">{formatSalary(job.ote)}</p>
+                  <p className="text-xl md:text-2xl font-black">{formatSalary(job.ote)}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground">Posted</p>
-                  <p className="text-2xl font-black">{new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                  <p className="text-xl md:text-2xl font-black">{new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs font-bold text-muted-foreground">Currency</p>
-                  <p className="text-2xl font-black">{job.currency}</p>
+                  <p className="text-xl md:text-2xl font-black">{job.currency}</p>
                 </div>
               </div>
             )}
@@ -239,11 +263,12 @@ export function JobDetailPage() {
           )}
         </div>
 
-        {/* Sidebar */}
+        {/* Sidebar — shows below content on mobile, sticky on desktop */}
         <aside className="lg:w-96 space-y-8">
-          <Card className="p-8 border border-white/5 bg-card/50 backdrop-blur-xl sticky top-32 space-y-10 shadow-2xl overflow-hidden group">
+          <Card className="p-8 border border-white/5 bg-card/50 backdrop-blur-xl lg:sticky lg:top-32 space-y-10 shadow-2xl overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all duration-700" />
 
+            {/* FIX 8: Save This Opportunity */}
             <div className="relative z-10 space-y-4">
               {applyUrl ? (
                 <a href={applyUrl} target="_blank" rel="noopener noreferrer" className="block">
@@ -252,9 +277,24 @@ export function JobDetailPage() {
               ) : (
                 <Button disabled className="w-full font-black py-8 text-xl tracking-tighter opacity-50 cursor-not-allowed">Application Link Not Available</Button>
               )}
-              <Button variant="ghost" className="w-full gap-2 font-bold text-muted-foreground hover:text-primary py-4 text-xs">
-                Save This Opportunity
+
+              <Button
+                variant="ghost"
+                onClick={handleSave}
+                className={`w-full gap-2 font-bold py-4 text-xs transition-colors ${isSaved ? 'text-primary hover:text-primary/80' : 'text-muted-foreground hover:text-primary'}`}
+              >
+                {isSaved ? <BookmarkCheck size={16} /> : <Bookmark size={16} />}
+                {isSaved ? 'Saved' : 'Save This Opportunity'}
               </Button>
+
+              {saveMessage === 'sign-in' && (
+                <p className="text-xs text-center text-muted-foreground">
+                  <Link to="/register" className="text-primary font-bold hover:underline">Sign in</Link> to save this job
+                </p>
+              )}
+              {saveMessage === 'error' && (
+                <p className="text-xs text-center text-destructive">Could not save job. Try again.</p>
+              )}
             </div>
 
             <div className="h-px bg-white/5" />

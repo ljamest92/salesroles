@@ -35,6 +35,15 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => {})
   pool.execute(`
+    CREATE TABLE IF NOT EXISTS saved_jobs (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      user_id INT NOT NULL,
+      job_id VARCHAR(255) NOT NULL,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_save (user_id, job_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => {})
+  pool.execute(`
     CREATE TABLE IF NOT EXISTS jobs (
       id VARCHAR(100) PRIMARY KEY,
       title VARCHAR(255) NOT NULL,
@@ -404,6 +413,56 @@ app.put('/api/auth/profile', async (c) => {
     return c.json({ ok: true })
   } catch {
     return c.json({ error: 'Update failed' }, 500)
+  }
+})
+
+// --- Saved Jobs (FIX 8) ---
+
+app.post('/api/saved-jobs', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const userId = String(payload.id)
+    const { jobId } = await c.req.json()
+    const [existing] = await pool.execute(
+      'SELECT id FROM saved_jobs WHERE user_id = ? AND job_id = ?',
+      [userId, jobId]
+    )
+    if ((existing as any[]).length > 0) {
+      await pool.execute('DELETE FROM saved_jobs WHERE user_id = ? AND job_id = ?', [userId, jobId])
+      return c.json({ saved: false })
+    }
+    await pool.execute('INSERT INTO saved_jobs (user_id, job_id) VALUES (?, ?)', [userId, jobId])
+    return c.json({ saved: true })
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+})
+
+// --- Create Job (FIX 10) ---
+
+app.post('/api/jobs', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    await jwtVerify(auth.slice(7), JWT_SECRET)
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  try {
+    const job = await c.req.json()
+    const id = `job-${Date.now()}`
+    await pool.execute(
+      `INSERT INTO jobs (id, title, company_name, company_website, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
+      [id, job.title, job.company_name, job.company_website, job.location, job.work_type, job.seniority, job.sector, job.description, job.base_salary, job.ote, job.commission_structure || '', job.currency || 'USD']
+    )
+    return c.json({ ok: true, id })
+  } catch (err: any) {
+    return c.json({ error: err.message || 'Failed to create job' }, 500)
   }
 })
 

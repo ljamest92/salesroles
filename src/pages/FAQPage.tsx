@@ -48,7 +48,7 @@ export function FAQPage() {
   }
 
   return (
-    <div className="pt-20 pb-12 md:py-24 space-y-24 animate-fade-in">
+    <div className="pt-20 pb-20 md:py-24 space-y-24 animate-fade-in">
       <Container className="text-center space-y-8">
         <div className="space-y-4">
           <Badge className="bg-primary/20 text-primary border-primary/20 px-4 py-1 font-black tracking-widest text-[10px]">Help Center</Badge>
@@ -63,11 +63,13 @@ export function FAQPage() {
 
       <Container className="max-w-4xl mx-auto">
         <Tabs defaultValue="candidates">
-          <TabsList className="bg-card border border-border p-1 rounded-xl w-full justify-center mb-12">
-            <TabsTrigger value="candidates" className="px-8 font-bold tracking-tight">For Candidates</TabsTrigger>
-            <TabsTrigger value="companies" className="px-8 font-bold tracking-tight">For Companies</TabsTrigger>
-            <TabsTrigger value="about" className="px-8 font-bold tracking-tight">About Us</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto mb-12">
+            <TabsList className="bg-card border border-border p-1 rounded-xl flex-nowrap inline-flex min-w-full sm:w-full justify-center">
+              <TabsTrigger value="candidates" className="px-6 sm:px-8 font-bold tracking-tight whitespace-nowrap">For Candidates</TabsTrigger>
+              <TabsTrigger value="companies" className="px-6 sm:px-8 font-bold tracking-tight whitespace-nowrap">For Companies</TabsTrigger>
+              <TabsTrigger value="about" className="px-6 sm:px-8 font-bold tracking-tight whitespace-nowrap">About Us</TabsTrigger>
+            </TabsList>
+          </div>
 
           {Object.entries(faqs).map(([category, items]) => (
             <TabsContent key={category} value={category} className="space-y-6 animate-fade-in">

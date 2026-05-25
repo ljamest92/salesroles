@@ -215,3 +215,14 @@ h1, h2, h3, h4, h5, h6 {
 .text-title {
   @apply text-foreground font-black tracking-tighter;
 }
+
+@keyframes marquee {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+.marquee-track {
+  animation: marquee 30s linear infinite;
+  display: flex;
+  width: max-content;
+}
