@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, User, CheckCircle2, Building2, MapPin } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, User, CheckCircle2, Building2, MapPin, Users } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -48,6 +48,8 @@ export function DashboardPage() {
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
   const [savedLoading, setSavedLoading] = useState(false)
   const [pendingJobs, setPendingJobs] = useState<any[]>([])
+  const [applications, setApplications] = useState<any[]>([])
+  const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set())
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -70,6 +72,35 @@ export function DashboardPage() {
       .then(data => setPendingJobs(Array.isArray(data) ? data : []))
       .catch(() => {})
   }, [user, role])
+
+  const fetchApplications = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    try {
+      const res = await fetch('/api/company/applications', { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      setApplications(Array.isArray(data) ? data : [])
+    } catch {}
+  }
+
+  const downloadCSV = () => {
+    const headers = ['Name', 'Email', 'Job Title', 'Cover Note', 'Applied Date']
+    const rows = applications.map(a => [
+      a.candidate_name,
+      a.candidate_email,
+      a.job_title,
+      (a.cover_note || '').replace(/,/g, ' '),
+      new Date(a.created_at).toLocaleDateString('en-GB'),
+    ])
+    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `candidates-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   // FIX 1: fetch saved jobs for candidate view
   useEffect(() => {
@@ -173,6 +204,7 @@ export function DashboardPage() {
             <TabsList className="bg-card border border-border p-1 rounded-xl overflow-x-auto flex-nowrap inline-flex">
               <TabsTrigger value="jobs" className="px-8 font-bold tracking-tight whitespace-nowrap">Active Listings</TabsTrigger>
               <TabsTrigger value="pending" className="px-8 font-bold tracking-tight whitespace-nowrap">Pending Approval {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
+              <TabsTrigger value="candidates" className="px-8 font-bold tracking-tight whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
               <TabsTrigger value="expired" className="px-8 font-bold tracking-tight whitespace-nowrap">Expired / Drafts</TabsTrigger>
               <TabsTrigger value="billing" className="px-8 font-bold tracking-tight whitespace-nowrap">Billing & Invoices</TabsTrigger>
             </TabsList>
@@ -208,6 +240,64 @@ export function DashboardPage() {
                     </div>
                   </Card>
                 ))
+              )}
+            </TabsContent>
+
+            <TabsContent value="candidates" className="mt-8 space-y-4">
+              {applications.length === 0 ? (
+                <EmptyState
+                  icon={<Users size={40} />}
+                  title="No Applications Yet"
+                  description="No applications yet. Share your job listing to start receiving candidates."
+                  className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
+                />
+              ) : (
+                <>
+                  <div className="flex justify-end">
+                    <button
+                      onClick={downloadCSV}
+                      className="border border-white/20 text-white/60 hover:text-white hover:border-white/40 px-4 py-2 rounded-lg text-sm transition-colors"
+                    >
+                      Download All as CSV
+                    </button>
+                  </div>
+                  {applications.map((a: any) => (
+                    <Card key={a.id} className="p-6 border border-white/5 bg-card/30 rounded-2xl space-y-3">
+                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                        <div className="space-y-1 flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-bold">{a.candidate_name}</p>
+                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${a.status === 'new' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'}`}>
+                              {a.status === 'new' ? 'New' : 'Reviewed'}
+                            </span>
+                          </div>
+                          <p className="text-sm text-muted-foreground">{a.candidate_email}</p>
+                          <p className="text-xs text-muted-foreground">Applied for <span className="font-bold text-foreground">{a.job_title}</span></p>
+                          {a.cover_note && (
+                            <p className="text-sm text-muted-foreground mt-2">
+                              {expandedNotes.has(a.id) ? a.cover_note : a.cover_note.slice(0, 100)}
+                              {a.cover_note.length > 100 && (
+                                <button
+                                  onClick={() => setExpandedNotes(prev => {
+                                    const next = new Set(prev)
+                                    next.has(a.id) ? next.delete(a.id) : next.add(a.id)
+                                    return next
+                                  })}
+                                  className="ml-1 text-primary text-xs font-bold"
+                                >
+                                  {expandedNotes.has(a.id) ? 'Show less' : '...more'}
+                                </button>
+                              )}
+                            </p>
+                          )}
+                        </div>
+                        <p className="text-xs text-muted-foreground shrink-0">
+                          {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                    </Card>
+                  ))}
+                </>
               )}
             </TabsContent>
 

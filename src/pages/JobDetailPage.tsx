@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useParams } from '@tanstack/react-router'
+import { Link, useParams, useNavigate } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, toast, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Briefcase, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight, Bookmark, BookmarkCheck } from 'lucide-react'
 import { ReportModal } from '../components/ReportModal'
@@ -12,6 +12,7 @@ import { useAuth } from '../hooks/useAuth'
 export function JobDetailPage() {
   const { slug } = useParams({ from: '/jobs/$slug' })
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [job, setJob] = useState<Job | null>(null)
   const [relatedJobs, setRelatedJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -21,6 +22,10 @@ export function JobDetailPage() {
   const [copied, setCopied] = useState(false)
   const [isSaved, setIsSaved] = useState(false)
   const [saveMessage, setSaveMessage] = useState('')
+  const [applyModalOpen, setApplyModalOpen] = useState(false)
+  const [coverNote, setCoverNote] = useState('')
+  const [applied, setApplied] = useState(false)
+  const [applyError, setApplyError] = useState('')
 
   useEffect(() => {
     const loadJob = async () => {
@@ -99,6 +104,31 @@ export function JobDetailPage() {
       }
     } catch {
       setSaveMessage('error')
+    }
+  }
+
+  const handleApply = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) {
+      navigate({ to: '/register' })
+      return
+    }
+    setApplyError('')
+    try {
+      const res = await fetch('/api/applications', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ jobId: job?.id, coverNote }),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setApplied(true)
+        setApplyModalOpen(false)
+      } else {
+        setApplyError(data.error || 'Application failed. Please try again.')
+      }
+    } catch {
+      setApplyError('Application failed. Please try again.')
     }
   }
 
@@ -268,14 +298,25 @@ export function JobDetailPage() {
           <Card className="p-8 border border-white/5 bg-card/50 backdrop-blur-xl lg:sticky lg:top-32 space-y-10 shadow-2xl overflow-hidden group">
             <div className="absolute top-0 right-0 w-32 h-32 bg-primary/5 rounded-full blur-3xl -mr-16 -mt-16 group-hover:bg-primary/10 transition-all duration-700" />
 
-            {/* FIX 8: Save This Opportunity */}
+            {/* Apply buttons */}
             <div className="relative z-10 space-y-4">
-              {applyUrl ? (
-                <a href={applyUrl} target="_blank" rel="noopener noreferrer" className="block">
-                  <Button className="w-full bg-primary text-primary-foreground font-black py-8 text-xl tracking-tighter cta-glow">Apply Now</Button>
+              <button
+                onClick={() => applied ? undefined : setApplyModalOpen(true)}
+                disabled={applied}
+                className={`w-full font-semibold py-3 rounded-lg transition-colors text-white ${applied ? 'bg-emerald-600 opacity-70 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-400 cursor-pointer'}`}
+              >
+                {applied ? 'Applied ✓' : 'Apply Now'}
+              </button>
+
+              {applyUrl && (
+                <a
+                  href={applyUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-full block text-center border border-white/20 text-white/60 hover:text-white hover:border-white/40 py-3 rounded-lg transition-colors text-sm"
+                >
+                  Apply on Company Site
                 </a>
-              ) : (
-                <Button disabled className="w-full font-black py-8 text-xl tracking-tighter opacity-50 cursor-not-allowed">Application Link Not Available</Button>
               )}
 
               <Button
@@ -397,6 +438,37 @@ export function JobDetailPage() {
         isOpen={isReportModalOpen}
         onOpenChange={setIsReportModalOpen}
       />
+
+      {applyModalOpen && (
+        <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 px-4">
+          <div className="bg-[#0f1729] border border-white/10 rounded-2xl p-6 w-full max-w-md">
+            <h2 className="text-white font-bold text-xl mb-1">Apply for {job?.title}</h2>
+            <p className="text-white/50 text-sm mb-4">{job?.company}</p>
+            <label className="text-white/60 text-sm block mb-2">Cover note (optional)</label>
+            <textarea
+              value={coverNote}
+              onChange={e => setCoverNote(e.target.value)}
+              placeholder="Tell them why you are a great fit..."
+              className="w-full bg-white/5 border border-white/10 rounded-lg px-4 py-3 text-white text-sm resize-none h-32 mb-4 focus:outline-none focus:border-emerald-500"
+            />
+            {applyError && <p className="text-red-400 text-sm mb-3">{applyError}</p>}
+            <div className="flex gap-3">
+              <button
+                onClick={handleApply}
+                className="flex-1 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3 rounded-lg transition-colors"
+              >
+                Submit Application
+              </button>
+              <button
+                onClick={() => setApplyModalOpen(false)}
+                className="px-4 border border-white/20 text-white/60 hover:text-white rounded-lg transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Container>
   )
 }

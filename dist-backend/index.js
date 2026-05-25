@@ -75,6 +75,19 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => { });
     pool.execute(`ALTER TABLE jobs ADD COLUMN company_id INT DEFAULT NULL`).catch(() => { });
+    pool.execute(`
+    CREATE TABLE IF NOT EXISTS applications (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      job_id VARCHAR(255) NOT NULL,
+      candidate_id INT NOT NULL,
+      candidate_name VARCHAR(255),
+      candidate_email VARCHAR(255),
+      cover_note TEXT,
+      cv_filename VARCHAR(255),
+      status VARCHAR(50) DEFAULT 'new',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => { });
 }
 catch { }
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'salesroles-dev-secret-change-in-prod');
@@ -589,6 +602,94 @@ app.get('/api/company/pending-jobs', async (c) => {
         const userId = String(payload.id);
         const [jobs] = await pool.execute("SELECT * FROM jobs WHERE (status = 'pending' OR status = 'draft') AND company_id = ? ORDER BY created_at DESC", [userId]);
         return c.json(jobs);
+    }
+    catch {
+        return c.json([]);
+    }
+});
+// --- Applications ---
+app.post('/api/applications', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    let userId, userEmail;
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        userId = String(payload.id);
+        userEmail = String(payload.email);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+    try {
+        const { jobId, coverNote } = await c.req.json();
+        const [userRows] = await pool.execute('SELECT name FROM users WHERE id = ?', [userId]);
+        const userName = userRows[0]?.name || '';
+        const [existing] = await pool.execute('SELECT id FROM applications WHERE job_id = ? AND candidate_id = ?', [jobId, userId]);
+        if (existing.length > 0) {
+            return c.json({ error: 'Already applied' }, 400);
+        }
+        await pool.execute('INSERT INTO applications (job_id, candidate_id, candidate_name, candidate_email, cover_note) VALUES (?, ?, ?, ?, ?)', [jobId, userId, userName, userEmail, coverNote || '']);
+        const [jobRows] = await pool.execute('SELECT j.title, u.email as company_email, u.name as company_name FROM jobs j JOIN users u ON j.company_id = u.id WHERE j.id = ?', [jobId]);
+        const jobInfo = jobRows[0];
+        if (jobInfo?.company_email) {
+            sendEmail(jobInfo.company_email, `New application for ${jobInfo.title}`, `<p>Hi ${jobInfo.company_name},</p><p>You have a new application for <strong>${jobInfo.title}</strong> on SalesRoles.co.</p><p><strong>Applicant:</strong> ${userName} (${userEmail})</p>${coverNote ? `<p><strong>Cover note:</strong> ${coverNote}</p>` : ''}<p><a href="https://salesroles.co/dashboard">View all applications in your dashboard</a></p><p>The SalesRoles.co team</p>`);
+        }
+        return c.json({ ok: true });
+    }
+    catch (err) {
+        return c.json({ error: err.message || 'Failed to submit application' }, 500);
+    }
+});
+app.get('/api/company/applications', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    let userId;
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        userId = String(payload.id);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+    try {
+        const [apps] = await pool.execute(`SELECT a.*, j.title as job_title, j.id as job_id
+       FROM applications a
+       JOIN jobs j ON a.job_id = j.id
+       WHERE j.company_id = ?
+       ORDER BY a.created_at DESC`, [userId]);
+        return c.json(apps);
+    }
+    catch {
+        return c.json([]);
+    }
+});
+app.get('/api/company/applications/:jobId', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    let userId;
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        userId = String(payload.id);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+    try {
+        const jobId = c.req.param('jobId');
+        const [apps] = await pool.execute(`SELECT a.* FROM applications a
+       JOIN jobs j ON a.job_id = j.id
+       WHERE a.job_id = ? AND j.company_id = ?
+       ORDER BY a.created_at DESC`, [jobId, userId]);
+        return c.json(apps);
     }
     catch {
         return c.json([]);
