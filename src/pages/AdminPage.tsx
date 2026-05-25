@@ -9,6 +9,8 @@ import {
   Stat,
 } from '@blinkdotnew/ui'
 import { ShieldCheck, ShieldAlert, Users, Briefcase, DollarSign, Eye, Search, Check, X, AlertTriangle, Building2, LogOut } from 'lucide-react'
+import { CompanyLogo } from '../components/CompanyLogo'
+import { getDomain } from '../utils/getDomain'
 
 export function AdminPage() {
   const navigate = useNavigate()
@@ -138,12 +140,7 @@ export function AdminPage() {
                 <div className="flex flex-col md:flex-row justify-between items-start gap-8">
                   <div className="flex gap-8">
                     <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-xl overflow-hidden">
-                      <img
-                        src={`https://logo.clearbit.com/${(job.companyName || 'company').toLowerCase().replace(/[^a-z0-9]/g, '')}.com`}
-                        alt={job.companyName || 'Company'}
-                        className="w-full h-full object-cover"
-                        onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                      />
+                      <CompanyLogo domain={getDomain(job.company_website, job.companyName || 'company')} name={job.companyName || 'Company'} />
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-2xl font-black tracking-tight">{job.title}</h3>

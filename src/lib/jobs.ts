@@ -4,6 +4,8 @@ export interface Job {
   company: string
   logo_url?: string
   domain?: string
+  company_website?: string
+  via_partner?: boolean
   location: string
   job_type: string
   sector: string

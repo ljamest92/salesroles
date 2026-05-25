@@ -17,8 +17,9 @@ import {
   toast
 } from '@blinkdotnew/ui'
 import { Search, MapPin, Briefcase, SlidersHorizontal, Building2, ShieldAlert, Share2 } from 'lucide-react'
-import { fetchPartnerJobs, type Job } from '../lib/jobs'
+import { type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
+import { getDomain } from '../utils/getDomain'
 import { motion } from 'framer-motion'
 import { ReportModal } from '../components/ReportModal'
 
@@ -36,28 +37,51 @@ export function JobsPage() {
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
   const [stats, setStats] = useState({ liveRoles: 0, avgOte: '$0' })
   const [reportingJobId, setReportingJobId] = useState<string | null>(null)
+  const [sortBy, setSortBy] = useState('latest')
 
   useEffect(() => {
-    const loadData = async () => {
+    const fetchAllJobs = async () => {
       try {
-        const pJobs = await fetchPartnerJobs()
-        let dbJobs: Job[] = []
-        try {
-          const res = await fetch('/api/jobs?status=live')
-          if (res.ok) {
-            const data = await res.json()
-            dbJobs = (data.jobs || []).map((j: any) => ({
-              ...j,
-              company: j.companyName || j.company,
-              is_partner: false
-            }))
-          }
-        } catch {}
+        const [localRes, externalRes] = await Promise.all([
+          fetch('/api/jobs'),
+          fetch('/api/jobs/external')
+        ])
 
-        const allJobs = [...dbJobs, ...pJobs]
-        setJobs(allJobs)
+        const localData = localRes.ok ? await localRes.json() : { jobs: [] }
+        const externalData = externalRes.ok ? await externalRes.json() : []
 
-        const totalOte = allJobs.reduce((sum, job) => {
+        const localJobs = (localData.jobs || localData || []).map((j: any) => ({
+          ...j,
+          company: j.companyName || j.company || '',
+        }))
+
+        const externalJobs = (Array.isArray(externalData) ? externalData : []).map((j: any) => ({
+          ...j,
+          company: j.company_name || j.company || '',
+          job_type: j.work_type || j.job_type || 'Remote',
+          application_url: j.apply_url || j.application_url || '',
+          commission_structure: j.commission_structure || '',
+          currency: j.currency || 'USD',
+          contact_email: '',
+          status: 'live',
+          featured: false,
+          sector: j.sector || 'Sales',
+          seniority: j.seniority || 'Mid-Level',
+          base_salary: j.base_salary || 'Salary Not Disclosed',
+          ote: j.ote || 'Salary Not Disclosed',
+        }))
+
+        const allJobs = [...localJobs, ...externalJobs]
+        const seen = new Set()
+        const unique = allJobs.filter((job: any) => {
+          if (seen.has(job.id)) return false
+          seen.add(job.id)
+          return true
+        })
+
+        setJobs(unique as Job[])
+
+        const totalOte = unique.reduce((sum: number, job: any) => {
           const oteStr = String(job.ote || '')
           if (!oteStr || oteStr === 'Salary Not Disclosed') return sum
           const match = oteStr.match(/(\d[\d,]*)\s*k/i)
@@ -75,16 +99,16 @@ export function JobsPage() {
         }, 0)
 
         setStats({
-          liveRoles: allJobs.length,
-          avgOte: allJobs.length > 0 ? `$${Math.round(totalOte / allJobs.length)}k` : '$0'
+          liveRoles: unique.length,
+          avgOte: unique.length > 0 ? `$${Math.round(totalOte / unique.length)}k` : '$0'
         })
         setIsLoading(false)
-      } catch (error) {
-        console.error('Error loading jobs:', error)
+      } catch (err) {
+        console.error('Failed to fetch jobs:', err)
         setIsLoading(false)
       }
     }
-    loadData()
+    fetchAllJobs()
   }, [])
 
   const toggle = (arr: string[], val: string) =>
@@ -110,6 +134,18 @@ export function JobsPage() {
     const matchesSeniority = seniorityFilters.length === 0 || seniorityFilters.includes(job.seniority)
     const matchesSector = sectorFilters.length === 0 || sectorFilters.includes(job.sector)
     return matchesSearch && matchesLocation && matchesWorkType && matchesSeniority && matchesSector
+  })
+
+  const sortedJobs = [...filteredJobs].sort((a, b) => {
+    if (sortBy === 'highest_ote') {
+      const oteA = typeof a.ote === 'number' ? a.ote : parseInt(String(a.ote || '0').replace(/\D/g, '')) || 0
+      const oteB = typeof b.ote === 'number' ? b.ote : parseInt(String(b.ote || '0').replace(/\D/g, '')) || 0
+      return oteB - oteA
+    }
+    if (sortBy === 'most_relevant') {
+      return (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
+    }
+    return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
   })
 
   const handleShare = (id: string) => {
@@ -247,7 +283,7 @@ export function JobsPage() {
               />
             </div>
             <div className="flex items-center gap-3 pr-4">
-              <Select defaultValue="latest">
+              <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-full sm:w-40 bg-secondary/50 border-white/5 h-11 text-[11px] font-black tracking-widest rounded-xl">
                   <SelectValue />
                 </SelectTrigger>
@@ -276,7 +312,7 @@ export function JobsPage() {
                 />
               </motion.div>
             ) : (
-              filteredJobs.map((job, i) => (
+              sortedJobs.map((job, i) => (
                   <motion.div
                     key={job.id}
                     initial={{ opacity: 0, y: 15 }}
@@ -287,7 +323,7 @@ export function JobsPage() {
                       <div className="flex flex-col md:flex-row justify-between gap-10">
                         <div className="flex gap-8">
                           <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl transition-all group-hover:scale-105 duration-500 overflow-hidden relative">
-                            <CompanyLogo domain={job.domain} name={job.company} />
+                            <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
                           </div>
                           <div className="space-y-2">
                             <div className="flex flex-wrap items-center gap-3">
@@ -296,6 +332,11 @@ export function JobsPage() {
                               </h3>
                               {job.featured && <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-[9px] tracking-widest">Featured</Badge>}
                               {job.is_partner && <Badge variant="outline" className="text-[9px] font-black text-muted-foreground/40 border-white/10 tracking-widest">Via Partner</Badge>}
+                              {job.via_partner && (
+                                <span className="text-xs border border-emerald-500/30 text-emerald-400/70 px-2 py-0.5 rounded-full">
+                                  Via Partner
+                                </span>
+                              )}
                             </div>
                             <div className="flex flex-wrap gap-6 text-muted-foreground font-bold text-[11px] tracking-[0.15em] pt-2">
                               <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>

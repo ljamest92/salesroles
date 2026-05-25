@@ -4,6 +4,8 @@ import { Link } from '@tanstack/react-router'
 import { MapPin, Building2, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
+import { CompanyLogo } from '../components/CompanyLogo'
+import { getDomain } from '../utils/getDomain'
 
 interface SEOLandingPageProps {
   title: string
@@ -14,11 +16,6 @@ interface SEOLandingPageProps {
 export function SEOLandingPage({ title, description, keyword }: SEOLandingPageProps) {
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
-
-  const getFallbackLogo = (name: string) => {
-    const letter = name.charAt(0).toUpperCase()
-    return `https://ui-avatars.com/api/?name=${letter}&background=0D0D0D&color=10B981&size=128&font-size=0.5&bold=true`
-  }
 
   useEffect(() => {
     fetchPartnerJobs().then(allJobs => {
@@ -70,12 +67,7 @@ export function SEOLandingPage({ title, description, keyword }: SEOLandingPagePr
                   <Card className="job-card-hover p-10 border border-white/5 bg-card/30 flex flex-col md:flex-row justify-between gap-10 rounded-[32px] group cursor-pointer">
                     <div className="flex gap-8">
                       <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl transition-all group-hover:scale-105 duration-500 overflow-hidden">
-                        <img
-                          src={`https://logo.clearbit.com/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`}
-                          alt={job.company}
-                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                          onError={(e) => { (e.currentTarget as HTMLImageElement).src = getFallbackLogo(job.company) }}
-                        />
+                        <CompanyLogo domain={getDomain(job.domain, job.company)} name={job.company} />
                       </div>
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-3">

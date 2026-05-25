@@ -72,7 +72,7 @@ const stripe = process.env.STRIPE_SECRET_KEY
 
 // --- Auth ---
 
-app.post('/auth/register', async (c) => {
+app.post('/api/auth/register', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   try {
     const { name, email, password, role } = await c.req.json()
@@ -104,7 +104,7 @@ app.post('/auth/register', async (c) => {
   }
 })
 
-app.post('/auth/login', async (c) => {
+app.post('/api/auth/login', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   try {
     const { email, password } = await c.req.json()
@@ -126,14 +126,14 @@ app.post('/auth/login', async (c) => {
   }
 })
 
-app.get('/auth/me', async (c) => {
+app.get('/api/auth/me', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   const auth = c.req.header('Authorization')
   if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
 
   try {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
-    const [rows] = await pool.execute('SELECT id, name, email, role FROM users WHERE id = ?', [payload.id]) as any[]
+    const [rows] = await pool.execute('SELECT id, name, email, role FROM users WHERE id = ?', [String(payload.id)]) as any[]
     const user = rows[0]
     if (!user) return c.json({ error: 'User not found' }, 404)
     return c.json({ user: { id: user.id.toString(), email: user.email, displayName: user.name, role: user.role } })
@@ -144,7 +144,7 @@ app.get('/auth/me', async (c) => {
 
 // --- Admin ---
 
-app.post('/admin/login', async (c) => {
+app.post('/api/admin/login', async (c) => {
   try {
     const { password } = await c.req.json()
     const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
@@ -159,7 +159,10 @@ app.post('/admin/login', async (c) => {
 
 // --- Payments ---
 
-app.post('/payments/create-checkout-session', async (c) => {
+app.post('/api/payments/create-checkout-session', async (c) => {
+  if (!process.env.STRIPE_SECRET_KEY) {
+    return c.json({ error: 'Stripe not configured on server.' }, 503)
+  }
   if (!stripe) return c.json({ error: 'Stripe not configured' }, 503)
   try {
     const { plan } = await c.req.json()
@@ -209,7 +212,7 @@ function extractDomain(url: string): string {
   }
 }
 
-app.get('/jobs', async (c) => {
+app.get('/api/jobs', async (c) => {
   try {
     const response = await fetch('https://arbeitnow.com/api/job-board-api')
     const result = await response.json()
@@ -232,7 +235,7 @@ app.get('/jobs', async (c) => {
   }
 })
 
-app.get('/jobs/external', async (c) => {
+app.get('/api/jobs/external', async (c) => {
   try {
     const res = await fetch('https://arbeitnow.com/api/job-board-api')
     const data = await res.json()
@@ -273,7 +276,7 @@ app.get('/jobs/external', async (c) => {
 // --- Static file serving (production) ---
 
 // Serve static assets from the Vite build output
-app.use('/*', serveStatic({ root: './dist' }))
+app.use('/assets/*', serveStatic({ root: './dist' }))
 
 // SPA catch-all: serve index.html for all unmatched routes
 app.get('*', (c) => {

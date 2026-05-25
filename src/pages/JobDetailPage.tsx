@@ -6,6 +6,7 @@ import { ReportModal } from '../components/ReportModal'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { formatSalary } from '../utils/formatSalary'
+import { getDomain } from '../utils/getDomain'
 
 export function JobDetailPage() {
   const { slug } = useParams({ from: '/jobs/$slug' })
@@ -128,7 +129,7 @@ export function JobDetailPage() {
             <div className="flex flex-col md:flex-row justify-between items-start gap-8">
               <div className="flex gap-6">
                 <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
-                  <CompanyLogo domain={job.domain} name={job.company} />
+                  <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
                 </div>
                 <div className="space-y-3">
                   <div className="flex flex-wrap items-center gap-3">
@@ -243,7 +244,7 @@ export function JobDetailPage() {
               <h4 className="text-[10px] font-black text-muted-foreground/50">Company Profile</h4>
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-lg overflow-hidden">
-                  <CompanyLogo domain={job.domain} name={job.company} />
+                  <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
                 </div>
                 <div>
                   <p className="font-bold text-lg">{job.company}</p>

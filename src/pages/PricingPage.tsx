@@ -78,7 +78,12 @@ export function PricingPage() {
             <li className="flex items-center gap-3"><Check size={18} className="text-primary shrink-0" /> Browse 5,000+ candidate profiles</li>
             <li className="flex items-center gap-3"><Check size={18} className="text-primary shrink-0" /> Dedicated Account Manager</li>
           </ul>
-          <Button variant="outline" className="w-full font-bold tracking-tight">Contact Sales</Button>
+          <a
+            href="mailto:info@salesroles.co?subject=SalesRoles.co%20Unlimited%20Plan%20Enquiry&body=Hi%2C%20I%27m%20interested%20in%20the%20Unlimited%20plan%20for%20SalesRoles.co.%20Please%20send%20me%20more%20information."
+            className="w-full block text-center border border-white/20 text-white py-3 rounded-lg hover:border-emerald-500 hover:text-emerald-400 transition-colors font-semibold cursor-pointer"
+          >
+            Contact Sales
+          </a>
         </Card>
       </Container>
 

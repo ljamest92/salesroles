@@ -24,7 +24,7 @@ export function CompanyLogo({ domain, name, imgClassName = '' }: CompanyLogoProp
     <img
       src={url}
       alt={name}
-      className={`w-full h-full object-cover ${imgClassName}`.trim()}
+      className={`w-full h-full object-contain ${imgClassName}`.trim()}
       onError={() => setFailed(true)}
       loading="lazy"
     />

@@ -38,6 +38,7 @@ export function PostJobPage() {
   const [plan, setPlan] = useState<'standard' | 'featured'>('standard')
   const [errors, setErrors] = useState<Record<string, string>>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [paymentError, setPaymentError] = useState('')
 
   const [formData, setFormData] = useState<FormData>({
     title: '',
@@ -89,6 +90,7 @@ export function PostJobPage() {
 
   const handleCheckout = async () => {
     setIsSubmitting(true)
+    setPaymentError('')
     try {
       const res = await fetch('/api/payments/create-checkout-session', {
         method: 'POST',
@@ -99,10 +101,10 @@ export function PostJobPage() {
       if (data.url) {
         window.location.href = data.url
       } else {
-        alert(data.error || 'Payment setup failed. Please try again.')
+        setPaymentError(data.error || 'Payment is not available right now. Please contact info@salesroles.co to post your job.')
       }
     } catch {
-      alert('Payment service unavailable. Please try again.')
+      setPaymentError('Payment is not available right now. Please contact info@salesroles.co to post your job.')
     } finally {
       setIsSubmitting(false)
     }
@@ -390,6 +392,9 @@ export function PostJobPage() {
             <p className="text-xs text-muted-foreground flex items-center justify-center gap-2 font-bold tracking-widest">
               <ShieldCheck size={14} /> Secure 256-Bit SSL Encrypted Payment
             </p>
+            {paymentError && (
+              <p className="text-red-400 text-sm text-center mt-3">{paymentError}</p>
+            )}
           </div>
 
           <Button variant="link" className="text-muted-foreground text-sm" onClick={() => setStep(2)}>Change plan</Button>

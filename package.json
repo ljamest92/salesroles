@@ -5,8 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build": "vite build",
-    "start": "tsx backend/index.ts",
+    "build": "vite build && npm run build:backend",
+    "build:backend": "tsc --project tsconfig.backend.json",
+    "start": "node dist-backend/index.js",
     "preview": "vite preview",
     "server": "tsx watch backend/index.ts",
     "lint:css": "stylelint \"src/**/*.css\" --fix --quiet",
