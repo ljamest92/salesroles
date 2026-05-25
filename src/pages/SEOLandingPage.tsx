@@ -33,7 +33,7 @@ export function SEOLandingPage({ title, description, keyword }: SEOLandingPagePr
   }, [keyword])
 
   return (
-    <div className="py-12 md:py-32 space-y-32 page-transition">
+    <div className="pt-20 pb-12 md:py-32 space-y-32 page-transition">
       <Container className="text-center space-y-10 animate-fade-in">
         <div className="space-y-6">
           <Badge variant="outline" className="px-6 py-2 text-primary border-primary/20 bg-primary/5 text-[10px] font-black">Curated Listings</Badge>

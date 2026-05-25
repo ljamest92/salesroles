@@ -3,7 +3,7 @@ import { Container, Card } from '@blinkdotnew/ui'
 
 export function PrivacyPage() {
   return (
-    <Container className="py-12 md:py-24 max-w-4xl space-y-12">
+    <Container className="pt-20 pb-12 md:py-24 max-w-4xl space-y-12">
       <h1 className="text-4xl md:text-6xl font-black tracking-tighter">Privacy <span className="text-primary">Policy</span></h1>
       <Card className="p-8 border border-border bg-card/30 prose prose-invert max-w-none">
         <p className="text-muted-foreground">Last updated: May 24, 2026</p>

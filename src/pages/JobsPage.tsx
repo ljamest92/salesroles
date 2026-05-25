@@ -106,7 +106,7 @@ export function JobsPage() {
   }
 
   return (
-    <Container className="py-12 md:py-24 space-y-16 animate-fade-in">
+    <Container className="pt-20 pb-12 md:py-24 space-y-16 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">
         <div className="space-y-6 max-w-2xl">
           <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">Find Your Next <span className="text-primary">Sales Role.</span></h1>

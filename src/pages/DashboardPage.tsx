@@ -67,7 +67,7 @@ export function DashboardPage() {
   }
 
   return (
-    <Container className="py-12 md:py-24 space-y-12 animate-fade-in">
+    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Dashboard</h1>

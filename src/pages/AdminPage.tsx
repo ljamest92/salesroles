@@ -69,7 +69,7 @@ export function AdminPage() {
   if (!isAuth) return null
 
   return (
-    <Container className="py-12 md:py-24 space-y-12 animate-fade-in">
+    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in">
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-4">
           <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none flex items-center gap-6">

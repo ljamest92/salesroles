@@ -42,7 +42,7 @@ export function PostJobPage() {
   }
 
   return (
-    <Container className="py-12 md:py-32 max-w-4xl space-y-20 page-transition">
+    <Container className="pt-20 pb-12 md:py-32 max-w-4xl space-y-20 page-transition">
       <div className="text-center space-y-6">
         <Badge variant="outline" className="px-6 py-2 text-primary border-primary/20 bg-primary/5 tracking-tight text-[10px] font-black">Hire Quality</Badge>
         <h1 className="text-4xl md:text-[84px] font-black tracking-tighter leading-[0.95]">Hire The Best <span className="text-primary underline underline-offset-[16px] decoration-primary/20">Sales Talent.</span></h1>
@@ -82,6 +82,23 @@ export function PostJobPage() {
                     <SelectItem value="saas">SaaS</SelectItem>
                     <SelectItem value="fintech">FinTech</SelectItem>
                     <SelectItem value="healthtech">HealthTech</SelectItem>
+                    <SelectItem value="adtech">AdTech</SelectItem>
+                    <SelectItem value="hardware">Hardware</SelectItem>
+                    <SelectItem value="cybersecurity">Cybersecurity</SelectItem>
+                    <SelectItem value="martech">MarTech</SelectItem>
+                    <SelectItem value="ecommerce">E-commerce</SelectItem>
+                    <SelectItem value="logistics">Logistics</SelectItem>
+                    <SelectItem value="proptech">PropTech</SelectItem>
+                    <SelectItem value="edtech">EdTech</SelectItem>
+                    <SelectItem value="insurtech">InsurTech</SelectItem>
+                    <SelectItem value="recruitment">Recruitment</SelectItem>
+                    <SelectItem value="consulting">Consulting</SelectItem>
+                    <SelectItem value="telecommunications">Telecommunications</SelectItem>
+                    <SelectItem value="financial-services">Financial Services</SelectItem>
+                    <SelectItem value="retail">Retail</SelectItem>
+                    <SelectItem value="manufacturing">Manufacturing</SelectItem>
+                    <SelectItem value="media">Media</SelectItem>
+                    <SelectItem value="professional-services">Professional Services</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

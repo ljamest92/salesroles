@@ -94,7 +94,7 @@ export function JobDetailPage() {
 
   if (isLoading) {
     return (
-      <Container className="py-12 space-y-12">
+      <Container className="pt-20 pb-12 md:py-24 space-y-12">
         <Skeleton className="h-8 w-64" />
         <div className="flex flex-col lg:flex-row gap-16">
           <div className="flex-1 space-y-12">
@@ -124,7 +124,7 @@ export function JobDetailPage() {
   const applyUrl = job.application_url
 
   return (
-    <Container className="py-12 space-y-12 animate-fade-in">
+    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in">
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-primary transition-colors font-medium">Home</Link>

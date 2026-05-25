@@ -4,7 +4,7 @@ import { Mail, MessageSquare, ShieldCheck, MapPin } from 'lucide-react'
 
 export function ContactPage() {
   return (
-    <div className="py-12 md:py-24 space-y-12">
+    <div className="pt-20 pb-12 md:py-24 space-y-12">
       <Container className="text-center space-y-6">
         <h1 className="text-4xl md:text-8xl font-black tracking-tighter italic leading-none">
           Get In <span className="text-primary">Touch.</span>
