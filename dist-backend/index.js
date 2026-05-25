@@ -253,6 +253,39 @@ app.get('/api/jobs/external', async (c) => {
         return c.json([]);
     }
 });
+// --- Dashboard ---
+app.get('/api/dashboard/stats', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        await jwtVerify(auth.slice(7), JWT_SECRET);
+        return c.json({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 });
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+app.put('/api/auth/profile', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const { name } = await c.req.json();
+        if (!name?.trim())
+            return c.json({ error: 'Name is required' }, 400);
+        await pool.execute('UPDATE users SET name = ? WHERE id = ?', [name.trim(), String(payload.id)]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Update failed' }, 500);
+    }
+});
 // --- Health check ---
 app.get('/api/health', async (c) => {
     try {

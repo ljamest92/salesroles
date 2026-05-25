@@ -20,6 +20,7 @@ import { SalaryInsightsPage } from './pages/SalaryInsightsPage'
 import { AdminLoginPage } from './pages/AdminLoginPage'
 import { CompanyProfilePage } from './pages/CompanyProfilePage'
 import { RegistrationPage } from './pages/RegistrationPage'
+import { ProfileEditPage } from './pages/ProfileEditPage'
 
 const rootRoute = createRootRoute({
   component: () => <AppLayout />,
@@ -34,6 +35,7 @@ const registerRoute = createRoute({ getParentRoute: () => rootRoute, path: '/reg
 const dashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/dashboard', component: DashboardPage })
 const companyDashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/company/dashboard', component: DashboardPage })
 const candidateDashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/candidate/dashboard', component: DashboardPage })
+const profileEditRoute = createRoute({ getParentRoute: () => rootRoute, path: '/dashboard/profile', component: ProfileEditPage })
 const adminRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin', component: AdminPage })
 const adminLoginRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin/login', component: AdminLoginPage })
 const blogRoute = createRoute({ getParentRoute: () => rootRoute, path: '/blog', component: BlogPage })
@@ -93,6 +95,7 @@ const routeTree = rootRoute.addChildren([
   dashboardRoute, 
   companyDashboardRoute,
   candidateDashboardRoute,
+  profileEditRoute,
   adminRoute, 
   adminLoginRoute,
   blogRoute, 
