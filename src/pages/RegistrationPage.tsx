@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, Card, Container, Badge } from '@blinkdotnew/ui'
-import { User, Building2, Mail, Lock, CheckCircle2, ArrowRight, Github, Chrome as Google } from 'lucide-react'
+import { User, Building2, Mail, Lock, CheckCircle2, ArrowRight, LogIn } from 'lucide-react'
 
 export function RegistrationPage() {
   const [role, setRole] = useState<'candidate' | 'company' | null>(null)
@@ -79,10 +79,10 @@ export function RegistrationPage() {
 
         <div className="grid grid-cols-2 gap-4">
           <Button variant="outline" className="h-14 font-bold tracking-widest text-[10px] gap-3 border-white/10 hover:bg-white/5">
-            <Google size={16} /> Google
+            <LogIn size={16} /> Google
           </Button>
           <Button variant="outline" className="h-14 font-bold tracking-widest text-[10px] gap-3 border-white/10 hover:bg-white/5">
-            <Github size={16} /> GitHub
+            <LogIn size={16} /> GitHub
           </Button>
         </div>
 
