@@ -14,6 +14,7 @@ export function CompanyProfilePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isFollowed, setIsFollowed] = useState(false)
   const [companyData, setCompanyData] = useState<any>(null)
+  const [badgeCopied, setBadgeCopied] = useState(false)
 
   const getFallbackLogo = (name: string) => {
     const letter = name.charAt(0).toUpperCase();
@@ -81,9 +82,25 @@ export function CompanyProfilePage() {
     loadData();
   }, [id, user])
 
-  const copyBadge = () => {
+  const getWebsiteUrl = (url: string) =>
+    url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
+
+  const copyBadge = async () => {
     const code = `<script src="https://salesroles.co/badge.js?company=${id}"></script>`
-    navigator.clipboard.writeText(code)
+    try {
+      await navigator.clipboard.writeText(code)
+    } catch {
+      const ta = document.createElement('textarea')
+      ta.value = code
+      ta.style.position = 'fixed'
+      ta.style.opacity = '0'
+      document.body.appendChild(ta)
+      ta.select()
+      document.execCommand('copy')
+      document.body.removeChild(ta)
+    }
+    setBadgeCopied(true)
+    setTimeout(() => setBadgeCopied(false), 2000)
     toast.success('Badge code copied', { description: 'Paste this into your website to show you are hiring.' })
   }
 
@@ -153,7 +170,7 @@ export function CompanyProfilePage() {
               <div className="flex flex-wrap gap-8 text-muted-foreground font-bold text-xs">
                 <span className="flex items-center gap-2.5"><MapPin size={18} className="text-primary" /> Remote First</span>
                 {companyData.website && (
-                  <a href={companyData.website} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-primary transition-colors">
+                  <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2.5 hover:text-primary transition-colors">
                     <Globe size={18} className="text-primary" /> {id}.com
                   </a>
                 )}
@@ -170,7 +187,7 @@ export function CompanyProfilePage() {
                 {isFollowed ? 'Following' : 'Follow Company'}
               </Button>
               {companyData.website && (
-                <a href={companyData.website} target="_blank" rel="noopener noreferrer">
+                <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer">
                   <Button variant="outline" className="font-black px-10 h-14 border-white/10 gap-2.5 text-xs hover:bg-white/5 transition-all">
                     <ExternalLink size={16} /> Website
                   </Button>
@@ -244,7 +261,7 @@ export function CompanyProfilePage() {
                 <p className="text-xs font-black text-primary">Employer Badge</p>
                 <p className="text-[11px] text-muted-foreground font-medium leading-relaxed">Display our premium "We are hiring" badge on your careers page.</p>
                 <Button onClick={copyBadge} variant="outline" size="sm" className="w-full bg-card border-white/5 font-black text-[9px] h-10 gap-2 group-hover/badge:border-primary/50 transition-all">
-                  <Copy size={14} /> Copy Embed Code
+                  <Copy size={14} /> {badgeCopied ? 'Copied!' : 'Copy Embed Code'}
                 </Button>
               </div>
             </div>
