@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Container, Card, Badge } from '@blinkdotnew/ui'
 import { Link } from '@tanstack/react-router'
-import { MapPin, Briefcase, Search, Building2, ArrowRight } from 'lucide-react'
+import { MapPin, Building2, ArrowRight } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 
@@ -49,10 +49,8 @@ export function SEOLandingPage({ title, description, keyword }: SEOLandingPagePr
       <Container className="space-y-16">
         <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6">
           <h2 className="text-4xl font-black tracking-tighter leading-none">Live {keyword} Roles</h2>
-          <Link to="/jobs">
-            <Button variant="ghost" className="text-primary font-black text-[10px] group">
-              View All Roles <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
-            </Button>
+          <Link to="/jobs" className="flex items-center text-primary font-black text-[10px] hover:opacity-80 transition-opacity group">
+            View All Roles <ArrowRight size={14} className="ml-2 group-hover:translate-x-1 transition-transform" />
           </Link>
         </div>
 

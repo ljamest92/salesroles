@@ -94,7 +94,7 @@ export function AppLayout() {
               <ul className="space-y-4 text-[13px] font-bold text-muted-foreground">
                 <li><Link to="/jobs" className="hover:text-primary transition-colors flex items-center gap-2 group">Find Sales Jobs <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" /></Link></li>
                 <li><Link to="/remote-sales-jobs" className="hover:text-primary transition-colors">Remote Sales Jobs</Link></li>
-                <li><Link to="/candidate/dashboard" className="hover:text-primary transition-colors">Candidate Dashboard</Link></li>
+                <li><Link to="/dashboard" search={{ mode: 'candidate' } as any} className="hover:text-primary transition-colors">Candidate Dashboard</Link></li>
                 <li><Link to="/blog" className="hover:text-primary transition-colors">Career Advice</Link></li>
               </ul>
             </div>
@@ -103,7 +103,7 @@ export function AppLayout() {
               <ul className="space-y-4 text-[13px] font-bold text-muted-foreground">
                 <li><Link to="/post-job" className="hover:text-primary transition-colors">Post a Job</Link></li>
                 <li><Link to="/pricing" className="hover:text-primary transition-colors">Pricing Plans</Link></li>
-                <li><Link to="/company/dashboard" className="hover:text-primary transition-colors">Company Dashboard</Link></li>
+                <li><Link to="/dashboard" search={{ mode: 'company' } as any} className="hover:text-primary transition-colors">Company Dashboard</Link></li>
                 <li><Link to="/faq" className="hover:text-primary transition-colors">Employer FAQ</Link></li>
               </ul>
             </div>

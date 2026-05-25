@@ -8,7 +8,7 @@ import { blink } from '../lib/blink'
 
 export function HomePage() {
   const [partnerJobs, setPartnerJobs] = useState<Job[]>([])
-  const [topCompanies, setTopCompanies] = useState<{name: string, count: number}[]>([])
+  const [topCompanies, setTopCompanies] = useState<{name: string, count: number, logo_url: string}[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [locationQuery, setLocationQuery] = useState('')
   const navigate = useNavigate()
@@ -41,16 +41,21 @@ export function HomePage() {
         setPartnerJobs(allJobs.slice(0, 5))
         
         // Calculate real stats from actual database + API feed
-        const companyMap = new Map<string, number>()
+        const companyMap = new Map<string, { count: number; logo_url: string }>()
         allJobs.forEach(j => {
-          companyMap.set(j.company, (companyMap.get(j.company) || 0) + 1)
+          const existing = companyMap.get(j.company)
+          if (existing) {
+            companyMap.set(j.company, { count: existing.count + 1, logo_url: existing.logo_url || j.logo_url || '' })
+          } else {
+            companyMap.set(j.company, { count: 1, logo_url: j.logo_url || '' })
+          }
         })
 
         const sortedCompanies = Array.from(companyMap.entries())
-          .map(([name, count]) => ({ name, count }))
+          .map(([name, { count, logo_url }]) => ({ name, count, logo_url }))
           .sort((a, b) => b.count - a.count)
           .slice(0, 4)
-        
+
         setTopCompanies(sortedCompanies)
 
         const totalOte = allJobs.reduce((sum, job) => {
@@ -351,8 +356,8 @@ export function HomePage() {
                     <div className="bg-card p-10 rounded-[32px] border border-white/5 text-center space-y-6 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_50px_rgba(16,185,129,0.12)] relative overflow-hidden h-full">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
                       <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground border border-white/5 group-hover:border-primary/30 transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden relative">
-                         <img 
-                           src={`https://logo.clearbit.com/${company.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`} 
+                         <img
+                           src={company.logo_url || `https://logo.clearbit.com/${company.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`}
                            alt={company.name}
                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
                            onError={(e) => {

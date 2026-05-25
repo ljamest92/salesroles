@@ -160,7 +160,7 @@ export function JobsPage() {
             <div className="space-y-3">
               <label className="text-xs font-bold tracking-wider text-muted-foreground">Sector</label>
               <div className="grid grid-cols-1 gap-2">
-                {['SaaS', 'FinTech', 'HealthTech', 'AdTech', 'Hardware'].map(sector => (
+                {['SaaS', 'FinTech', 'HealthTech', 'AdTech', 'Hardware', 'Cybersecurity', 'MarTech', 'E-commerce', 'Logistics', 'PropTech', 'EdTech', 'InsurTech', 'Recruitment', 'Consulting', 'Telecommunications', 'Financial Services', 'Retail', 'Manufacturing', 'Media', 'Professional Services'].map(sector => (
                   <label key={sector} className="flex items-center gap-2 text-sm cursor-pointer hover:text-primary transition-colors">
                     <input type="checkbox" className="rounded border-border bg-secondary text-primary focus:ring-primary" />
                     {sector}

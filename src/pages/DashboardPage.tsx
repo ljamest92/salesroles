@@ -26,9 +26,12 @@ const TabsContent = UITabsContent as any;
 export function DashboardPage() {
   const { user, isLoading } = useAuth()
   const navigate = useNavigate()
-  const [role, setRole] = useState<'candidate' | 'company'>('company') // Demo toggle
-  const [hasJobs, setHasJobs] = useState(true) // Demo toggle for empty states
-  const [hasSavedJobs, setHasSavedJobs] = useState(true) // Demo toggle
+  const [role, setRole] = useState<'candidate' | 'company'>(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('mode') === 'candidate' ? 'candidate' : 'company'
+  })
+  const [hasJobs, setHasJobs] = useState(true)
+  const [hasSavedJobs, setHasSavedJobs] = useState(true)
 
   useEffect(() => {
     if (!isLoading && !user) {
