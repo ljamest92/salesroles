@@ -1,0 +1,14 @@
+SalesRoles.co - Premium Sales Job Board
+
+SalesRoles.co is the world's best job board exclusively for sales professionals. 
+Our core differentiator is mandatory compensation transparency: every listing must show base salary, OTE, and commission structure.
+
+Key Pages:
+- Homepage: /
+- Job Search: /jobs
+- Post a Job: /post-job
+- Pricing: /pricing
+- Resources: /blog
+- About Us: /about
+
+Transparency is our mission. Efficiency is our result.

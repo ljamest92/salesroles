@@ -1,0 +1,138 @@
+import React, { useState } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
+import { Button, Card, Container, Badge } from '@blinkdotnew/ui'
+import { User, Building2, Mail, Lock, CheckCircle2, ArrowRight, Github, Chrome as Google } from 'lucide-react'
+
+export function RegistrationPage() {
+  const [role, setRole] = useState<'candidate' | 'company' | null>(null)
+  const navigate = useNavigate()
+
+  const handleRegister = (e: React.FormEvent) => {
+    e.preventDefault()
+    // Simulate registration
+    navigate({ to: role === 'company' ? '/company/dashboard' : '/candidate/dashboard' })
+  }
+
+  if (!role) {
+    return (
+      <Container className="min-h-[80vh] flex flex-col items-center justify-center py-24 space-y-12 page-transition">
+        <div className="text-center space-y-4">
+          <Badge className="bg-primary/20 text-primary border-primary/20 px-4 py-1 font-black tracking-widest text-[10px]">Join SalesRoles.co</Badge>
+          <h1 className="text-4xl md:text-8xl font-black tracking-tighter leading-none">Choose Your Path</h1>
+          <p className="text-xl text-muted-foreground font-medium max-w-xl mx-auto">Access the world's most transparent sales network. Are you hiring or looking?</p>
+        </div>
+
+        <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
+          <Card 
+            onClick={() => setRole('candidate')}
+            className="p-12 border-2 border-white/5 bg-card/30 hover:border-primary/50 transition-all cursor-pointer group text-center space-y-6 rounded-[40px] relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto group-hover:scale-110 transition-transform duration-500 shadow-2xl">
+              <User size={48} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-3xl font-black tracking-tighter">I'm a Candidate</h3>
+              <p className="text-muted-foreground font-medium">Find your next role with full OTE transparency.</p>
+            </div>
+            <Button variant="ghost" className="text-primary font-black tracking-widest text-xs gap-2 group-hover:gap-3 transition-all">
+              Get Started <ArrowRight size={14} />
+            </Button>
+          </Card>
+
+          <Card 
+            onClick={() => setRole('company')}
+            className="p-12 border-2 border-white/5 bg-card/30 hover:border-primary/50 transition-all cursor-pointer group text-center space-y-6 rounded-[40px] relative overflow-hidden"
+          >
+            <div className="absolute top-0 left-0 w-full h-1 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
+            <div className="w-24 h-24 rounded-full bg-primary/10 flex items-center justify-center text-primary mx-auto group-hover:scale-110 transition-transform duration-500 shadow-2xl">
+              <Building2 size={48} />
+            </div>
+            <div className="space-y-2">
+              <h3 className="text-3xl font-black tracking-tighter">I'm Hiring</h3>
+              <p className="text-muted-foreground font-medium">Post your first listing and reach the top 1%.</p>
+            </div>
+            <Button variant="ghost" className="text-primary font-black tracking-widest text-xs gap-2 group-hover:gap-3 transition-all">
+              Post a Job <ArrowRight size={14} />
+            </Button>
+          </Card>
+        </div>
+      </Container>
+    )
+  }
+
+  return (
+    <Container className="min-h-[80vh] flex items-center justify-center py-24 page-transition">
+      <Card className="w-full max-w-lg p-12 border border-white/5 bg-card/50 backdrop-blur-xl shadow-2xl space-y-10 relative overflow-hidden rounded-[40px]">
+        <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
+        
+        <button onClick={() => setRole(null)} className="text-[10px] font-black tracking-widest text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
+          <ArrowRight size={12} className="rotate-180" /> Change Path
+        </button>
+
+        <div className="space-y-2">
+          <h2 className="text-3xl md:text-4xl font-black tracking-tighter leading-none">
+            {role === 'company' ? 'Build Your Team.' : 'Fuel Your Career.'}
+          </h2>
+          <p className="text-muted-foreground font-medium">Create your professional account in seconds.</p>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <Button variant="outline" className="h-14 font-bold tracking-widest text-[10px] gap-3 border-white/10 hover:bg-white/5">
+            <Google size={16} /> Google
+          </Button>
+          <Button variant="outline" className="h-14 font-bold tracking-widest text-[10px] gap-3 border-white/10 hover:bg-white/5">
+            <Github size={16} /> GitHub
+          </Button>
+        </div>
+
+        <div className="flex items-center gap-4">
+          <div className="h-px bg-white/5 flex-1" />
+          <span className="text-[10px] font-black tracking-widest text-muted-foreground/30">Or with email</span>
+          <div className="h-px bg-white/5 flex-1" />
+        </div>
+
+        <form onSubmit={handleRegister} className="space-y-6">
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Full Name</label>
+              <div className="relative">
+                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <input type="text" placeholder="Alex Rivera" className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Work Email</label>
+              <div className="relative">
+                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <input type="email" placeholder="alex@company.com" className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Password</label>
+              <div className="relative">
+                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                <input type="password" placeholder="••••••••" className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium" />
+              </div>
+            </div>
+          </div>
+
+          <label className="flex items-start gap-3 cursor-pointer group">
+            <input type="checkbox" required className="mt-1 rounded border-white/10 bg-secondary text-primary focus:ring-primary" />
+            <span className="text-[11px] text-muted-foreground leading-relaxed font-medium group-hover:text-foreground transition-colors">
+              I am over 18 years old and I agree to the <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+            </span>
+          </label>
+
+          <Button type="submit" className="w-full bg-primary text-primary-foreground font-black tracking-widest h-16 cta-glow text-xs">
+            Create Account
+          </Button>
+        </form>
+
+        <div className="text-center pt-2">
+          <p className="text-xs text-muted-foreground font-medium">Already have an account? <Link to="/admin/login" className="text-primary font-bold hover:underline">Sign In</Link></p>
+        </div>
+      </Card>
+    </Container>
+  )
+}

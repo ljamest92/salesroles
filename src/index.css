@@ -1,0 +1,216 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Lora:ital,wght@0,400..700;1,400..700&family=IBM+Plex+Mono:ital,wght@0,100..700;1,100..700&family=Plus+Jakarta+Sans:wght@200..800&family=Manrope:wght@200..800&display=swap');
+
+/* ─────────────────────────────────────────────────────────────────────────────
+   Blink UI Theme CSS
+   REQUIRED for @blinkdotnew/ui components to render correctly.
+   BlinkUIProvider adds .theme-{name} + .dark/.light to <html>,
+   activating the matching CSS variable set below.
+   ───────────────────────────────────────────────────────────────────────────── */
+@import '@blinkdotnew/ui/styles';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  /* Full viewport chain so AppShell / Sidebar h-full + flex-1 SidebarContent work */
+  html {
+    height: 100%;
+  }
+
+  #root {
+    min-height: 100%;
+    min-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body {
+    min-height: 100%;
+    min-height: 100dvh;
+    @apply bg-background text-foreground;
+    font-family: 'Manrope', var(--font-sans), sans-serif;
+    letter-spacing: var(--tracking-normal);
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Plus Jakarta Sans', var(--font-heading), sans-serif;
+    text-transform: none !important;
+  }
+}
+
+/* ── App palette (unlayered, after utilities) ─────────────────────────────────
+   Overrides @blinkdotnew/ui theme colors. @layer base loses specificity to UI themes.
+   Dark mode uses :root.dark + .theme-*.dark to match BlinkUIProvider.
+   Emerald #10B981 (HSL: 161 84% 39%) is the primary brand color.
+   ──────────────────────────────────────────────────────────────────────────── */
+:root {
+  --background: 222 47% 3%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 5%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 3%;
+  --popover-foreground: 210 40% 98%;
+  --primary: 161 84% 39%;
+  --primary-foreground: 161 84% 95%;
+  --secondary: 217 32% 14%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 32% 14%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 161 84% 39%;
+  --accent-foreground: 161 84% 95%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 32% 14%;
+  --input: 217 32% 14%;
+  --ring: 161 84% 39%;
+
+  /* Charts */
+  --chart-1: 161 84% 39%;
+  --chart-2: 161 84% 50%;
+  --chart-3: 161 84% 60%;
+  --chart-4: 161 84% 30%;
+  --chart-5: 161 84% 20%;
+
+  /* Sidebar */
+  --sidebar: 222 47% 4%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 161 84% 39%;
+  --sidebar-primary-foreground: 161 84% 95%;
+  --sidebar-accent: 217 32% 14%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 32% 14%;
+  --sidebar-ring: 161 84% 39%;
+
+  /* Fonts */
+  --font-sans: 'Manrope', sans-serif;
+  --font-heading: 'Plus Jakarta Sans', sans-serif;
+  --font-mono: 'IBM Plex Mono', monospace;
+
+  /* Shadows */
+  --shadow-2xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+  --shadow-xs: 0px 4px 8px -1px hsl(0 0% 0% / 0.05);
+  --shadow-sm: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
+  --shadow: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 1px 2px -2px hsl(0 0% 0% / 0.10);
+  --shadow-md: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 2px 4px -2px hsl(0 0% 0% / 0.10);
+  --shadow-lg: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 4px 6px -2px hsl(0 0% 0% / 0.10);
+  --shadow-xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.10), 0px 8px 10px -2px hsl(0 0% 0% / 0.10);
+  --shadow-2xl: 0px 4px 8px -1px hsl(0 0% 0% / 0.25);
+
+  /* Misc */
+  --tracking-normal: -0.01em;
+  --tracking-tight: -0.03em;
+  --tracking-tighter: -0.05em;
+  --spacing: 0.25rem;
+  --radius: 0.5rem;
+}
+
+:root.dark,
+.theme-linear.dark,
+.theme-glass.dark,
+.theme-midnight.dark,
+.theme-minimal.dark {
+  /* ⚠️ AGENT MUST REPLACE: Dark mode colors - replace with your custom dark palette */
+  --background: 222 47% 4%;
+  --foreground: 210 40% 98%;
+  --card: 222 47% 6%;
+  --card-foreground: 210 40% 98%;
+  --popover: 222 47% 4%;
+  --popover-foreground: 210 40% 98%;
+  /* ⚠️ PLACEHOLDER: Replace with your custom dark mode primary color */
+  --primary: 161 84% 39%;
+  --primary-foreground: 161 84% 95%;
+  --secondary: 217 32% 17%;
+  --secondary-foreground: 210 40% 98%;
+  --muted: 217 32% 17%;
+  --muted-foreground: 215 20.2% 65.1%;
+  --accent: 161 84% 39%;
+  --accent-foreground: 161 84% 95%;
+  --destructive: 0 84% 60%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 217 32% 17%;
+  --input: 217 32% 17%;
+  --ring: 161 84% 39%;
+
+  /* ⚠️ PLACEHOLDER: Replace with your custom dark mode chart colors */
+  --chart-1: 142 70% 50%;
+  --chart-2: 160 84% 39%;
+  --chart-3: 142 70% 60%;
+  --chart-4: 142 70% 40%;
+  --chart-5: 142 70% 70%;
+
+  /* ⚠️ PLACEHOLDER: Replace with your custom dark mode sidebar colors */
+  --sidebar: 222 47% 6%;
+  --sidebar-foreground: 210 40% 98%;
+  --sidebar-primary: 142 70% 50%;
+  --sidebar-primary-foreground: 144 33% 8%;
+  --sidebar-accent: 217 32% 17%;
+  --sidebar-accent-foreground: 210 40% 98%;
+  --sidebar-border: 217 32% 17%;
+  --sidebar-ring: 142 70% 50%;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.page-transition {
+  @apply animate-fade-in;
+}
+
+.job-card-hover {
+  @apply transition-all duration-500 hover:bg-card/80 hover:border-primary/40 hover:shadow-[0_0_30px_rgba(16,185,129,0.08)] hover:-translate-y-1 relative;
+}
+
+.job-card-hover::after {
+  content: '';
+  @apply absolute inset-0 rounded-[inherit] opacity-0 transition-opacity duration-500 pointer-events-none;
+  box-shadow: inset 0 0 20px rgba(16,185,129,0.05);
+}
+
+.job-card-hover:hover::after {
+  @apply opacity-100;
+}
+
+.cta-glow {
+  @apply relative overflow-hidden transition-all duration-300 hover:shadow-[0_0_25px_rgba(16,185,129,0.4)] active:scale-[0.98] hover:brightness-110;
+}
+
+.cta-glow::before {
+  content: '';
+  @apply absolute inset-0 bg-gradient-to-r from-transparent via-white/10 to-transparent -translate-x-full transition-transform duration-500;
+}
+
+.cta-glow:hover::before {
+  @apply translate-x-full;
+}
+
+.validation-error {
+  @apply text-destructive text-[11px] font-bold tracking-wider mt-1.5 animate-slide-up flex items-center gap-1.5 italic;
+}
+
+.footer-weight {
+  @apply border-t border-primary/30 pt-16 mt-32 bg-gradient-to-b from-transparent to-primary/5;
+}
+
+.glass {
+  @apply bg-background/60 backdrop-blur-xl border-b border-white/5 sticky top-0 z-50;
+}
+
+.glass-card {
+  @apply bg-card/40 backdrop-blur-md border border-white/10 hover:border-primary/30 transition-all duration-300;
+}
+
+.text-title {
+  @apply text-foreground font-black tracking-tighter;
+}
