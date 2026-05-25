@@ -1,0 +1,27 @@
+SalesRoles.co Full Documentation
+
+Mission:
+To provide global remote and on-site sales job listings with mandatory transparent compensation (base, OTE, commission) in a modern, visually striking interface.
+
+Page Descriptions:
+- /: Hero section with search, stats, featured jobs, and social proof.
+- /jobs: Filterable list of all roles (Remote/Hybrid/On-site, Sector, Seniority, Salary).
+- /jobs/[slug]: Detailed job view with full comp breakdown and structured data.
+- /post-job: Multi-step form for companies to post jobs with preview and payment.
+- /pricing: Standard ($99), Featured ($249), and Unlimited ($999/yr) plans.
+- /dashboard: Manage listings for companies and profiles for candidates.
+- /admin: Moderation, approval, and system stats for site owners.
+- /blog: Sales career advice, salary guides, and industry news.
+- /salary-insights: Benchmarking data derived from live listings.
+
+Salary Benchmarking Structure:
+We track Base Salary, On-Target Earnings (OTE), Commission Structure, and Quotas across:
+- Roles: SDR, AE, Account Manager, Sales Director, VP Sales.
+- Regions: USA, UK, Australia, EU, Remote.
+- Sectors: SaaS, FinTech, HealthTech, hardware, Services.
+
+Blog Categories:
+- Sales Career Advice
+- Salary Guides
+- Interview Tips
+- Industry News

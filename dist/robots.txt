@@ -1,0 +1,17 @@
+User-agent: *
+Allow: /
+Allow: /jobs
+Allow: /blog
+Allow: /about
+Allow: /pricing
+Allow: /contact
+Allow: /faq
+Allow: /remote-sales-jobs
+Allow: /account-executive-jobs
+Allow: /sales-development-representative-jobs
+
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /settings
+
+Sitemap: https://salesroles.co/sitemap.xml
