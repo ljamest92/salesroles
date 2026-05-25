@@ -594,6 +594,17 @@ app.get('/api/company/pending-jobs', async (c) => {
         return c.json([]);
     }
 });
+// --- Test endpoint: simulate Stripe webhook payment completion ---
+app.post('/api/test/simulate-payment', async (c) => {
+    if (process.env.NODE_ENV === 'production' && !process.env.ENABLE_PAYMENT_TEST) {
+        return c.json({ error: 'Not available' }, 403);
+    }
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const { jobId } = await c.req.json();
+    await pool.execute("UPDATE jobs SET status = 'pending' WHERE id = ?", [jobId]);
+    return c.json({ ok: true, message: `Job ${jobId} moved to pending` });
+});
 // --- Static file serving (production) ---
 const mimeTypes = {
     '.html': 'text/html',
