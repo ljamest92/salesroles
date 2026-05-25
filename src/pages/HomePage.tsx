@@ -3,12 +3,12 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, StatGroup, Stat, Input, Card, Badge, Container } from '@blinkdotnew/ui'
 import { Search, MapPin, Briefcase, DollarSign, TrendingUp, Building2, Quote, Star } from 'lucide-react'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
-import { getCompanyLogoUrl } from '../lib/utils'
+import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
 
 export function HomePage() {
   const [partnerJobs, setPartnerJobs] = useState<Job[]>([])
-  const [topCompanies, setTopCompanies] = useState<{name: string, count: number, logo_url: string}[]>([])
+  const [topCompanies, setTopCompanies] = useState<{name: string, count: number, domain: string | null}[]>([])
   const [searchQuery, setSearchQuery] = useState('')
   const [locationQuery, setLocationQuery] = useState('')
   const navigate = useNavigate()
@@ -17,11 +17,6 @@ export function HomePage() {
     companies: 0,
     avgOte: '$0'
   })
-
-  const getFallbackLogo = (name: string) => {
-    const letter = name.charAt(0).toUpperCase();
-    return `https://ui-avatars.com/api/?name=${letter}&background=0D0D0D&color=10B981&size=128&font-size=0.5&bold=true`;
-  };
 
   useEffect(() => {
     const loadData = async () => {
@@ -103,11 +98,7 @@ export function HomePage() {
               }
             })
             const top6 = Array.from(cMap.entries())
-              .map(([name, { count, domain }]) => ({
-                name,
-                count,
-                logo_url: getCompanyLogoUrl(domain) || getFallbackLogo(name)
-              }))
+              .map(([name, { count, domain }]) => ({ name, count, domain }))
               .sort((a, b) => b.count - a.count)
               .slice(0, 6)
             if (top6.length > 0) {
@@ -120,17 +111,17 @@ export function HomePage() {
         }
 
         if (!companiesSet) {
-          const seedMap = new Map<string, { count: number; logo_url: string }>()
+          const seedMap = new Map<string, { count: number; domain: string | null }>()
           allJobs.forEach(j => {
             const existing = seedMap.get(j.company)
             if (existing) {
-              seedMap.set(j.company, { count: existing.count + 1, logo_url: existing.logo_url })
+              seedMap.set(j.company, { count: existing.count + 1, domain: existing.domain })
             } else {
-              seedMap.set(j.company, { count: 1, logo_url: getCompanyLogoUrl(j.domain) || j.logo_url || getFallbackLogo(j.company) })
+              seedMap.set(j.company, { count: 1, domain: j.domain || null })
             }
           })
           const fallback6 = Array.from(seedMap.entries())
-            .map(([name, { count, logo_url }]) => ({ name, count, logo_url }))
+            .map(([name, { count, domain }]) => ({ name, count, domain }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 6)
           setTopCompanies(fallback6)
@@ -258,13 +249,7 @@ export function HomePage() {
                   <div className="flex flex-col md:flex-row justify-between gap-8">
                     <div className="flex gap-6">
                       <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/50 overflow-hidden relative">
-                        <img
-                          src={getCompanyLogoUrl(job.domain) ?? getFallbackLogo(job.company)}
-                          alt={job.company}
-                          className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                          onError={(e) => { e.currentTarget.src = getFallbackLogo(job.company) }}
-                        />
-                        <Building2 size={32} className="absolute z-[-1]" />
+                        <CompanyLogo domain={job.domain} name={job.company} imgClassName="grayscale group-hover:grayscale-0 transition-all duration-700" />
                       </div>
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
@@ -404,15 +389,7 @@ export function HomePage() {
                     <div className="bg-card p-10 rounded-[32px] border border-white/5 text-center space-y-6 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_50px_rgba(16,185,129,0.12)] relative overflow-hidden h-full">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
                       <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground border border-white/5 group-hover:border-primary/30 transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden relative">
-                         <img
-                           src={company.logo_url}
-                           alt={company.name}
-                           className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                           onError={(e) => {
-                             e.currentTarget.src = getFallbackLogo(company.name);
-                           }}
-                         />
-                         <Building2 size={36} className="absolute z-[-1]" />
+                        <CompanyLogo domain={company.domain} name={company.name} imgClassName="grayscale group-hover:grayscale-0 transition-all duration-700" />
                       </div>
                       <div>
                         <h3 className="font-black group-hover:text-primary transition-colors text-xl tracking-tight leading-none">{company.name}</h3>

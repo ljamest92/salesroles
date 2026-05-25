@@ -3,7 +3,7 @@ import { useParams, Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, StatGroup, Stat, Toaster, toast, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Globe, Briefcase, Users, Building2, ExternalLink, Check, Copy } from 'lucide-react'
 import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
-import { getCompanyLogoUrl } from '../lib/utils'
+import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 
@@ -24,11 +24,6 @@ export function CompanyProfilePage() {
   const [isFollowed, setIsFollowed] = useState(false)
   const [companyData, setCompanyData] = useState<any>(null)
   const [badgeCopied, setBadgeCopied] = useState(false)
-
-  const getFallbackLogo = (name: string) => {
-    const letter = name.charAt(0).toUpperCase();
-    return `https://ui-avatars.com/api/?name=${letter}&background=0D0D0D&color=10B981&size=128&font-size=0.5&bold=true`;
-  };
 
   // Resolve the correct domain for Clearbit — seed map first, then generic fallback
   const companyDomain = SEED_COMPANY_DOMAINS[id.toLowerCase()] || `${id}.com`
@@ -160,13 +155,7 @@ export function CompanyProfilePage() {
       <Container>
         <div className="flex flex-col md:flex-row gap-12 items-start animate-fade-in">
           <div className="w-32 h-32 rounded-[32px] bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative group">
-            <img
-              src={getCompanyLogoUrl(companyDomain) ?? getFallbackLogo(companyData.name)}
-              alt={companyData.name}
-              className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-              onError={(e) => { e.currentTarget.src = getFallbackLogo(companyData.name) }}
-            />
-            <Building2 size={64} className="absolute z-[-1]" />
+            <CompanyLogo domain={companyDomain} name={companyData.name} imgClassName="grayscale group-hover:grayscale-0 transition-all duration-700" />
           </div>
           <div className="space-y-8 flex-1">
             <div className="space-y-4">
