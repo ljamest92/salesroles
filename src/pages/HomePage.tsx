@@ -3,6 +3,7 @@ import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, StatGroup, Stat, Input, Card, Badge, Container } from '@blinkdotnew/ui'
 import { Search, MapPin, Briefcase, DollarSign, TrendingUp, Building2, Quote, Star } from 'lucide-react'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
+import { getCompanyLogoUrl } from '../lib/utils'
 import { motion } from 'framer-motion'
 
 export function HomePage() {
@@ -105,7 +106,7 @@ export function HomePage() {
               .map(([name, { count, domain }]) => ({
                 name,
                 count,
-                logo_url: `https://logo.clearbit.com/${domain}`
+                logo_url: getCompanyLogoUrl(domain) || getFallbackLogo(name)
               }))
               .sort((a, b) => b.count - a.count)
               .slice(0, 6)
@@ -125,7 +126,7 @@ export function HomePage() {
             if (existing) {
               seedMap.set(j.company, { count: existing.count + 1, logo_url: existing.logo_url })
             } else {
-              seedMap.set(j.company, { count: 1, logo_url: j.logo_url || `https://logo.clearbit.com/${j.company.toLowerCase().replace(/[^a-z0-9]/g, '')}.com` })
+              seedMap.set(j.company, { count: 1, logo_url: getCompanyLogoUrl(j.domain) || j.logo_url || getFallbackLogo(j.company) })
             }
           })
           const fallback6 = Array.from(seedMap.entries())
@@ -257,13 +258,11 @@ export function HomePage() {
                   <div className="flex flex-col md:flex-row justify-between gap-8">
                     <div className="flex gap-6">
                       <div className="w-16 h-16 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/50 overflow-hidden relative">
-                        <img 
-                          src={job.logo_url} 
+                        <img
+                          src={getCompanyLogoUrl(job.domain) ?? getFallbackLogo(job.company)}
                           alt={job.company}
                           className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-                          onError={(e) => {
-                            e.currentTarget.src = getFallbackLogo(job.company);
-                          }}
+                          onError={(e) => { e.currentTarget.src = getFallbackLogo(job.company) }}
                         />
                         <Building2 size={32} className="absolute z-[-1]" />
                       </div>
@@ -406,7 +405,7 @@ export function HomePage() {
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
                       <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground border border-white/5 group-hover:border-primary/30 transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden relative">
                          <img
-                           src={company.logo_url || `https://logo.clearbit.com/${company.name.toLowerCase().replace(/[^a-z0-9]/g, '')}.com`}
+                           src={company.logo_url}
                            alt={company.name}
                            className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
                            onError={(e) => {

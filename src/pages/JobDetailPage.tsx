@@ -4,6 +4,7 @@ import { Button, Container, Card, Badge, toast, Toaster, Skeleton } from '@blink
 import { MapPin, Briefcase, DollarSign, Calendar, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight } from 'lucide-react'
 import { ReportModal } from '../components/ReportModal'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
+import { getCompanyLogoUrl } from '../lib/utils'
 
 export function JobDetailPage() {
   const { slug } = useParams({ from: '/jobs/$slug' })
@@ -132,12 +133,10 @@ export function JobDetailPage() {
               <div className="flex gap-6">
                 <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
                   <img
-                    src={job.logo_url}
+                    src={getCompanyLogoUrl(job.domain) ?? getFallbackLogo(job.company)}
                     alt={job.company}
                     className="w-full h-full object-cover grayscale transition-all duration-700"
-                    onError={(e) => {
-                      e.currentTarget.src = getFallbackLogo(job.company)
-                    }}
+                    onError={(e) => { e.currentTarget.src = getFallbackLogo(job.company) }}
                   />
                 </div>
                 <div className="space-y-3">
@@ -254,12 +253,10 @@ export function JobDetailPage() {
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-lg overflow-hidden">
                   <img
-                    src={job.logo_url}
+                    src={getCompanyLogoUrl(job.domain) ?? getFallbackLogo(job.company)}
                     alt={job.company}
                     className="w-full h-full object-cover grayscale transition-all duration-700"
-                    onError={(e) => {
-                      e.currentTarget.src = getFallbackLogo(job.company)
-                    }}
+                    onError={(e) => { e.currentTarget.src = getFallbackLogo(job.company) }}
                   />
                 </div>
                 <div>
@@ -318,7 +315,7 @@ export function JobDetailPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground border border-border/50 overflow-hidden">
                     <img
-                      src={relJob.logo_url}
+                      src={getCompanyLogoUrl(relJob.domain) ?? getFallbackLogo(relJob.company)}
                       alt={relJob.company}
                       className="w-full h-full object-cover"
                       onError={(e) => { e.currentTarget.src = getFallbackLogo(relJob.company) }}

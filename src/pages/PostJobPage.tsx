@@ -73,6 +73,10 @@ export function PostJobPage() {
                 <input type="text" placeholder="e.g. HubSpot" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium" />
               </div>
               <div className="space-y-2">
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Company Website</label>
+                <input type="text" placeholder="e.g. hubspot.com" className="w-full bg-secondary border border-white/5 rounded-xl px-4 py-4 focus:outline-none focus:border-primary/50 transition-all font-medium" />
+              </div>
+              <div className="space-y-2">
                 <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Sector</label>
                 <Select>
                   <SelectTrigger className="w-full bg-secondary border-border py-6">

@@ -7,7 +7,7 @@ import { CookieConsent } from '../components/CookieConsent'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function AppLayout() {
-  const { user, login, logout } = useAuth()
+  const { user, logout } = useAuth()
   const location = useLocation()
 
   return (
@@ -50,7 +50,9 @@ export function AppLayout() {
               </>
             ) : (
               <>
-                <Button variant="ghost" size="sm" onClick={() => login()} className="font-bold tracking-widest text-[10px] hidden sm:flex">Log In</Button>
+                <Link to="/register">
+                  <Button variant="ghost" size="sm" className="font-bold tracking-widest text-[10px] hidden sm:flex">Log In</Button>
+                </Link>
                 <Link to="/post-job">
                   <Button size="sm" className="bg-primary text-primary-foreground font-black tracking-widest text-[10px] h-11 px-6 cta-glow">Post a Job</Button>
                 </Link>
@@ -120,9 +122,14 @@ export function AppLayout() {
             </div>
           </div>
           <div className="mt-24 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-[11px] font-black tracking-[0.15em] text-muted-foreground/40">
-              © {new Date().getFullYear()} SalesRoles.co. Built for Sales Professionals.
-            </p>
+            <div className="flex flex-col gap-1">
+              <p className="text-[11px] font-black tracking-[0.15em] text-muted-foreground/40">
+                © {new Date().getFullYear()} SalesRoles.co. Built for Sales Professionals.
+              </p>
+              <p className="text-[10px] text-muted-foreground/25">
+                <a href="https://logos.apistemic.com" target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground/50 transition-colors">Logos by apistemic</a>
+              </p>
+            </div>
             <div className="flex gap-8">
                <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><Briefcase size={16} /></a>
                <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><User size={16} /></a>

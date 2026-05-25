@@ -3,6 +3,7 @@ import { useParams, Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, StatGroup, Stat, Toaster, toast, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Globe, Briefcase, Users, Building2, ExternalLink, Check, Copy } from 'lucide-react'
 import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
+import { getCompanyLogoUrl } from '../lib/utils'
 import { motion } from 'framer-motion'
 import { useAuth } from '../hooks/useAuth'
 
@@ -160,12 +161,10 @@ export function CompanyProfilePage() {
         <div className="flex flex-col md:flex-row gap-12 items-start animate-fade-in">
           <div className="w-32 h-32 rounded-[32px] bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative group">
             <img
-              src={`https://logo.clearbit.com/${companyDomain}`}
+              src={getCompanyLogoUrl(companyDomain) ?? getFallbackLogo(companyData.name)}
               alt={companyData.name}
               className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700"
-              onError={(e) => {
-                e.currentTarget.src = getFallbackLogo(companyData.name)
-              }}
+              onError={(e) => { e.currentTarget.src = getFallbackLogo(companyData.name) }}
             />
             <Building2 size={64} className="absolute z-[-1]" />
           </div>

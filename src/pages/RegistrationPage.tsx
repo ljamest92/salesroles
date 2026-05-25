@@ -2,18 +2,39 @@ import React, { useState } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, Card, Container, Badge } from '@blinkdotnew/ui'
 import { User, Building2, Mail, Lock, CheckCircle2, ArrowRight, LogIn } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 
 export function RegistrationPage() {
   const [role, setRole] = useState<'candidate' | 'company' | null>(null)
+  const [isLogin, setIsLogin] = useState(false)
+  const [name, setName] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState('')
+  const { register, loginWithCredentials } = useAuth()
   const navigate = useNavigate()
 
-  const handleRegister = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    // Simulate registration
-    navigate({ to: role === 'company' ? '/company/dashboard' : '/candidate/dashboard' })
+    setError('')
+    setIsSubmitting(true)
+    try {
+      if (isLogin) {
+        const u = await loginWithCredentials(email, password)
+        navigate({ to: '/dashboard', search: { mode: u.role === 'company' ? 'company' : 'candidate' } as any })
+      } else {
+        const u = await register(name, email, password, role || 'candidate')
+        navigate({ to: '/dashboard', search: { mode: u.role === 'company' ? 'company' : 'candidate' } as any })
+      }
+    } catch (err: any) {
+      setError(err.message || 'Something went wrong. Please try again.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
-  if (!role) {
+  if (!role && !isLogin) {
     return (
       <Container className="min-h-[80vh] flex flex-col items-center justify-center py-24 space-y-12 page-transition">
         <div className="text-center space-y-4">
@@ -23,7 +44,7 @@ export function RegistrationPage() {
         </div>
 
         <div className="grid md:grid-cols-2 gap-8 w-full max-w-4xl">
-          <Card 
+          <Card
             onClick={() => setRole('candidate')}
             className="p-12 border-2 border-white/5 bg-card/30 hover:border-primary/50 transition-all cursor-pointer group text-center space-y-6 rounded-[40px] relative overflow-hidden"
           >
@@ -40,7 +61,7 @@ export function RegistrationPage() {
             </Button>
           </Card>
 
-          <Card 
+          <Card
             onClick={() => setRole('company')}
             className="p-12 border-2 border-white/5 bg-card/30 hover:border-primary/50 transition-all cursor-pointer group text-center space-y-6 rounded-[40px] relative overflow-hidden"
           >
@@ -57,6 +78,11 @@ export function RegistrationPage() {
             </Button>
           </Card>
         </div>
+
+        <p className="text-xs text-muted-foreground font-medium">
+          Already have an account?{' '}
+          <button onClick={() => setIsLogin(true)} className="text-primary font-bold hover:underline">Sign In</button>
+        </p>
       </Container>
     )
   }
@@ -65,16 +91,21 @@ export function RegistrationPage() {
     <Container className="min-h-[80vh] flex items-center justify-center py-24 page-transition">
       <Card className="w-full max-w-lg p-12 border border-white/5 bg-card/50 backdrop-blur-xl shadow-2xl space-y-10 relative overflow-hidden rounded-[40px]">
         <div className="absolute top-0 left-0 w-full h-1 bg-primary" />
-        
-        <button onClick={() => setRole(null)} className="text-[10px] font-black tracking-widest text-muted-foreground hover:text-primary transition-colors flex items-center gap-2">
-          <ArrowRight size={12} className="rotate-180" /> Change Path
+
+        <button
+          onClick={() => { setRole(null); setIsLogin(false); setError('') }}
+          className="text-[10px] font-black tracking-widest text-muted-foreground hover:text-primary transition-colors flex items-center gap-2"
+        >
+          <ArrowRight size={12} className="rotate-180" /> {isLogin ? 'Back' : 'Change Path'}
         </button>
 
         <div className="space-y-2">
           <h2 className="text-3xl md:text-4xl font-black tracking-tighter leading-none">
-            {role === 'company' ? 'Build Your Team.' : 'Fuel Your Career.'}
+            {isLogin ? 'Welcome Back.' : role === 'company' ? 'Build Your Team.' : 'Fuel Your Career.'}
           </h2>
-          <p className="text-muted-foreground font-medium">Create your professional account in seconds.</p>
+          <p className="text-muted-foreground font-medium">
+            {isLogin ? 'Sign in to your account.' : 'Create your professional account in seconds.'}
+          </p>
         </div>
 
         <div className="grid grid-cols-2 gap-4">
@@ -92,45 +123,86 @@ export function RegistrationPage() {
           <div className="h-px bg-white/5 flex-1" />
         </div>
 
-        <form onSubmit={handleRegister} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6">
           <div className="space-y-4">
-            <div className="space-y-2">
-              <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Full Name</label>
-              <div className="relative">
-                <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input type="text" placeholder="Alex Rivera" className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium" />
+            {!isLogin && (
+              <div className="space-y-2">
+                <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Full Name</label>
+                <div className="relative">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Alex Rivera"
+                    className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
+                  />
+                </div>
               </div>
-            </div>
+            )}
             <div className="space-y-2">
               <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Work Email</label>
               <div className="relative">
                 <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input type="email" placeholder="alex@company.com" className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium" />
+                <input
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="alex@company.com"
+                  className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
+                />
               </div>
             </div>
             <div className="space-y-2">
               <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/50">Password</label>
               <div className="relative">
                 <Lock className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-                <input type="password" placeholder="••••••••" className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium" />
+                <input
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                  className="w-full bg-secondary/50 border border-white/5 rounded-xl pl-12 pr-4 py-4 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
+                />
               </div>
             </div>
           </div>
 
-          <label className="flex items-start gap-3 cursor-pointer group">
-            <input type="checkbox" required className="mt-1 rounded border-white/10 bg-secondary text-primary focus:ring-primary" />
-            <span className="text-[11px] text-muted-foreground leading-relaxed font-medium group-hover:text-foreground transition-colors">
-              I am over 18 years old and I agree to the <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
-            </span>
-          </label>
+          {!isLogin && (
+            <label className="flex items-start gap-3 cursor-pointer group">
+              <input type="checkbox" required className="mt-1 rounded border-white/10 bg-secondary text-primary focus:ring-primary" />
+              <span className="text-[11px] text-muted-foreground leading-relaxed font-medium group-hover:text-foreground transition-colors">
+                I am over 18 years old and I agree to the{' '}
+                <Link to="/terms" className="text-primary hover:underline">Terms of Service</Link> and{' '}
+                <Link to="/privacy" className="text-primary hover:underline">Privacy Policy</Link>.
+              </span>
+            </label>
+          )}
 
-          <Button type="submit" className="w-full bg-primary text-primary-foreground font-black tracking-widest h-16 cta-glow text-xs">
-            Create Account
+          {error && (
+            <p className="text-sm text-destructive font-medium bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">{error}</p>
+          )}
+
+          <Button type="submit" disabled={isSubmitting} className="w-full bg-primary text-primary-foreground font-black tracking-widest h-16 cta-glow text-xs">
+            {isSubmitting ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
           </Button>
         </form>
 
         <div className="text-center pt-2">
-          <p className="text-xs text-muted-foreground font-medium">Already have an account? <Link to="/admin/login" className="text-primary font-bold hover:underline">Sign In</Link></p>
+          {isLogin ? (
+            <p className="text-xs text-muted-foreground font-medium">
+              Don't have an account?{' '}
+              <button onClick={() => { setIsLogin(false); setError('') }} className="text-primary font-bold hover:underline">Register</button>
+            </p>
+          ) : (
+            <p className="text-xs text-muted-foreground font-medium">
+              Already have an account?{' '}
+              <button onClick={() => { setIsLogin(true); setError('') }} className="text-primary font-bold hover:underline">Sign In</button>
+            </p>
+          )}
         </div>
       </Card>
     </Container>
