@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import {
   Button,
   Container,
@@ -8,12 +8,13 @@ import {
   StatGroup,
   Stat,
 } from '@blinkdotnew/ui'
-import { ShieldCheck, ShieldAlert, Users, Briefcase, DollarSign, Eye, Search, Check, X, AlertTriangle, Building2, LogOut } from 'lucide-react'
+import { ShieldCheck, ShieldAlert, Users, Briefcase, DollarSign, Check, X, AlertTriangle, LogOut, Trash2, Settings } from 'lucide-react'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { getDomain } from '../utils/getDomain'
 
 export function AdminPage() {
   const navigate = useNavigate()
+  const [settingsOpen, setSettingsOpen] = useState(false)
   const [stats, setStats] = useState({
     listings: 0,
     revenue: '$0',
@@ -23,6 +24,7 @@ export function AdminPage() {
   })
   const [pendingJobs, setPendingJobs] = useState<any[]>([])
   const [reports, setReports] = useState<any[]>([])
+  const [liveJobs, setLiveJobs] = useState<any[]>([])
   const [activeTab, setActiveTab] = useState('pending')
 
   const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('admin_auth') === 'true'
@@ -41,31 +43,21 @@ export function AdminPage() {
         } catch { return {} }
       }
 
-      const [jobsData, candidatesData, paymentsData, reportsData, pendingData] = await Promise.all([
-        fetchSafe('/api/jobs?status=live'),
-        fetchSafe('/api/candidates'),
-        fetchSafe('/api/payments'),
-        fetchSafe('/api/reports?status=open'),
-        fetchSafe('/api/jobs?status=pending')
+      const [adminStats, jobsData] = await Promise.all([
+        fetchSafe('/api/admin/stats'),
+        fetchSafe('/api/jobs'),
       ])
 
-      const allJobs = jobsData.jobs || []
-      const allCandidates = candidatesData.candidates || []
-      const allPayments = paymentsData.payments || []
-      const allReports = reportsData.reports || []
-      const pendingList = pendingData.jobs || []
-
-      const totalRevenue = allPayments.reduce((sum: number, p: any) => sum + (p.amount || 0), 0)
+      const allJobs: any[] = jobsData.jobs || []
 
       setStats({
-        listings: allJobs.length,
-        revenue: `$${totalRevenue.toLocaleString()}`,
-        candidates: allCandidates.length,
-        pending: pendingList.length,
-        reports: allReports.length
+        listings: adminStats.liveListings || 0,
+        revenue: '$0',
+        candidates: adminStats.candidates || 0,
+        pending: 0,
+        reports: 0,
       })
-      setPendingJobs(pendingList)
-      setReports(allReports)
+      setLiveJobs(allJobs)
     }
 
     loadData()
@@ -74,6 +66,27 @@ export function AdminPage() {
   const handleLogout = () => {
     sessionStorage.removeItem('admin_auth')
     navigate({ to: '/admin/login' })
+  }
+
+  const handleRemoveJob = async (id: string) => {
+    if (!confirm('Remove this listing?')) return
+    const adminPassword = prompt('Admin password:')
+    if (!adminPassword) return
+    try {
+      const res = await fetch(`/api/admin/jobs/${id}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: adminPassword }),
+      })
+      if (res.ok) {
+        setLiveJobs(prev => prev.filter(j => j.id !== id))
+        setStats(prev => ({ ...prev, listings: prev.listings - 1 }))
+      } else {
+        alert('Failed to remove listing.')
+      }
+    } catch {
+      alert('Failed to remove listing.')
+    }
   }
 
   if (!isAuth) return null
@@ -91,9 +104,38 @@ export function AdminPage() {
           <Button variant="outline" size="sm" onClick={handleLogout} className="gap-2">
             <LogOut size={16} /> Logout
           </Button>
-          <Button size="sm" className="bg-primary text-primary-foreground font-bold">System Settings</Button>
+          <Button
+            size="sm"
+            className="bg-primary text-primary-foreground font-bold gap-2"
+            onClick={() => setSettingsOpen(o => !o)}
+          >
+            <Settings size={16} /> System Settings
+          </Button>
         </div>
       </div>
+
+      {settingsOpen && (
+        <div className="bg-white/5 border border-white/10 rounded-xl p-6">
+          <h2 className="text-white font-semibold text-lg mb-4">System Settings</h2>
+          <div className="space-y-3 text-sm text-white/60">
+            <div className="flex justify-between">
+              <span>Platform</span><span className="text-white">SalesRoles.co</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Contact</span><span className="text-white">info@salesroles.co</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Standard Listing</span><span className="text-white">$99 / 30 days</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Featured Listing</span><span className="text-white">$249 / 30 days</span>
+            </div>
+            <div className="flex justify-between">
+              <span>Annual Unlimited</span><span className="text-white">$999 / year</span>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="h-px bg-border" />
 
@@ -108,7 +150,7 @@ export function AdminPage() {
       <div className="flex gap-2 bg-card/50 border border-white/5 p-1 rounded-2xl w-full justify-start overflow-x-auto">
         {[
           { key: 'pending', label: `Pending Approval (${stats.pending})` },
-          { key: 'jobs', label: 'All Live Jobs' },
+          { key: 'jobs', label: `All Live Jobs (${stats.listings})` },
           { key: 'candidates', label: 'Candidates' },
           { key: 'reports', label: `Reports (${stats.reports})`, danger: true },
         ].map(tab => (
@@ -140,7 +182,7 @@ export function AdminPage() {
                 <div className="flex flex-col md:flex-row justify-between items-start gap-8">
                   <div className="flex gap-8">
                     <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-xl overflow-hidden">
-                      <CompanyLogo domain={getDomain(job.company_website, job.companyName || 'company')} name={job.companyName || 'Company'} />
+                      <CompanyLogo domain={getDomain(job.company_website, job.company_name || 'company')} name={job.company_name || 'Company'} />
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-2xl font-black tracking-tight">{job.title}</h3>
@@ -195,9 +237,40 @@ export function AdminPage() {
       )}
 
       {activeTab === 'jobs' && (
-        <Card className="p-16 text-center border-dashed border-white/10">
-          <p className="text-muted-foreground font-medium">Live job management coming soon.</p>
-        </Card>
+        <div className="space-y-4">
+          {liveJobs.length === 0 ? (
+            <Card className="p-16 text-center border-dashed border-white/10">
+              <p className="text-muted-foreground font-medium">No live listings found.</p>
+            </Card>
+          ) : (
+            liveJobs.map((job: any) => (
+              <Card key={job.id} className="p-6 border border-white/5 bg-card/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-primary/20 transition-all">
+                <div className="flex items-center gap-4">
+                  <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center border border-white/5 overflow-hidden shrink-0">
+                    <CompanyLogo domain={getDomain(job.company_website, job.company_name || 'company')} name={job.company_name || 'Company'} size={32} />
+                  </div>
+                  <div>
+                    <p className="font-black text-sm">{job.title}</p>
+                    <p className="text-xs text-muted-foreground">{job.company_name} &bull; {job.location}</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  {job.featured && (
+                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Featured</Badge>
+                  )}
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    className="text-destructive font-bold gap-2 hover:bg-destructive/10 text-xs"
+                    onClick={() => handleRemoveJob(job.id)}
+                  >
+                    <Trash2 size={14} /> Remove
+                  </Button>
+                </div>
+              </Card>
+            ))
+          )}
+        </div>
       )}
 
       {activeTab === 'candidates' && (

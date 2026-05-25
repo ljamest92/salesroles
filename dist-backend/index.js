@@ -328,6 +328,40 @@ app.get('/api/jobs/:id', async (c) => {
         return c.json({ error: 'Failed to fetch job' }, 500);
     }
 });
+// --- Admin Stats ---
+app.get('/api/admin/stats', async (c) => {
+    if (!pool)
+        return c.json({ liveListings: 0, totalRevenue: 0, candidates: 0, pendingReview: 0 });
+    try {
+        const [jobs] = await pool.execute("SELECT COUNT(*) as count FROM jobs WHERE status = 'live'");
+        const [users] = await pool.execute('SELECT COUNT(*) as count FROM users');
+        return c.json({
+            liveListings: jobs[0]?.count || 0,
+            totalRevenue: 0,
+            candidates: users[0]?.count || 0,
+            pendingReview: 0,
+        });
+    }
+    catch {
+        return c.json({ liveListings: 0, totalRevenue: 0, candidates: 0, pendingReview: 0 });
+    }
+});
+app.delete('/api/admin/jobs/:id', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    try {
+        const { password } = await c.req.json();
+        if (password !== (process.env.ADMIN_PASSWORD || 'admin123')) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+        const id = c.req.param('id');
+        await pool.execute('DELETE FROM jobs WHERE id = ?', [id]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Delete failed' }, 500);
+    }
+});
 // --- Dashboard ---
 app.get('/api/dashboard/stats', async (c) => {
     if (!pool)
