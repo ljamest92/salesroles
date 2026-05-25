@@ -1,5 +1,5 @@
-import React, { useState } from 'react'
-import { Link } from '@tanstack/react-router'
+import React, { useState, useEffect } from 'react'
+import { Link, useNavigate } from '@tanstack/react-router'
 import { 
   Button, 
   Container, 
@@ -24,10 +24,30 @@ const TabsTrigger = UITabsTrigger as any;
 const TabsContent = UITabsContent as any;
 
 export function DashboardPage() {
-  const { user } = useAuth()
+  const { user, isLoading } = useAuth()
+  const navigate = useNavigate()
   const [role, setRole] = useState<'candidate' | 'company'>('company') // Demo toggle
   const [hasJobs, setHasJobs] = useState(true) // Demo toggle for empty states
   const [hasSavedJobs, setHasSavedJobs] = useState(true) // Demo toggle
+
+  useEffect(() => {
+    if (!isLoading && !user) {
+      navigate({ to: '/register' })
+    }
+  }, [user, isLoading, navigate])
+
+  if (isLoading) {
+    return (
+      <Container className="py-24 flex items-center justify-center min-h-[60vh]">
+        <div className="space-y-4 text-center">
+          <div className="w-12 h-12 rounded-full border-2 border-primary border-t-transparent animate-spin mx-auto" />
+          <p className="text-muted-foreground font-medium text-sm">Loading your dashboard...</p>
+        </div>
+      </Container>
+    )
+  }
+
+  if (!user) return null
 
   return (
     <Container className="py-12 md:py-24 space-y-12 animate-fade-in">
