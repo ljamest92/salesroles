@@ -69,9 +69,11 @@ try {
       contact_email VARCHAR(255),
       featured TINYINT(1) DEFAULT 0,
       status VARCHAR(20) DEFAULT 'live',
+      company_id INT DEFAULT NULL,
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => {})
+  pool.execute(`ALTER TABLE jobs ADD COLUMN company_id INT DEFAULT NULL`).catch(() => {})
 } catch {}
 
 const JWT_SECRET = new TextEncoder().encode(
@@ -107,6 +109,35 @@ async function sendEmail(to: string, subject: string, html: string) {
 const stripe = process.env.STRIPE_SECRET_KEY
   ? new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' as any })
   : null
+
+// --- Stripe Webhook ---
+
+app.post('/api/webhooks/stripe', async (c) => {
+  const sig = c.req.header('stripe-signature')
+  const body = await c.req.text()
+  if (!process.env.STRIPE_WEBHOOK_SECRET || !stripe) {
+    return c.json({ error: 'Webhook not configured' }, 500)
+  }
+  let event
+  try {
+    event = stripe.webhooks.constructEvent(body, sig!, process.env.STRIPE_WEBHOOK_SECRET)
+  } catch (err: any) {
+    console.error('Webhook signature verification failed:', err.message)
+    return c.json({ error: 'Webhook signature verification failed' }, 400)
+  }
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object as any
+    const jobId = session.metadata?.jobId
+    if (jobId && pool) {
+      await pool.execute(
+        "UPDATE jobs SET status = 'pending' WHERE id = ?",
+        [jobId]
+      ).catch((err: any) => console.error('Failed to update job status:', err))
+      console.log(`Job ${jobId} moved to pending after payment`)
+    }
+  }
+  return c.json({ received: true })
+})
 
 // --- Auth ---
 
@@ -203,18 +234,16 @@ app.post('/api/payments/create-checkout-session', async (c) => {
   }
   if (!stripe) return c.json({ error: 'Stripe not configured' }, 503)
   try {
-    const { plan } = await c.req.json()
+    const { plan, jobId } = await c.req.json()
 
     const prices: Record<string, number> = {
       standard: 9900,
       featured: 24900,
-      bundle: 19800,
     }
 
     const productNames: Record<string, string> = {
       standard: 'Standard Job Listing',
       featured: 'Featured Job Listing',
-      bundle: 'Bundle: 3 Listings for 2',
     }
 
     const session = await stripe.checkout.sessions.create({
@@ -230,6 +259,10 @@ app.post('/api/payments/create-checkout-session', async (c) => {
       mode: 'payment',
       success_url: `${process.env.SITE_URL || 'https://salesroles.co'}/post-job/success`,
       cancel_url: `${process.env.SITE_URL || 'https://salesroles.co'}/post-job`,
+      metadata: {
+        jobId: jobId || '',
+        plan: plan || 'standard',
+      },
     })
 
     return c.json({ url: session.url })
@@ -489,24 +522,27 @@ app.post('/api/saved-jobs', async (c) => {
   }
 })
 
-// --- Create Job (FIX 10) ---
+// --- Create Job ---
 
 app.post('/api/jobs', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   const auth = c.req.header('Authorization')
   if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  let userId: string
   try {
-    await jwtVerify(auth.slice(7), JWT_SECRET)
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    userId = String(payload.id)
   } catch {
     return c.json({ error: 'Unauthorized' }, 401)
   }
   try {
     const job = await c.req.json()
     const id = `job-${Date.now()}`
+    const status = job.status || 'pending'
     await pool.execute(
-      `INSERT INTO jobs (id, title, company_name, company_website, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', NOW())`,
-      [id, job.title, job.company_name, job.company_website, job.location, job.work_type, job.seniority, job.sector, job.description, job.base_salary, job.ote, job.commission_structure || '', job.currency || 'USD']
+      `INSERT INTO jobs (id, title, company_name, company_website, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, company_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
+      [id, job.title, job.company_name, job.company_website, job.location, job.work_type, job.seniority, job.sector, job.description, job.base_salary, job.ote, job.commission_structure || '', job.currency || 'USD', status, userId]
     )
     return c.json({ ok: true, id })
   } catch (err: any) {
@@ -557,6 +593,25 @@ app.get('/api/admin/candidates', async (c) => {
       'SELECT id, name, email, role, created_at FROM users ORDER BY created_at DESC'
     ) as any[]
     return c.json(users)
+  } catch {
+    return c.json([])
+  }
+})
+
+// --- Company dashboard ---
+
+app.get('/api/company/pending-jobs', async (c) => {
+  if (!pool) return c.json([])
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const userId = String(payload.id)
+    const [jobs] = await pool.execute(
+      "SELECT * FROM jobs WHERE (status = 'pending' OR status = 'draft') AND company_id = ? ORDER BY created_at DESC",
+      [userId]
+    ) as any[]
+    return c.json(jobs)
   } catch {
     return c.json([])
   }

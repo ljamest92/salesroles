@@ -1,7 +1,7 @@
 import React from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, Separator as UISeparator } from '@blinkdotnew/ui'
-import { Check, Rocket, Zap, Globe, Mail, BarChart3, Users, Gift } from 'lucide-react'
+import { Check, Rocket, Zap } from 'lucide-react'
 
 const Separator = UISeparator as any;
 
@@ -84,23 +84,6 @@ export function PricingPage() {
           >
             Contact Sales
           </a>
-        </Card>
-      </Container>
-
-      <Container>
-        <Card className="p-12 border border-primary/20 bg-primary/5 flex flex-col md:flex-row items-center justify-between gap-8 rounded-[40px]">
-          <div className="space-y-4">
-            <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center text-primary-foreground">
-                <Gift size={24} />
-              </div>
-              <h2 className="text-3xl font-black tracking-tighter">Bundle & Save</h2>
-            </div>
-            <p className="text-lg text-muted-foreground max-w-xl">Post 3 listings for the price of 2. Use them anytime within 12 months. Save $99 on your hiring budget.</p>
-          </div>
-          <Link to="/post-job" search={{ plan: 'bundle' } as any}>
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-12 tracking-tighter h-16 text-lg">Buy 3-Pack for $198</Button>
-          </Link>
         </Card>
       </Container>
 

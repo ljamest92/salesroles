@@ -47,6 +47,7 @@ export function DashboardPage() {
   const [stats, setStats] = useState<DashboardStats>({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 })
   const [savedJobs, setSavedJobs] = useState<SavedJob[]>([])
   const [savedLoading, setSavedLoading] = useState(false)
+  const [pendingJobs, setPendingJobs] = useState<any[]>([])
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -59,6 +60,16 @@ export function DashboardPage() {
       setRole(user.role === 'company' ? 'company' : 'candidate')
     }
   }, [user])
+
+  useEffect(() => {
+    if (!user || role !== 'company') return
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    fetch('/api/company/pending-jobs', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => setPendingJobs(Array.isArray(data) ? data : []))
+      .catch(() => {})
+  }, [user, role])
 
   // FIX 1: fetch saved jobs for candidate view
   useEffect(() => {
@@ -159,10 +170,11 @@ export function DashboardPage() {
           </StatGroup>
 
           <Tabs defaultValue="jobs">
-            <TabsList className="bg-card border border-border p-1 rounded-xl">
-              <TabsTrigger value="jobs" className="px-8 font-bold tracking-tight">Active Listings</TabsTrigger>
-              <TabsTrigger value="expired" className="px-8 font-bold tracking-tight">Expired / Drafts</TabsTrigger>
-              <TabsTrigger value="billing" className="px-8 font-bold tracking-tight">Billing & Invoices</TabsTrigger>
+            <TabsList className="bg-card border border-border p-1 rounded-xl overflow-x-auto flex-nowrap inline-flex">
+              <TabsTrigger value="jobs" className="px-8 font-bold tracking-tight whitespace-nowrap">Active Listings</TabsTrigger>
+              <TabsTrigger value="pending" className="px-8 font-bold tracking-tight whitespace-nowrap">Pending Approval {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
+              <TabsTrigger value="expired" className="px-8 font-bold tracking-tight whitespace-nowrap">Expired / Drafts</TabsTrigger>
+              <TabsTrigger value="billing" className="px-8 font-bold tracking-tight whitespace-nowrap">Billing & Invoices</TabsTrigger>
             </TabsList>
 
             <TabsContent value="jobs" className="mt-8 space-y-4">
@@ -174,6 +186,31 @@ export function DashboardPage() {
                 className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
               />
             </TabsContent>
+            <TabsContent value="pending" className="mt-8 space-y-4">
+              {pendingJobs.length === 0 ? (
+                <div className="p-16 text-center">
+                  <p className="text-white/40 font-medium">No listings pending review.</p>
+                </div>
+              ) : (
+                pendingJobs.map((job: any) => (
+                  <Card key={job.id} className="p-6 border border-white/5 bg-card/30 rounded-2xl space-y-3">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="space-y-1">
+                        <h4 className="font-bold">{job.title}</h4>
+                        <p className="text-sm text-muted-foreground">{job.company_name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Submitted {new Date(job.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </p>
+                      </div>
+                      <span className="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full shrink-0">
+                        Awaiting Review
+                      </span>
+                    </div>
+                  </Card>
+                ))
+              )}
+            </TabsContent>
+
             <TabsContent value="expired" className="mt-8">
               <EmptyState
                 icon={<Building2 size={40} />}

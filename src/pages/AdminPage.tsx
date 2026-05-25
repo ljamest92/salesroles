@@ -75,6 +75,39 @@ export function AdminPage() {
     navigate({ to: '/admin/login' })
   }
 
+  const fetchPendingJobs = async () => {
+    try {
+      const r = await fetch('/api/admin/pending-jobs')
+      const data = r.ok ? await r.json() : []
+      const list = Array.isArray(data) ? data : []
+      setPendingJobs(list)
+      setStats(prev => ({ ...prev, pending: list.length }))
+    } catch {}
+  }
+
+  const fetchCandidates = async () => {
+    try {
+      const r = await fetch('/api/admin/candidates')
+      const data = r.ok ? await r.json() : []
+      setCandidates(Array.isArray(data) ? data : [])
+    } catch {}
+  }
+
+  const fetchLiveJobs = async () => {
+    try {
+      const r = await fetch('/api/jobs')
+      const data = r.ok ? await r.json() : {}
+      setLiveJobs(data.jobs || [])
+    } catch {}
+  }
+
+  const handleTabChange = (tab: string) => {
+    setActiveTab(tab)
+    if (tab === 'pending') fetchPendingJobs()
+    if (tab === 'candidates') fetchCandidates()
+    if (tab === 'jobs') fetchLiveJobs()
+  }
+
   const handleApproveJob = async (id: string) => {
     try {
       const res = await fetch(`/api/admin/jobs/${id}/approve`, { method: 'POST' })
@@ -176,14 +209,14 @@ export function AdminPage() {
       {/* Tab Navigation */}
       <div className="flex gap-2 bg-card/50 border border-white/5 p-1 rounded-2xl w-full justify-start overflow-x-auto">
         {[
-          { key: 'pending', label: `Pending Approval (${stats.pending})` },
+          { key: 'pending', label: `Pending Approval (${pendingJobs.length})` },
           { key: 'jobs', label: `All Live Jobs (${stats.listings})` },
           { key: 'candidates', label: 'Candidates' },
           { key: 'reports', label: `Reports (${stats.reports})`, danger: true },
         ].map(tab => (
           <button
             key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
+            onClick={() => handleTabChange(tab.key)}
             className={`px-6 py-3 rounded-xl font-black text-[10px] whitespace-nowrap transition-all ${
               activeTab === tab.key
                 ? 'bg-primary text-primary-foreground'
@@ -213,10 +246,12 @@ export function AdminPage() {
                     </div>
                     <div className="space-y-2">
                       <h3 className="text-2xl font-black tracking-tight">{job.title}</h3>
-                      <p className="text-sm text-muted-foreground font-bold opacity-60">{job.location}</p>
-                      <div className="flex gap-4 pt-2">
+                      <p className="text-sm font-bold text-muted-foreground">{job.company_name}</p>
+                      <p className="text-sm text-muted-foreground opacity-60">{job.location}</p>
+                      <div className="flex flex-wrap gap-4 pt-2">
                         <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20">{job.featured ? 'Featured ($249)' : 'Standard ($99)'}</Badge>
                         <span className="text-xs font-bold text-foreground">OTE: {job.ote}</span>
+                        <span className="text-xs text-muted-foreground">Submitted {new Date(job.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       </div>
                     </div>
                   </div>

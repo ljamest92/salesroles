@@ -95,10 +95,26 @@ export function PostJobPage() {
     setIsSubmitting(true)
     setPaymentError('')
     try {
+      const token = localStorage.getItem('salesroles_token')
+      if (!token) {
+        setPaymentError('Please sign in to post a job.')
+        return
+      }
+      // Save job as draft so the webhook can link payment to this job
+      const jobRes = await fetch('/api/jobs', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ ...formData, status: 'draft' }),
+      })
+      const jobData = await jobRes.json()
+      if (!jobRes.ok || !jobData.id) {
+        setPaymentError(jobData.error || 'Could not save job. Please try again.')
+        return
+      }
       const res = await fetch('/api/payments/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ plan }),
+        body: JSON.stringify({ plan, jobId: jobData.id }),
       })
       const data = await res.json()
       if (data.url) {
