@@ -72,7 +72,7 @@ export function FAQPage() {
                   className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors ${
                     activeTab === tab
                       ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      : `text-muted-foreground hover:text-foreground${tab === 'companies' ? ' border-0 outline-none shadow-none ring-0 bg-transparent' : ''}`
                   }`}
                 >
                   {tabLabels[tab]}
