@@ -75,6 +75,7 @@ export function DashboardPage() {
   const [profileModal, setProfileModal] = useState<{ open: boolean; candidateId: number | null; data: any | null; loading: boolean; appData: any | null }>({ open: false, candidateId: null, data: null, loading: false, appData: null })
   const [appliedJobs, setAppliedJobs] = useState<any[]>([])
   const [appliedLoading, setAppliedLoading] = useState(false)
+  const [candidateSort, setCandidateSort] = useState('newest')
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -440,7 +441,7 @@ export function DashboardPage() {
   }
 
   return (
-    <Container className="px-4 pt-20 pb-16 md:py-32 md:px-8 space-y-16 animate-fade-in">
+    <Container className="px-4 pt-20 pb-16 md:py-32 md:px-8 space-y-16 animate-fade-in w-full mx-auto">
       {/* Redirect toast */}
       {redirectToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-xl backdrop-blur-sm">
@@ -580,13 +581,28 @@ export function DashboardPage() {
                 />
               ) : (
                 <>
-                  <div className="flex gap-3 mb-4">
-                    <button onClick={downloadCandidatesCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                      Download CSV
-                    </button>
-                    <button onClick={downloadBlindedCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                      Download Blinded CSV
-                    </button>
+                  <div className="flex flex-wrap gap-3 mb-4 items-center justify-between">
+                    <div className="flex gap-3">
+                      <button onClick={downloadCandidatesCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                        Download CSV
+                      </button>
+                      <button onClick={downloadBlindedCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                        Download Blinded CSV
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] font-black tracking-widest text-white/40">SORT</label>
+                      <select
+                        value={candidateSort}
+                        onChange={e => setCandidateSort(e.target.value)}
+                        className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                      >
+                        <option value="newest">Apply date (newest)</option>
+                        <option value="oldest">Apply date (oldest)</option>
+                        <option value="name_az">Name A–Z</option>
+                        <option value="name_za">Name Z–A</option>
+                      </select>
+                    </div>
                   </div>
                   {(() => {
                     const statusColors: Record<string, string> = {
@@ -598,7 +614,13 @@ export function DashboardPage() {
                       'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
                       'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
                     }
-                    return applications.map((a: any) => (
+                    const sorted = [...applications].sort((a: any, b: any) => {
+                      if (candidateSort === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                      if (candidateSort === 'name_az') return (a.candidate_name || '').localeCompare(b.candidate_name || '')
+                      if (candidateSort === 'name_za') return (b.candidate_name || '').localeCompare(a.candidate_name || '')
+                      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                    })
+                    return sorted.map((a: any) => (
                       <Card key={a.id} className="p-5 border border-white/5 bg-card/30 rounded-2xl">
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                           <div className="space-y-1 flex-1 min-w-0">
@@ -639,7 +661,7 @@ export function DashboardPage() {
                               ))}
                             </select>
                             <button
-                              onClick={() => openProfileModal(a.candidate_id, a)}
+                              onClick={() => { window.location.href = `/candidates/${a.candidate_id}` }}
                               className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold w-full sm:w-auto text-center"
                             >
                               View Profile

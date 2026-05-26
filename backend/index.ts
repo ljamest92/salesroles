@@ -168,7 +168,7 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => {})
   pool.execute(`ALTER TABLE applications ADD COLUMN screening_answers TEXT`).catch(() => {})
-  pool.execute(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS views INT DEFAULT 0`).catch(() => {})
+  pool.execute(`ALTER TABLE jobs ADD COLUMN views INT DEFAULT 0`).catch(() => {})
   // Add viewer_name and viewer_company columns to profile_views if missing
   pool.execute(`ALTER TABLE profile_views ADD COLUMN viewer_name VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE profile_views ADD COLUMN viewer_company VARCHAR(255)`).catch(() => {})
@@ -922,12 +922,16 @@ app.get('/api/company/applicant/:id', async (c) => {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
     const companyId = String(payload.id)
     const candidateId = c.req.param('id')
-    // Verify this candidate applied to at least one of this company's jobs
+    // Verify this candidate applied to at least one of this company's jobs; get most recent cover_note
     const [check] = await pool.execute(
-      'SELECT a.id FROM applications a JOIN jobs j ON a.job_id = j.id WHERE a.candidate_id = ? AND j.company_id = ? LIMIT 1',
+      `SELECT a.id, a.cover_note, a.cv_filename as app_cv_filename
+       FROM applications a JOIN jobs j ON a.job_id = j.id
+       WHERE a.candidate_id = ? AND j.company_id = ?
+       ORDER BY a.created_at DESC LIMIT 1`,
       [candidateId, companyId]
     ) as any[]
     if ((check as any[]).length === 0) return c.json({ error: 'Not found' }, 404)
+    const appRow = (check as any[])[0]
     const [rows] = await pool.execute(
       `SELECT id, name, headline, location, years_experience, target_role, skills,
               availability, cv_filename, profile_slug, linkedin_url, bio, target_salary, email
@@ -936,7 +940,11 @@ app.get('/api/company/applicant/:id', async (c) => {
     ) as any[]
     const candidate = (rows as any[])[0]
     if (!candidate) return c.json({ error: 'Not found' }, 404)
-    return c.json(candidate)
+    return c.json({
+      ...candidate,
+      cover_note: appRow.cover_note || null,
+      cv_filename: candidate.cv_filename || appRow.app_cv_filename || null,
+    })
   } catch {
     return c.json({ error: 'Failed to fetch applicant' }, 500)
   }

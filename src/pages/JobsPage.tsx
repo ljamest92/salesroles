@@ -335,7 +335,7 @@ export function JobsPage() {
         </aside>
 
         {/* Main Jobs List */}
-        <div className="flex-1 space-y-10">
+        <div className="flex-1 space-y-10 min-w-0">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-xl shadow-xl">
             <div className="relative flex-1 w-full">
               <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
@@ -400,15 +400,15 @@ export function JobsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.4, delay: i * 0.04 }}
                   >
-                    <Card className="job-card-hover p-10 border border-white/5 group relative overflow-hidden rounded-[32px]">
-                      <div className="flex flex-col md:flex-row justify-between gap-10">
-                        <div className="flex gap-8">
-                          <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl transition-all group-hover:scale-105 duration-500 overflow-hidden relative">
+                    <Card className="job-card-hover p-5 sm:p-8 md:p-10 border border-white/5 group relative overflow-hidden rounded-[32px]">
+                      <div className="flex flex-col md:flex-row justify-between gap-6 md:gap-10 min-w-0">
+                        <div className="flex gap-4 sm:gap-6 md:gap-8 min-w-0">
+                          <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl transition-all group-hover:scale-105 duration-500 overflow-hidden relative">
                             <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} />
                           </div>
-                          <div className="space-y-2">
+                          <div className="space-y-2 min-w-0">
                             <div className="flex flex-wrap items-center gap-3">
-                              <h3 className="text-2xl md:text-3xl font-black tracking-tight group-hover:text-primary transition-colors leading-none">
+                              <h3 className="text-lg sm:text-2xl md:text-3xl font-black tracking-tight group-hover:text-primary transition-colors leading-none">
                                 <Link to={`/jobs/${job.id}`}>{job.title}</Link>
                               </h3>
                               {job.featured && <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-[9px] tracking-widest">Featured</Badge>}
@@ -439,14 +439,14 @@ export function JobsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-2 text-right">
+                        <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-2 text-right shrink-0">
                           <div>
                             {(job.via_partner || job.is_partner) && (!job.ote || job.ote === 'Salary Not Disclosed') ? (
                               <span className="text-white/40 text-sm">Salary not disclosed</span>
                             ) : (
                               <>
                                 <p className="text-[10px] text-muted-foreground font-black tracking-[0.25em] mb-2 opacity-50">On-Target Earnings</p>
-                                <p className="text-4xl font-black text-foreground tabular-nums tracking-tighter group-hover:text-primary transition-colors">{job.ote}</p>
+                                <p className="text-2xl sm:text-3xl md:text-4xl font-black text-foreground tabular-nums tracking-tighter group-hover:text-primary transition-colors">{job.ote}</p>
                                 {job.base_salary && job.base_salary !== 'Salary Not Disclosed' && (
                                   <p className="text-[11px] text-primary font-black tracking-[0.2em] mt-2 underline underline-offset-4">Base: {job.base_salary}</p>
                                 )}

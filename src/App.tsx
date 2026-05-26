@@ -26,6 +26,7 @@ import { RemoteSalesJobsPage } from './pages/RemoteSalesJobsPage'
 import { CandidateProfilePage } from './pages/CandidateProfilePage'
 import { CandidateSearchPage } from './pages/CandidateSearchPage'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
+import { CompanyApplicantPage } from './pages/CompanyApplicantPage'
 
 const rootRoute = createRootRoute({
   component: () => <AppLayout />,
@@ -58,6 +59,7 @@ const salaryInsightsRoute = createRoute({ getParentRoute: () => rootRoute, path:
 const candidateProfileRoute = createRoute({ getParentRoute: () => rootRoute, path: '/profile/$identifier', component: CandidateProfilePage })
 const candidateSearchRoute = createRoute({ getParentRoute: () => rootRoute, path: '/companies/candidates', component: CandidateSearchPage })
 const authCallbackRoute = createRoute({ getParentRoute: () => rootRoute, path: '/auth/callback', component: AuthCallbackPage })
+const companyApplicantRoute = createRoute({ getParentRoute: () => rootRoute, path: '/candidates/$id', component: CompanyApplicantPage })
 
 // SEO Routes
 const remoteJobsRoute = createRoute({
@@ -123,6 +125,7 @@ const routeTree = rootRoute.addChildren([
   candidateProfileRoute,
   candidateSearchRoute,
   authCallbackRoute,
+  companyApplicantRoute,
   remoteJobsRoute,
   aeJobsRoute,
   sdrJobsRoute,
