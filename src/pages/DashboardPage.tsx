@@ -661,7 +661,12 @@ export function DashboardPage() {
                               ))}
                             </select>
                             <button
-                              onClick={() => { window.location.href = `/candidates/${a.candidate_id}` }}
+                              onClick={() => {
+                                const url = a.candidate_slug
+                                  ? `/profile/${a.candidate_slug}`
+                                  : `/candidates/${a.candidate_id}`
+                                window.open(url, '_blank')
+                              }}
                               className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold w-full sm:w-auto text-center"
                             >
                               View Profile

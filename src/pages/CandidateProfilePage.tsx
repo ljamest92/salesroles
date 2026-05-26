@@ -153,9 +153,17 @@ export function CandidateProfilePage() {
             {/* Avatar */}
             <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-500/10 border border-emerald-500/20 flex items-center justify-center overflow-hidden">
               {profile.avatar_url
-                ? <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
-                : <span className="text-2xl font-black text-emerald-400">{initials}</span>
+                ? <img
+                    src={profile.avatar_url.startsWith('http') ? profile.avatar_url : `/uploads/avatars/${profile.avatar_url}`}
+                    alt={profile.name}
+                    className="w-full h-full object-cover"
+                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                  />
+                : null
               }
+              {!profile.avatar_url && (
+                <span className="text-2xl font-black text-emerald-400">{initials}</span>
+              )}
             </div>
 
             <div className="space-y-2 min-w-0">
@@ -272,12 +280,16 @@ export function CandidateProfilePage() {
                 </div>
               </div>
             )}
-            {profile.sales_methodology && (
+            {safeList(profile.sales_methodology).length > 0 && (
               <div className="space-y-1.5">
                 <p className="text-[10px] font-bold tracking-widest text-white/30">METHODOLOGY</p>
-                <span className="inline-flex items-center gap-1 text-xs bg-white/5 text-white/60 border border-white/10 px-2.5 py-1 rounded-full">
-                  <Zap size={11} className="text-emerald-500/60" /> {profile.sales_methodology}
-                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {safeList(profile.sales_methodology).map(m => (
+                    <span key={m} className="inline-flex items-center gap-1 text-xs bg-white/5 text-white/60 border border-white/10 px-2.5 py-1 rounded-full">
+                      <Zap size={11} className="text-emerald-500/60" /> {m}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -593,15 +593,18 @@ app.get('/api/dashboard/stats', async (c) => {
     try {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const userId = String(payload.id);
-        const [[liveRow], [applyRow]] = await Promise.all([
+        const [[liveRow], [viewRow], [applyRow]] = await Promise.all([
             pool.execute("SELECT COUNT(*) as count FROM jobs WHERE company_id = ? AND status = 'live' AND (expires_at IS NULL OR expires_at > NOW())", [userId]),
+            pool.execute("SELECT COALESCE(SUM(views), 0) as total FROM jobs WHERE company_id = ?", [userId]),
             pool.execute(`SELECT COUNT(*) as count FROM applications a
          JOIN jobs j ON a.job_id = j.id
          WHERE j.company_id = ?`, [userId]),
         ]);
-        const liveJobs = liveRow[0]?.count || 0;
-        const applyClicks = applyRow[0]?.count || 0;
-        return c.json({ liveJobs, totalViews: 0, applyClicks, avgCtr: 0 });
+        const liveJobs = Number(liveRow[0]?.count || 0);
+        const totalViews = Number(viewRow[0]?.total || 0);
+        const applyClicks = Number(applyRow[0]?.count || 0);
+        const avgCtr = totalViews > 0 ? Math.round((applyClicks / totalViews) * 100) : 0;
+        return c.json({ liveJobs, totalViews, applyClicks, avgCtr });
     }
     catch {
         return c.json({ error: 'Unauthorized' }, 401);
@@ -1103,9 +1106,11 @@ app.get('/api/company/applications', async (c) => {
         return c.json({ error: 'Unauthorized' }, 401);
     }
     try {
-        const [apps] = await pool.execute(`SELECT a.*, j.title as job_title, j.id as job_id
+        const [apps] = await pool.execute(`SELECT a.*, j.title as job_title, j.id as job_id,
+              u.profile_slug as candidate_slug, u.avatar_url as candidate_avatar
        FROM applications a
        JOIN jobs j ON a.job_id = j.id
+       LEFT JOIN users u ON a.candidate_id = u.id
        WHERE j.company_id = ?
        ORDER BY a.created_at DESC`, [userId]);
         return c.json(apps);
