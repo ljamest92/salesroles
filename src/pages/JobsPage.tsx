@@ -204,14 +204,14 @@ export function JobsPage() {
             Browse {stats.liveRoles} verified live sales roles with mandatory transparent compensation.
           </p>
         </div>
-        <Card className="p-8 bg-card/50 border border-white/5 backdrop-blur-xl w-full md:w-auto min-w-[260px] shrink-0 shadow-2xl relative group">
+        <Card className="p-6 sm:p-8 bg-card/50 border border-white/5 backdrop-blur-xl w-full md:w-auto shrink-0 shadow-2xl relative group">
           <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-full" />
-          <div className="flex gap-12">
-            <div className="space-y-1">
+          <div className="grid grid-cols-2 divide-x divide-white/10">
+            <div className="pr-4 space-y-1 text-center">
               <p className="text-2xl font-black tracking-tighter"><AnimatedCounter target={stats.liveRoles} /></p>
               <p className="text-xs text-muted-foreground font-bold tracking-widest">Live Roles</p>
             </div>
-            <div className="space-y-1">
+            <div className="pl-4 space-y-1 text-center">
               <p className="text-2xl font-black tracking-tighter text-emerald-400"><AnimatedCounter target={stats.avgOteNum} prefix="$" suffix="k" /></p>
               <p className="text-xs text-muted-foreground font-bold tracking-widest">Average OTE</p>
             </div>

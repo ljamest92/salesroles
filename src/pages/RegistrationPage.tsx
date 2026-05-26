@@ -20,6 +20,7 @@ export function RegistrationPage() {
     const roleParam = params.get('role')
     if (roleParam === 'candidate') setRole('candidate')
     if (roleParam === 'company') setRole('company')
+    if (params.get('login') === 'true') setIsLogin(true)
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

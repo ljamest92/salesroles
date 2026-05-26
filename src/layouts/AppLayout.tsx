@@ -62,7 +62,7 @@ export function AppLayout() {
               </>
             ) : (
               <>
-                <Link to="/register" className="hidden md:block">
+                <Link to="/register" search={{ login: 'true' } as any} className="hidden md:block">
                   <Button variant="ghost" size="sm" className="font-bold tracking-widest text-[10px]">Log In</Button>
                 </Link>
                 <Link to="/post-job" className="hidden md:block">
@@ -132,7 +132,7 @@ export function AppLayout() {
                   </>
                 ) : (
                   <>
-                    <Link to="/register" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                    <Link to="/register" search={{ login: 'true' } as any} className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
                       Log In
                     </Link>
                     <div className="px-2 pt-2 pb-1">

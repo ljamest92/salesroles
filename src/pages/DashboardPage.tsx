@@ -56,6 +56,7 @@ export function DashboardPage() {
   const [profileName, setProfileName] = useState('')
   const [headline, setHeadline] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [avatarError, setAvatarError] = useState(false)
   const [profileData, setProfileData] = useState<any>(null)
   const [redirectToast, setRedirectToast] = useState<string | null>(null)
   // Company-specific state
@@ -370,7 +371,7 @@ export function DashboardPage() {
             <p className="text-muted-foreground font-medium">Please sign in to access your dashboard.</p>
           </div>
           <div className="flex flex-col gap-4">
-            <Link to="/register">
+            <Link to="/register" search={{ login: 'true' } as any}>
               <Button className="w-full bg-primary text-primary-foreground font-black h-14 cta-glow text-xs tracking-widest">
                 Sign In
               </Button>
@@ -387,7 +388,7 @@ export function DashboardPage() {
   }
 
   return (
-    <Container className="pt-20 pb-16 md:py-32 md:px-8 space-y-16 animate-fade-in">
+    <Container className="px-4 pt-20 pb-16 md:py-32 md:px-8 space-y-16 animate-fade-in">
       {/* Redirect toast */}
       {redirectToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-xl backdrop-blur-sm">
@@ -432,14 +433,16 @@ export function DashboardPage() {
           )}
 
           <Tabs defaultValue="jobs">
-            <TabsList className="bg-card border border-border p-2 rounded-xl inline-flex flex-wrap gap-1">
-              <TabsTrigger value="jobs" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
-              <TabsTrigger value="pending" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
-              <TabsTrigger value="candidates" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
-              <TabsTrigger value="expired" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
-              <TabsTrigger value="billing" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
-              <TabsTrigger value="settings" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>
-            </TabsList>
+            <div className="overflow-x-auto -mx-1 px-1 pb-1">
+              <TabsList className="bg-card border border-border p-2 rounded-xl flex flex-nowrap gap-1 w-max min-w-full">
+                <TabsTrigger value="jobs" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
+                <TabsTrigger value="pending" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
+                <TabsTrigger value="candidates" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
+                <TabsTrigger value="expired" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
+                <TabsTrigger value="billing" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
+                <TabsTrigger value="settings" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>
+              </TabsList>
+            </div>
 
             {/* Active Listings */}
             <TabsContent value="jobs" className="mt-10 space-y-4">
@@ -595,7 +598,7 @@ export function DashboardPage() {
 
             {/* Company Profile */}
             <TabsContent value="settings" className="mt-10">
-              <Card className="border border-white/5 bg-card/30 rounded-2xl p-8 max-w-2xl space-y-8">
+              <Card className="border border-white/5 bg-card/30 rounded-2xl p-4 sm:p-8 w-full space-y-8">
                 <div>
                   <h3 className="text-xl font-black tracking-tighter">Company Profile</h3>
                   <p className="text-sm text-muted-foreground mt-1">This information appears on your job listings and company profile page.</p>
@@ -706,9 +709,9 @@ export function DashboardPage() {
         </div>
       ) : (
         <div className="space-y-12">
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             {/* Premium Profile Card */}
-            <Card className="border-border bg-card/30 col-span-1 rounded-[32px] overflow-hidden">
+            <Card className="border-border bg-card/30 col-span-1 rounded-[32px] overflow-hidden w-full">
               {/* Header gradient */}
               <div className="h-20 bg-gradient-to-br from-emerald-900/60 to-emerald-600/20 relative">
                 {isPro && (
@@ -721,8 +724,15 @@ export function DashboardPage() {
                 <label className="cursor-pointer group/avatar block w-20 h-20">
                   <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f) }} />
                   <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 border-4 border-card flex items-center justify-center overflow-hidden shadow-xl">
-                    {avatarUrl ? (
-                      <img src={`/uploads/avatars/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                    {avatarUrl && !avatarError ? (
+                      <img
+                        src={`/uploads/avatars/${avatarUrl}`}
+                        alt="Profile"
+                        width={80}
+                        height={80}
+                        className="w-full h-full object-cover"
+                        onError={() => setAvatarError(true)}
+                      />
                     ) : (
                       <span className="text-white font-black text-2xl">{(profileName || user?.displayName || '?')[0]?.toUpperCase()}</span>
                     )}
@@ -865,7 +875,7 @@ export function DashboardPage() {
               </div>
             </Card>
 
-            <div className="md:col-span-2 space-y-8">
+            <div className="col-span-1 md:col-span-2 space-y-8 w-full min-w-0">
               <Tabs defaultValue="saved">
                 <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex">
                   <TabsTrigger value="saved" className="px-6 font-bold tracking-tight whitespace-nowrap">Saved Jobs</TabsTrigger>
