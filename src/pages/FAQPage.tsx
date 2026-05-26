@@ -64,7 +64,7 @@ export function FAQPage() {
       <Container className="max-w-4xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="mb-12">
-            <div className="bg-card border border-border p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full gap-0.5">
+            <div className="bg-card p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full gap-0.5 sm:border sm:border-border">
               {Object.keys(faqs).map((tab) => (
                 <div
                   key={tab}
