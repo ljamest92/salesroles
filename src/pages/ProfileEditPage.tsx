@@ -1,47 +1,120 @@
 import React, { useState, useEffect } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
-import { Button, Container, Card } from '@blinkdotnew/ui'
+import { useNavigate } from '@tanstack/react-router'
+import { Container, Card } from '@blinkdotnew/ui'
 import { useAuth } from '../hooks/useAuth'
-import { Plus, Trash2 } from 'lucide-react'
+import { CheckCircle2, Camera } from 'lucide-react'
 
-const STORAGE_KEY = 'salesroles_user'
 const TOKEN_KEY = 'salesroles_token'
 
-const ROLE_OPTIONS = ['Closer', 'Full Cycle Closer', 'SDR', 'BDR', 'Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'CSM', 'RevOps']
-const LOOKING_FOR_OPTIONS = ['Remote Role', 'Hybrid Role', 'On-site Role', 'SaaS', 'FinTech', 'HealthTech', 'Enterprise', 'SMB', 'Mid-Market', 'Startup', 'Series A–C', 'Public Company']
+const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'Head of Sales', 'CSM', 'Full Cycle AE', 'RevOps', 'Closer']
+const AVAILABILITY_OPTIONS = ['Immediately', 'Within 1 month', 'Within 3 months', 'Open to opportunities', 'Not looking']
+const INDUSTRY_OPTIONS = ['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'HR Tech', 'MarTech', 'Cybersecurity', 'Enterprise Software', 'E-commerce', 'Logistics', 'Real Estate Tech', 'InsurTech']
+const DEAL_SIZE_OPTIONS = ['<$10K', '$10K–$50K', '$50K–$100K', '$100K–$500K', '$500K–$1M', '$1M+']
+const METHODOLOGY_OPTIONS = ['MEDDIC', 'SPIN Selling', 'Challenger Sale', 'Solution Selling', 'Command of the Message', 'Sandler', 'Value-Based Selling', 'SPIN', 'Gap Selling']
 
-interface WorkEntry {
-  title: string
-  company: string
-  start: string
-  end: string
-  industry: string
-  description: string
-  cash_collected: string
-  avg_deal_size: string
-  highlights: string
+function Label({ children }: { children: React.ReactNode }) {
+  return <label className="text-[10px] font-black tracking-[0.2em] text-muted-foreground/60 uppercase">{children}</label>
+}
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-2">
+      <Label>{label}</Label>
+      {children}
+    </div>
+  )
+}
+
+const inputCls = "w-full bg-secondary/50 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
+
+function TagSelect({ options, value, onChange }: { options: string[]; value: string[]; onChange: (v: string[]) => void }) {
+  const toggle = (o: string) => onChange(value.includes(o) ? value.filter(x => x !== o) : [...value, o])
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map(o => (
+        <button
+          key={o}
+          type="button"
+          onClick={() => toggle(o)}
+          className={`text-xs px-3 py-1.5 rounded-full border font-bold transition-all ${value.includes(o) ? 'bg-primary/20 text-primary border-primary/40' : 'border-white/10 text-muted-foreground hover:border-white/30'}`}
+        >
+          {o}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function SkillsInput({ value, onChange }: { value: string[]; onChange: (v: string[]) => void }) {
+  const [input, setInput] = useState('')
+  const add = () => {
+    const trimmed = input.trim()
+    if (trimmed && !value.includes(trimmed)) { onChange([...value, trimmed]); setInput('') }
+  }
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <input
+          value={input}
+          onChange={e => setInput(e.target.value)}
+          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); add() } }}
+          placeholder="Type a skill and press Enter"
+          className={inputCls + ' flex-1'}
+        />
+        <button type="button" onClick={add} className="px-4 py-2 bg-primary/20 text-primary border border-primary/30 rounded-xl text-sm font-bold hover:bg-primary/30 transition-colors">
+          Add
+        </button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        {value.map(s => (
+          <span key={s} className="flex items-center gap-1.5 text-xs bg-primary/10 text-primary border border-primary/20 px-2.5 py-1 rounded-full font-bold">
+            {s}
+            <button type="button" onClick={() => onChange(value.filter(x => x !== s))} className="text-primary/60 hover:text-primary leading-none">×</button>
+          </span>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function ProfileEditPage() {
   const { user, isLoading } = useAuth()
   const navigate = useNavigate()
+
+  // Identity
   const [name, setName] = useState('')
   const [headline, setHeadline] = useState('')
   const [location, setLocation] = useState('')
+  const [phone, setPhone] = useState('')
+  const [linkedinUrl, setLinkedinUrl] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
+
+  // Sales career
+  const [targetRole, setTargetRole] = useState('')
+  const [yearsExperience, setYearsExperience] = useState('')
+  const [currentOte, setCurrentOte] = useState('')
+  const [targetSalary, setTargetSalary] = useState('')
+  const [availability, setAvailability] = useState('')
+  const [industries, setIndustries] = useState<string[]>([])
+  const [dealSizes, setDealSizes] = useState<string[]>([])
+  const [salesMethodology, setSalesMethodology] = useState<string[]>([])
+  const [skills, setSkills] = useState<string[]>([])
+
+  // Bio
+  const [bio, setBio] = useState('')
+  const [achievements, setAchievements] = useState('')
+
+  // CV + visibility
+  const [cvFilename, setCvFilename] = useState('')
+  const [isPublic, setIsPublic] = useState(false)
+
+  // Legacy fields (kept for backwards compat with existing backend)
   const [yearsInSales, setYearsInSales] = useState('')
   const [totalRevenue, setTotalRevenue] = useState('')
-  const [companiesClosed, setCompaniesClosed] = useState('')
-  const [bio, setBio] = useState('')
-  const [currentRoles, setCurrentRoles] = useState<string[]>([])
-  const [lookingFor, setLookingFor] = useState<string[]>([])
-  const [workHistory, setWorkHistory] = useState<WorkEntry[]>([])
-  const [isPublic, setIsPublic] = useState(false)
-  const [cvFilename, setCvFilename] = useState('')
-  const [avatarUrl, setAvatarUrl] = useState('')
+
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
-  const [loaded, setLoaded] = useState(false)
 
   useEffect(() => {
     if (!user) return
@@ -53,19 +126,26 @@ export function ProfileEditPage() {
         if (data.error) return
         setHeadline(data.headline || '')
         setLocation(data.location || '')
+        setPhone(data.phone || '')
+        setLinkedinUrl(data.linkedin_url || '')
+        setTargetRole(data.target_role || '')
+        setYearsExperience(data.years_experience != null ? String(data.years_experience) : '')
+        setCurrentOte(data.current_ote || '')
+        setTargetSalary(data.target_salary || '')
+        setAvailability(data.availability || '')
+        setBio(data.bio || '')
+        setAchievements(data.achievements || '')
+        setIsPublic(!!data.is_public)
         setYearsInSales(data.years_in_sales != null ? String(data.years_in_sales) : '')
         setTotalRevenue(data.total_revenue || '')
-        setCompaniesClosed(data.companies_closed != null ? String(data.companies_closed) : '')
-        setBio(data.bio || '')
-        setIsPublic(!!data.is_public)
         if (data.cv_filename) setCvFilename(data.cv_filename)
         if (data.avatar_url) setAvatarUrl(data.avatar_url)
-        try { setCurrentRoles(JSON.parse(data.current_roles || '[]')) } catch {}
-        try { setLookingFor(JSON.parse(data.looking_for || '[]')) } catch {}
-        try { setWorkHistory(JSON.parse(data.work_history || '[]')) } catch {}
-        setLoaded(true)
+        try { setSkills(JSON.parse(data.skills || '[]')) } catch {}
+        try { setIndustries(JSON.parse(data.industries || '[]')) } catch {}
+        try { setDealSizes(JSON.parse(data.deal_sizes || '[]')) } catch {}
+        try { setSalesMethodology(JSON.parse(data.sales_methodology || '[]')) } catch {}
       })
-      .catch(() => setLoaded(true))
+      .catch(() => {})
   }, [user])
 
   const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -78,20 +158,9 @@ export function ProfileEditPage() {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: fd,
-    }).catch(() => null)
-    if (res?.ok) {
-      const data = await res.json()
-      if (data.ok) setAvatarUrl(data.avatar_url)
-    }
-  }
-
-  const handleDeleteCV = async () => {
-    const token = localStorage.getItem(TOKEN_KEY)
-    await fetch('/api/candidate/delete-cv', {
-      method: 'DELETE',
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => {})
-    setCvFilename('')
+    })
+    const data = await res.json()
+    if (data.ok) setAvatarUrl(data.avatar_url)
   }
 
   const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -104,274 +173,246 @@ export function ProfileEditPage() {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
       body: fd,
-    }).catch(() => null)
-    if (res?.ok) {
-      const data = await res.json()
-      if (data.ok) setCvFilename(data.filename)
-    }
+    })
+    const data = await res.json()
+    if (data.ok) setCvFilename(data.filename)
   }
 
-  const toggleTag = (arr: string[], val: string, set: (v: string[]) => void) => {
-    set(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val])
-  }
-
-  const addWorkEntry = () => {
-    setWorkHistory(prev => [...prev, { title: '', company: '', start: '', end: '', industry: '', description: '', cash_collected: '', avg_deal_size: '', highlights: '' }])
-  }
-
-  const updateWork = (i: number, field: keyof WorkEntry, val: string) => {
-    setWorkHistory(prev => prev.map((e, idx) => idx === i ? { ...e, [field]: val } : e))
-  }
-
-  const removeWork = (i: number) => {
-    setWorkHistory(prev => prev.filter((_, idx) => idx !== i))
-  }
-
-  const handleSave = async () => {
+  const handleDeleteCV = async () => {
     const token = localStorage.getItem(TOKEN_KEY)
-    if (!token) return
+    await fetch('/api/candidate/delete-cv', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    })
+    setCvFilename('')
+  }
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault()
     setSaving(true)
-    setError('')
     setSaved(false)
+    setError('')
+    const token = localStorage.getItem(TOKEN_KEY)
     try {
-      // Save name
-      await fetch('/api/auth/profile', {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ name: name.trim() }),
-      })
-      // Save candidate profile fields
       const res = await fetch('/api/candidate/profile', {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          headline,
-          location,
+          headline, location, phone, linkedin_url: linkedinUrl,
+          target_role: targetRole, years_experience: yearsExperience ? parseInt(yearsExperience) : null,
+          current_ote: currentOte, target_salary: targetSalary, availability,
+          industries, deal_sizes: dealSizes, sales_methodology: salesMethodology, skills,
+          bio, achievements, is_public: isPublic,
           years_in_sales: yearsInSales ? parseInt(yearsInSales) : null,
           total_revenue: totalRevenue,
-          companies_closed: companiesClosed ? parseInt(companiesClosed) : null,
-          bio,
-          current_roles: currentRoles,
-          looking_for: lookingFor,
-          work_history: workHistory,
-          is_public: isPublic,
+          current_roles: [], looking_for: [], work_history: [],
         }),
       })
       const data = await res.json()
-      if (!data.ok) throw new Error(data.error || 'Update failed')
-      const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) {
-        const u = JSON.parse(stored)
-        u.displayName = name.trim()
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(u))
+      if (data.ok) {
+        setSaved(true)
+        setTimeout(() => setSaved(false), 3000)
+      } else {
+        setError(data.error || 'Save failed')
       }
-      setSaved(true)
-      setTimeout(() => navigate({ to: '/dashboard', search: { mode: 'candidate' } as any }), 1500)
-    } catch (e: any) {
-      setError(e.message || 'Update failed')
+    } catch {
+      setError('Save failed. Please try again.')
     } finally {
       setSaving(false)
     }
   }
 
-  if (isLoading || !loaded) return (
-    <Container className="py-24 flex items-center justify-center">
-      <div className="w-10 h-10 rounded-full border-2 border-primary border-t-transparent animate-spin" />
-    </Container>
-  )
-
-  if (!user) {
-    window.location.href = '/register'
-    return null
-  }
-
-  const inputCls = "w-full bg-secondary border border-border rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-primary/50"
-  const labelCls = "text-xs font-bold tracking-widest text-muted-foreground"
+  if (isLoading) return null
+  if (!user) { navigate({ to: '/register' }); return null }
 
   return (
-    <Container className="pt-12 pb-16 md:pt-16 max-w-2xl mx-auto space-y-8 animate-fade-in">
+    <Container className="py-12 md:py-20 max-w-3xl mx-auto space-y-8 animate-fade-in">
       <div className="space-y-1">
-        <h2 className="text-3xl font-black tracking-tighter">Edit Profile</h2>
-        <p className="text-muted-foreground font-medium text-sm">{user.email}</p>
+        <h1 className="text-3xl md:text-5xl font-black tracking-tighter">Edit Profile</h1>
+        <p className="text-muted-foreground font-medium">Keep your profile sharp. Companies search here.</p>
       </div>
 
-      <Card className="p-8 border border-white/5 bg-card/50 space-y-6 rounded-[32px]">
-        <h3 className="font-bold tracking-wider text-sm text-muted-foreground">Basic Info</h3>
+      <form onSubmit={handleSubmit} className="space-y-6">
 
-        {/* Headshot */}
-        <div className="flex items-center gap-4">
-          <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
-            {avatarUrl ? (
-              <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Headshot" className="w-full h-full object-cover" />
-            ) : (
-              <span className="text-white/30 text-2xl font-bold">{name?.[0]?.toUpperCase() || '?'}</span>
-            )}
-          </div>
-          <label className="cursor-pointer text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
-            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
-            {avatarUrl ? 'Change Photo' : 'Upload Photo'}
-          </label>
-        </div>
+        {/* Section 1: Photo + Identity */}
+        <Card className="p-6 md:p-8 border border-white/5 bg-card/30 rounded-[28px] space-y-6">
+          <h2 className="text-sm font-black tracking-widest text-muted-foreground">PHOTO + IDENTITY</h2>
 
-        {/* CV management */}
-        <div className="space-y-2">
-          <label className={labelCls}>CV / RESUME</label>
-          {cvFilename ? (
-            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
-              <span className="text-sm text-white/70 flex-1 truncate">{cvFilename}</span>
-              <button onClick={handleDeleteCV} className="text-red-400/60 hover:text-red-400 text-xs transition-colors shrink-0">Remove</button>
-              <label className="cursor-pointer text-xs text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
-                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVUpload} />
-                Replace
+          {/* Avatar */}
+          <div className="flex items-center gap-6">
+            <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xl">
+              {avatarUrl ? (
+                <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+              ) : (
+                <span className="text-white font-black text-2xl">{(name || '?')[0]?.toUpperCase()}</span>
+              )}
+              <label className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-full">
+                <Camera size={20} className="text-white" />
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
               </label>
             </div>
+            <div className="space-y-1">
+              <p className="text-sm font-bold">{name}</p>
+              <label className="cursor-pointer text-xs text-primary font-bold hover:underline">
+                Change photo
+                <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+              </label>
+            </div>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Field label="Full Name">
+              <input value={name} onChange={e => setName(e.target.value)} placeholder="Your name" className={inputCls} />
+            </Field>
+            <Field label="Location">
+              <input value={location} onChange={e => setLocation(e.target.value)} placeholder="e.g. London, UK" className={inputCls} />
+            </Field>
+            <Field label="Professional Headline">
+              <input value={headline} onChange={e => setHeadline(e.target.value)} placeholder="e.g. Senior AE | SaaS | £85K OTE" className={inputCls} />
+            </Field>
+            <Field label="Phone">
+              <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+44 7700 900000" className={inputCls} />
+            </Field>
+            <Field label="LinkedIn URL">
+              <input value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/yourname" className={inputCls} />
+            </Field>
+          </div>
+        </Card>
+
+        {/* Section 2: Sales Career */}
+        <Card className="p-6 md:p-8 border border-white/5 bg-card/30 rounded-[28px] space-y-6">
+          <h2 className="text-sm font-black tracking-widest text-muted-foreground">SALES CAREER</h2>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Field label="Target Role">
+              <select value={targetRole} onChange={e => setTargetRole(e.target.value)} className={inputCls}>
+                <option value="">Select a role</option>
+                {TARGET_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+              </select>
+            </Field>
+            <Field label="Years of Sales Experience">
+              <input type="number" min="0" max="40" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)} placeholder="e.g. 5" className={inputCls} />
+            </Field>
+            <Field label="Current OTE">
+              <input value={currentOte} onChange={e => setCurrentOte(e.target.value)} placeholder="e.g. £75,000" className={inputCls} />
+            </Field>
+            <Field label="Target OTE / Salary">
+              <input value={targetSalary} onChange={e => setTargetSalary(e.target.value)} placeholder="e.g. £100,000" className={inputCls} />
+            </Field>
+            <Field label="Availability">
+              <select value={availability} onChange={e => setAvailability(e.target.value)} className={inputCls}>
+                <option value="">Select availability</option>
+                {AVAILABILITY_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
+              </select>
+            </Field>
+          </div>
+
+          <Field label="Industries">
+            <TagSelect options={INDUSTRY_OPTIONS} value={industries} onChange={setIndustries} />
+          </Field>
+
+          <Field label="Deal Sizes">
+            <TagSelect options={DEAL_SIZE_OPTIONS} value={dealSizes} onChange={setDealSizes} />
+          </Field>
+
+          <Field label="Sales Methodology">
+            <TagSelect options={METHODOLOGY_OPTIONS} value={salesMethodology} onChange={setSalesMethodology} />
+          </Field>
+
+          <Field label="Key Skills">
+            <SkillsInput value={skills} onChange={setSkills} />
+          </Field>
+        </Card>
+
+        {/* Section 3: Bio + Achievements */}
+        <Card className="p-6 md:p-8 border border-white/5 bg-card/30 rounded-[28px] space-y-6">
+          <h2 className="text-sm font-black tracking-widest text-muted-foreground">BIO + ACHIEVEMENTS</h2>
+
+          <Field label="Professional Bio">
+            <textarea
+              value={bio}
+              onChange={e => setBio(e.target.value)}
+              rows={5}
+              placeholder="Describe your sales background, approach, and what makes you stand out..."
+              className={inputCls + ' resize-none'}
+            />
+          </Field>
+
+          <Field label="Key Achievements">
+            <textarea
+              value={achievements}
+              onChange={e => setAchievements(e.target.value)}
+              rows={4}
+              placeholder="e.g. Closed $2.4M ARR in FY2023 · 147% of quota · #1 AE globally..."
+              className={inputCls + ' resize-none'}
+            />
+          </Field>
+        </Card>
+
+        {/* Section 4: CV */}
+        <Card className="p-6 md:p-8 border border-white/5 bg-card/30 rounded-[28px] space-y-4">
+          <h2 className="text-sm font-black tracking-widest text-muted-foreground">CV / RESUME</h2>
+
+          {cvFilename ? (
+            <div className="flex items-center justify-between bg-white/5 rounded-xl p-4">
+              <div>
+                <p className="text-sm font-bold">{cvFilename}</p>
+                <p className="text-xs text-muted-foreground">CV on file</p>
+              </div>
+              <div className="flex gap-3">
+                <label className="cursor-pointer text-primary text-xs font-bold hover:underline">
+                  Replace
+                  <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVUpload} />
+                </label>
+                <button type="button" onClick={handleDeleteCV} className="text-red-400 text-xs font-bold hover:underline">Remove</button>
+              </div>
+            </div>
           ) : (
-            <label className="cursor-pointer flex items-center gap-2 border border-dashed border-white/20 rounded-xl px-4 py-3 hover:border-emerald-500/50 transition-colors">
+            <label className="cursor-pointer flex flex-col items-center justify-center border-2 border-dashed border-white/10 rounded-2xl p-10 hover:border-primary/30 hover:bg-primary/5 transition-all">
+              <p className="text-sm font-bold mb-1">Upload your CV</p>
+              <p className="text-xs text-muted-foreground">PDF, DOC, DOCX — max 10MB</p>
               <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVUpload} />
-              <span className="text-sm text-white/40">Upload CV (PDF, DOC, DOCX)</span>
             </label>
           )}
-        </div>
+        </Card>
 
-        <div className="space-y-2">
-          <label className={labelCls}>FULL NAME</label>
-          <input className={inputCls} value={name} onChange={e => setName(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <label className={labelCls}>HEADLINE</label>
-          <input className={inputCls} placeholder="e.g. Senior AE | SaaS | $2M+ closed" value={headline} onChange={e => setHeadline(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <label className={labelCls}>LOCATION</label>
-          <input className={inputCls} placeholder="e.g. Austin, TX" value={location} onChange={e => setLocation(e.target.value)} />
-        </div>
-        <div className="space-y-2">
-          <label className={labelCls}>BIO</label>
-          <textarea className={`${inputCls} resize-none h-28`} placeholder="A short summary of your sales background..." value={bio} onChange={e => setBio(e.target.value)} />
-        </div>
+        {/* Section 5: Visibility */}
+        <Card className="p-6 md:p-8 border border-white/5 bg-card/30 rounded-[28px]">
+          <label className="flex items-center justify-between cursor-pointer gap-4">
+            <div>
+              <h2 className="text-sm font-black tracking-widest text-muted-foreground">PROFILE VISIBILITY</h2>
+              <p className="text-xs text-muted-foreground mt-1">Make your profile visible to hiring companies</p>
+            </div>
+            <div
+              onClick={() => setIsPublic(!isPublic)}
+              className={`w-12 h-6 rounded-full transition-colors relative ${isPublic ? 'bg-primary' : 'bg-white/10'}`}
+            >
+              <div className={`absolute top-0.5 w-5 h-5 rounded-full bg-white transition-transform ${isPublic ? 'translate-x-6' : 'translate-x-0.5'}`} />
+            </div>
+          </label>
+        </Card>
 
-        <div className="grid grid-cols-3 gap-4">
-          <div className="space-y-2">
-            <label className={labelCls}>YEARS IN SALES</label>
-            <input className={inputCls} type="number" min="0" value={yearsInSales} onChange={e => setYearsInSales(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <label className={labelCls}>TOTAL REVENUE</label>
-            <input className={inputCls} placeholder="e.g. $4.2M" value={totalRevenue} onChange={e => setTotalRevenue(e.target.value)} />
-          </div>
-          <div className="space-y-2">
-            <label className={labelCls}>COMPANIES CLOSED FOR</label>
-            <input className={inputCls} type="number" min="0" value={companiesClosed} onChange={e => setCompaniesClosed(e.target.value)} />
-          </div>
-        </div>
-      </Card>
+        {/* Error */}
+        {error && <p className="text-sm text-destructive font-medium bg-destructive/10 border border-destructive/20 rounded-xl px-4 py-3">{error}</p>}
 
-      <Card className="p-8 border border-white/5 bg-card/50 space-y-4 rounded-[32px]">
-        <h3 className="font-bold tracking-wider text-sm text-muted-foreground">Current Roles</h3>
-        <div className="flex flex-wrap gap-2">
-          {ROLE_OPTIONS.map(r => (
-            <button key={r} onClick={() => toggleTag(currentRoles, r, setCurrentRoles)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${currentRoles.includes(r) ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'border-white/10 text-white/40 hover:border-white/30 hover:text-white/60'}`}>
-              {r}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="p-8 border border-white/5 bg-card/50 space-y-4 rounded-[32px]">
-        <h3 className="font-bold tracking-wider text-sm text-muted-foreground">Looking For</h3>
-        <div className="flex flex-wrap gap-2">
-          {LOOKING_FOR_OPTIONS.map(r => (
-            <button key={r} onClick={() => toggleTag(lookingFor, r, setLookingFor)}
-              className={`px-3 py-1.5 rounded-full text-xs font-bold border transition-colors ${lookingFor.includes(r) ? 'bg-emerald-500/20 border-emerald-500/40 text-emerald-400' : 'border-white/10 text-white/40 hover:border-white/30 hover:text-white/60'}`}>
-              {r}
-            </button>
-          ))}
-        </div>
-      </Card>
-
-      <Card className="p-8 border border-white/5 bg-card/50 space-y-6 rounded-[32px]">
-        <div className="flex items-center justify-between">
-          <h3 className="font-bold tracking-wider text-sm text-muted-foreground">Work History</h3>
-          <button onClick={addWorkEntry} className="flex items-center gap-1.5 text-xs font-bold text-emerald-400 hover:text-emerald-300 transition-colors">
-            <Plus size={14} /> Add Entry
+        {/* Actions */}
+        <div className="flex items-center gap-4">
+          <button
+            type="submit"
+            disabled={saving}
+            className="flex-1 py-4 bg-primary text-primary-foreground font-black tracking-widest text-xs rounded-2xl hover:bg-primary/90 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          >
+            {saving ? 'Saving...' : saved ? <><CheckCircle2 size={16} /> Saved!</> : 'Save Profile'}
+          </button>
+          <button
+            type="button"
+            onClick={() => navigate({ to: '/dashboard', search: { mode: 'candidate' } as any })}
+            className="px-6 py-4 border border-white/10 text-muted-foreground font-bold text-xs rounded-2xl hover:bg-white/5 transition-colors"
+          >
+            Cancel
           </button>
         </div>
-        {workHistory.length === 0 && (
-          <p className="text-white/30 text-sm text-center py-4">No work history added yet.</p>
-        )}
-        {workHistory.map((entry, i) => (
-          <div key={i} className="border border-white/10 rounded-xl p-5 space-y-4">
-            <div className="flex justify-between items-center">
-              <span className="text-xs font-bold text-white/40">Entry {i + 1}</span>
-              <button onClick={() => removeWork(i)} className="text-white/30 hover:text-red-400 transition-colors"><Trash2 size={14} /></button>
-            </div>
-            <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-1">
-                <label className={labelCls}>JOB TITLE</label>
-                <input className={inputCls} value={entry.title} onChange={e => updateWork(i, 'title', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelCls}>COMPANY</label>
-                <input className={inputCls} value={entry.company} onChange={e => updateWork(i, 'company', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelCls}>START</label>
-                <input className={inputCls} placeholder="e.g. Jan 2022" value={entry.start} onChange={e => updateWork(i, 'start', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelCls}>END</label>
-                <input className={inputCls} placeholder="e.g. Dec 2023 or Present" value={entry.end} onChange={e => updateWork(i, 'end', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelCls}>INDUSTRY</label>
-                <input className={inputCls} placeholder="e.g. SaaS" value={entry.industry} onChange={e => updateWork(i, 'industry', e.target.value)} />
-              </div>
-              <div className="space-y-1">
-                <label className={labelCls}>AVG DEAL SIZE</label>
-                <input className={inputCls} placeholder="e.g. $45K" value={entry.avg_deal_size} onChange={e => updateWork(i, 'avg_deal_size', e.target.value)} />
-              </div>
-            </div>
-            <div className="space-y-1">
-              <label className={labelCls}>CASH COLLECTED</label>
-              <input className={inputCls} placeholder="e.g. $1.2M" value={entry.cash_collected} onChange={e => updateWork(i, 'cash_collected', e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className={labelCls}>DESCRIPTION</label>
-              <textarea className={`${inputCls} resize-none h-20`} value={entry.description} onChange={e => updateWork(i, 'description', e.target.value)} />
-            </div>
-            <div className="space-y-1">
-              <label className={labelCls}>HIGHLIGHTS (one per line)</label>
-              <textarea className={`${inputCls} resize-none h-20`} placeholder="250% to quota Q3 2023&#10;Closed 3 enterprise deals >$100K" value={entry.highlights} onChange={e => updateWork(i, 'highlights', e.target.value)} />
-            </div>
-          </div>
-        ))}
-      </Card>
-
-      <Card className="p-8 border border-white/5 bg-card/50 space-y-4 rounded-[32px]">
-        <h3 className="font-bold tracking-wider text-sm text-muted-foreground">Visibility</h3>
-        <label className="flex items-center gap-3 cursor-pointer">
-          <div
-            onClick={() => setIsPublic(v => !v)}
-            className={`w-11 h-6 rounded-full transition-colors relative ${isPublic ? 'bg-emerald-500' : 'bg-white/10'}`}
-          >
-            <div className={`absolute top-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isPublic ? 'translate-x-5' : 'translate-x-0.5'}`} />
-          </div>
-          <span className="text-sm font-medium">{isPublic ? 'Profile is public — companies can find you' : 'Profile is private'}</span>
-        </label>
-      </Card>
-
-      {error && <p className="text-sm text-red-500 font-medium">{error}</p>}
-      {saved && <p className="text-sm text-emerald-500 font-bold">Profile saved. Redirecting...</p>}
-
-      <div className="flex gap-4">
-        <Button onClick={handleSave} disabled={saving} className="flex-1 bg-primary text-primary-foreground font-black h-12 text-xs tracking-widest">
-          {saving ? 'Saving...' : 'Save Profile'}
-        </Button>
-        <Link to="/dashboard" search={{ mode: 'candidate' } as any}>
-          <Button variant="outline" className="font-black h-12 border-white/10 text-xs tracking-widest">Back</Button>
-        </Link>
-      </div>
+      </form>
     </Container>
   )
 }

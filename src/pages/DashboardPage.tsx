@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, User, CheckCircle2, Building2, MapPin, Users, Star, Download } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -56,6 +56,7 @@ export function DashboardPage() {
   const [profileName, setProfileName] = useState('')
   const [headline, setHeadline] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
+  const [profileData, setProfileData] = useState<any>(null)
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -194,13 +195,14 @@ export function DashboardPage() {
       .catch(() => {})
   }, [])
 
-  // FIX 6: load full profile from /api/auth/me on mount
+  // Load full profile from /api/auth/me on mount
   useEffect(() => {
     const token = localStorage.getItem('salesroles_token')
     if (!token) return
     fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => {
+        setProfileData(data)
         if (data.name) setProfileName(data.name)
         if (data.cv_filename) setCvFilename(data.cv_filename)
         if (data.headline) setHeadline(data.headline)
@@ -263,15 +265,7 @@ export function DashboardPage() {
                 <Button size="sm" className="bg-primary text-primary-foreground font-bold">Post New Job</Button>
               </Link>
             </>
-          ) : (
-            <div className="flex flex-col items-end gap-1">
-              <label className="cursor-pointer inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">
-                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCVUpload(f) }} />
-                {cvFilename ? 'Change CV' : 'Upload CV'}
-              </label>
-              {cvFilename && <p className="text-white/40 text-xs">{cvFilename}</p>}
-            </div>
-          )}
+          ) : null}
         </div>
       </div>
 
@@ -408,42 +402,135 @@ export function DashboardPage() {
       ) : (
         <div className="space-y-12">
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="p-8 border-border bg-card/30 space-y-4 col-span-1 rounded-[32px]">
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <h3 className="font-bold tracking-widest text-xs text-muted-foreground">Profile</h3>
-                  {isPro && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">PRO</span>}
+            {/* Premium Profile Card */}
+            <Card className="border-border bg-card/30 col-span-1 rounded-[32px] overflow-hidden">
+              {/* Header gradient */}
+              <div className="h-20 bg-gradient-to-br from-emerald-900/60 to-emerald-600/20 relative">
+                {isPro && (
+                  <span className="absolute top-3 right-3 text-[10px] bg-emerald-500/30 text-emerald-300 border border-emerald-500/40 px-2.5 py-0.5 rounded-full font-bold tracking-widest">PRO</span>
+                )}
+              </div>
+
+              {/* Avatar */}
+              <div className="px-6 -mt-10 mb-4">
+                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 border-4 border-card flex items-center justify-center overflow-hidden shadow-xl">
+                  {avatarUrl ? (
+                    <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                  ) : (
+                    <span className="text-white font-black text-2xl">{(profileName || user?.displayName || '?')[0]?.toUpperCase()}</span>
+                  )}
                 </div>
               </div>
-              <Separator className="bg-border" />
-              <div className="space-y-4">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
-                    {avatarUrl ? (
-                      <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
-                    ) : (
-                      <span className="text-white/50 font-bold text-sm">{(profileName || user?.displayName || '?')[0]?.toUpperCase()}</span>
-                    )}
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-bold truncate">{profileName || user?.displayName}</p>
-                    {headline && <p className="text-xs text-white/40 truncate">{headline}</p>}
-                  </div>
+
+              <div className="px-6 pb-6 space-y-5">
+                {/* Name + headline */}
+                <div>
+                  <h3 className="text-lg font-black tracking-tight">{profileName || user?.displayName}</h3>
+                  {headline && <p className="text-sm text-emerald-400 font-medium mt-0.5">{headline}</p>}
+                  {profileData?.location && (
+                    <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><MapPin size={12} /> {profileData.location}</p>
+                  )}
                 </div>
-                <div className="flex items-center gap-3">
-                  <Briefcase size={18} className="text-primary shrink-0" />
-                  <span className="text-sm font-medium truncate">{user.email}</span>
+
+                <Separator className="bg-border" />
+
+                {/* Career details */}
+                <div className="space-y-2.5 text-sm">
+                  {profileData?.target_role && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <TrendingUp size={14} className="text-primary shrink-0" />
+                      <span className="truncate">Target: <span className="text-foreground font-medium">{profileData.target_role}</span></span>
+                    </div>
+                  )}
+                  {profileData?.years_experience && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Briefcase size={14} className="text-primary shrink-0" />
+                      <span>{profileData.years_experience} yrs experience</span>
+                    </div>
+                  )}
+                  {profileData?.target_salary && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Globe size={14} className="text-primary shrink-0" />
+                      <span>Target OTE: <span className="text-foreground font-medium">{profileData.target_salary}</span></span>
+                    </div>
+                  )}
+                  {profileData?.availability && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Clock size={14} className="text-primary shrink-0" />
+                      <span>{profileData.availability}</span>
+                    </div>
+                  )}
+                  {profileData?.linkedin_url && (
+                    <a href={profileData.linkedin_url} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-muted-foreground hover:text-primary transition-colors">
+                      <Link2 size={14} className="text-primary shrink-0" />
+                      <span className="truncate">LinkedIn</span>
+                    </a>
+                  )}
+                  {profileData?.phone && (
+                    <div className="flex items-center gap-2 text-muted-foreground">
+                      <Phone size={14} className="text-primary shrink-0" />
+                      <span>{profileData.phone}</span>
+                    </div>
+                  )}
                 </div>
+
+                {/* Skills */}
+                {profileData?.skills?.length > 0 && (
+                  <>
+                    <Separator className="bg-border" />
+                    <div>
+                      <p className="text-[10px] font-black tracking-widest text-muted-foreground mb-2">SKILLS</p>
+                      <div className="flex flex-wrap gap-1.5">
+                        {(profileData.skills as string[]).slice(0, 6).map((s: string) => (
+                          <span key={s} className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-bold">{s}</span>
+                        ))}
+                      </div>
+                    </div>
+                  </>
+                )}
+
+                <Separator className="bg-border" />
+
+                {/* Profile completeness */}
+                {(() => {
+                  const fields = ['headline', 'location', 'target_role', 'years_experience', 'skills', 'target_salary', 'availability', 'bio', 'linkedin_url']
+                  const filled = fields.filter(f => {
+                    const v = profileData?.[f]
+                    return v && (Array.isArray(v) ? v.length > 0 : true)
+                  }).length
+                  const pct = Math.round((filled / fields.length) * 100)
+                  return (
+                    <div>
+                      <div className="flex justify-between text-[10px] font-bold mb-1.5">
+                        <span className="text-muted-foreground">PROFILE STRENGTH</span>
+                        <span className="text-primary">{pct}%</span>
+                      </div>
+                      <div className="h-1.5 bg-white/10 rounded-full overflow-hidden">
+                        <div className="h-full bg-gradient-to-r from-emerald-600 to-emerald-400 rounded-full transition-all duration-700" style={{ width: `${pct}%` }} />
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* CV */}
                 {cvFilename && (
-                  <div className="flex items-center gap-2 pl-0">
-                    <span className="text-white/40 text-xs">CV:</span>
-                    <span className="text-white/70 text-xs truncate flex-1">{cvFilename}</span>
+                  <div className="bg-white/5 rounded-xl p-3 flex items-center justify-between gap-2">
+                    <span className="text-xs text-white/60 truncate">{cvFilename}</span>
                     <button onClick={handleDeleteCV} className="text-red-400/60 hover:text-red-400 text-xs shrink-0 transition-colors">Remove</button>
                   </div>
                 )}
-                <div className="flex items-center gap-3">
-                  <Settings size={18} className="text-primary shrink-0" />
-                  <Link to="/dashboard/profile" search={{ mode: 'candidate' } as any} className="text-sm font-bold text-primary hover:underline">Edit Profile</Link>
+
+                {/* Action buttons */}
+                <div className="flex flex-col gap-2 pt-1">
+                  <Link to="/dashboard/profile" search={{ mode: 'candidate' } as any}>
+                    <button className="w-full py-2.5 bg-primary text-primary-foreground font-bold text-xs tracking-widest rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+                      <Settings size={14} /> Edit Profile
+                    </button>
+                  </Link>
+                  <label className="cursor-pointer w-full py-2 border border-white/10 text-white/60 hover:text-white font-bold text-xs tracking-widest rounded-xl hover:bg-white/5 transition-colors flex items-center justify-center gap-2">
+                    <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCVUpload(f) }} />
+                    {cvFilename ? 'Change CV' : 'Upload CV'}
+                  </label>
                 </div>
               </div>
             </Card>

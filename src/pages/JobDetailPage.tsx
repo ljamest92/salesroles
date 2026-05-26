@@ -192,35 +192,37 @@ export function JobDetailPage() {
       <div className="flex flex-col lg:flex-row gap-10 lg:gap-16">
         {/* Main Content */}
         <div className="flex-1 space-y-12 min-w-0">
-          <div className="space-y-6">
-            <div className="flex flex-col md:flex-row justify-between items-start gap-8">
-              <div className="flex gap-4 md:gap-6 min-w-0">
-                <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
-                  <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
-                </div>
-                <div className="space-y-3 min-w-0">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <h1 className="text-2xl md:text-6xl font-black tracking-tighter leading-[0.9]">{job.title}</h1>
-                    {job.featured && <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-[10px]">Featured</Badge>}
-                  </div>
-                  <div className="flex flex-wrap gap-4 md:gap-6 text-muted-foreground font-bold text-sm">
-                    <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
-                    <span className="flex items-center gap-2"><MapPin size={18} className="text-primary" /> {job.location}</span>
-                    <span className="flex items-center gap-2"><Briefcase size={18} className="text-primary" /> {job.sector}</span>
-                  </div>
-                </div>
+          <div className="space-y-4">
+            {/* Row 1: Logo + company meta */}
+            <div className="flex items-center gap-4 md:gap-6">
+              <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
+                <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
               </div>
-              <div className="flex items-center gap-3 w-full md:w-auto relative z-10 shrink-0">
-                <button onClick={handleShare} className="flex items-center gap-2 border border-white/20 text-white/70 hover:text-white hover:border-white/40 px-4 py-2 rounded-lg text-sm transition-colors">
+              <div className="flex flex-wrap gap-3 md:gap-6 text-muted-foreground font-bold text-sm items-center">
+                <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
+                <span className="flex items-center gap-1.5"><MapPin size={16} className="text-primary" /> {job.location}</span>
+                <span className="flex items-center gap-1.5"><Briefcase size={16} className="text-primary" /> {job.sector}</span>
+              </div>
+            </div>
+
+            {/* Row 2: Title + share/report */}
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl md:text-5xl font-black tracking-tighter leading-[0.9]">{job.title}</h1>
+                {job.featured && <Badge className="bg-primary text-primary-foreground font-black px-3 py-1 text-[10px]">Featured</Badge>}
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <button onClick={handleShare} className="flex items-center gap-2 border border-white/20 text-white/70 hover:text-white hover:border-white/40 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap">
                   <Share2 className="w-4 h-4" />
                   {copied ? 'Copied!' : 'Share'}
                 </button>
-                <button onClick={() => setIsReportModalOpen(true)} className="flex items-center gap-2 border border-red-500/30 text-red-400/70 hover:text-red-400 hover:border-red-500/50 px-4 py-2 rounded-lg text-sm transition-colors">
+                <button onClick={() => setIsReportModalOpen(true)} className="flex items-center gap-2 border border-red-500/30 text-red-400/70 hover:text-red-400 hover:border-red-500/50 px-3 py-2 rounded-lg text-sm transition-colors whitespace-nowrap">
                   <ShieldAlert className="w-4 h-4" />
                   Report
                 </button>
               </div>
             </div>
+          </div>
 
             <div className="h-px bg-border" />
 
@@ -260,7 +262,6 @@ export function JobDetailPage() {
                 </div>
               </div>
             )}
-          </div>
 
           <div className="prose prose-invert max-w-none">
             <h2 className="text-2xl font-black tracking-tighter mb-6">Job Description</h2>

@@ -89,6 +89,19 @@ try {
     pool.execute(`ALTER TABLE users ADD COLUMN work_history TEXT`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN is_public TINYINT DEFAULT 0`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN is_pro TINYINT DEFAULT 0`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN phone VARCHAR(50)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN linkedin_url VARCHAR(500)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN target_role VARCHAR(255)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN years_experience INT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN skills TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN target_salary VARCHAR(100)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN availability VARCHAR(100)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN achievements TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN industries TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN deal_sizes TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN sales_methodology TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => { });
     pool.execute(`
     CREATE TABLE IF NOT EXISTS profile_views (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -234,11 +247,50 @@ app.get('/api/auth/me', async (c) => {
         return c.json({ error: 'Unauthorized' }, 401);
     try {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
-        const [rows] = await pool.execute('SELECT id, name, email, role FROM users WHERE id = ?', [String(payload.id)]);
+        const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, cv_filename, avatar_url, is_pro, is_public,
+              phone, linkedin_url, target_role, years_experience, skills, target_salary,
+              availability, achievements, industries, deal_sizes, sales_methodology, current_ote
+       FROM users WHERE id = ?`, [String(payload.id)]);
         const user = rows[0];
         if (!user)
             return c.json({ error: 'User not found' }, 404);
-        return c.json({ user: { id: user.id.toString(), email: user.email, displayName: user.name, role: user.role } });
+        let company_name = null;
+        if (user.role === 'company') {
+            const [jobRows] = await pool.execute('SELECT company_name FROM jobs WHERE company_id = ? LIMIT 1', [String(payload.id)]);
+            company_name = jobRows[0]?.company_name || null;
+        }
+        const safeParse = (v) => { try {
+            return v ? JSON.parse(v) : [];
+        }
+        catch {
+            return [];
+        } };
+        return c.json({
+            id: user.id.toString(),
+            email: user.email,
+            name: user.name,
+            displayName: user.name,
+            role: user.role,
+            headline: user.headline || null,
+            location: user.location || null,
+            cv_filename: user.cv_filename || null,
+            avatar_url: user.avatar_url || null,
+            is_pro: !!user.is_pro,
+            is_public: !!user.is_public,
+            phone: user.phone || null,
+            linkedin_url: user.linkedin_url || null,
+            target_role: user.target_role || null,
+            years_experience: user.years_experience || null,
+            skills: safeParse(user.skills),
+            target_salary: user.target_salary || null,
+            availability: user.availability || null,
+            achievements: user.achievements || null,
+            industries: safeParse(user.industries),
+            deal_sizes: safeParse(user.deal_sizes),
+            sales_methodology: safeParse(user.sales_methodology),
+            current_ote: user.current_ote || null,
+            company_name,
+        });
     }
     catch {
         return c.json({ error: 'Invalid token' }, 401);
@@ -771,6 +823,41 @@ app.post('/api/candidate/upload-cv', async (c) => {
         return c.json({ error: 'Upload failed' }, 500);
     }
 });
+app.delete('/api/candidate/delete-cv', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        await pool.execute('UPDATE users SET cv_filename = NULL WHERE id = ?', [String(payload.id)]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+app.post('/api/candidate/upload-avatar', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const formData = await c.req.formData();
+        const file = formData.get('avatar');
+        if (!file)
+            return c.json({ error: 'No file' }, 400);
+        const filename = `avatar-${payload.id}-${Date.now()}.jpg`;
+        await pool.execute('UPDATE users SET avatar_url = ? WHERE id = ?', [filename, String(payload.id)]);
+        return c.json({ ok: true, avatar_url: filename });
+    }
+    catch {
+        return c.json({ error: 'Upload failed' }, 500);
+    }
+});
 // --- Candidate profile update ---
 app.put('/api/candidate/profile', async (c) => {
     if (!pool)
@@ -782,7 +869,13 @@ app.put('/api/candidate/profile', async (c) => {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const userId = String(payload.id);
         const data = await c.req.json();
-        await pool.execute(`UPDATE users SET headline=?, location=?, years_in_sales=?, total_revenue=?, companies_closed=?, current_roles=?, looking_for=?, bio=?, work_history=?, is_public=? WHERE id=?`, [
+        await pool.execute(`UPDATE users SET
+        headline=?, location=?, years_in_sales=?, total_revenue=?, companies_closed=?,
+        current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
+        phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
+        target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
+        sales_methodology=?, current_ote=?
+       WHERE id=?`, [
             data.headline || null,
             data.location || null,
             data.years_in_sales || null,
@@ -793,6 +886,18 @@ app.put('/api/candidate/profile', async (c) => {
             data.bio || null,
             JSON.stringify(data.work_history || []),
             data.is_public ? 1 : 0,
+            data.phone || null,
+            data.linkedin_url || null,
+            data.target_role || null,
+            data.years_experience || null,
+            JSON.stringify(data.skills || []),
+            data.target_salary || null,
+            data.availability || null,
+            data.achievements || null,
+            JSON.stringify(data.industries || []),
+            JSON.stringify(data.deal_sizes || []),
+            JSON.stringify(data.sales_methodology || []),
+            data.current_ote || null,
             userId,
         ]);
         return c.json({ ok: true });
@@ -810,7 +915,7 @@ app.get('/api/candidate/me', async (c) => {
     try {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const userId = String(payload.id);
-        const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_public, is_pro FROM users WHERE id = ?`, [userId]);
+        const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro FROM users WHERE id = ?`, [userId]);
         const user = rows[0];
         if (!user)
             return c.json({ error: 'Not found' }, 404);
@@ -828,7 +933,7 @@ app.get('/api/candidates', async (c) => {
     try {
         const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, current_roles, looking_for, cv_filename, is_pro
        FROM users
-       WHERE role = 'candidate' AND is_public = 1
+       WHERE role = 'candidate' AND (is_public = 1 OR is_public IS NULL)
        AND (name LIKE ? OR headline LIKE ? OR current_roles LIKE ? OR looking_for LIKE ?)
        ORDER BY is_pro DESC, created_at DESC`, [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]);
         return c.json(rows);
@@ -863,11 +968,31 @@ app.get('/api/candidates/:id', async (c) => {
         return c.json({ error: 'Database not configured' }, 503);
     const id = c.req.param('id');
     try {
-        const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro
-       FROM users WHERE id = ? AND is_public = 1`, [id]);
+        const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro, email
+       FROM users WHERE id = ? AND (is_public = 1 OR is_public IS NULL)`, [id]);
         if (!rows.length)
             return c.json({ error: 'Not found' }, 404);
-        return c.json(rows[0]);
+        const candidate = rows[0];
+        // Record profile view if viewer is authenticated
+        const auth = c.req.header('Authorization');
+        if (auth?.startsWith('Bearer ')) {
+            try {
+                const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+                const viewerId = String(payload.id);
+                if (viewerId !== id) {
+                    await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action) VALUES (?, ?, ?)', [viewerId, id, 'view']).catch(() => { });
+                    if (candidate.is_pro && candidate.email) {
+                        const [viewerRows] = await pool.execute('SELECT name FROM users WHERE id = ?', [viewerId]);
+                        const viewerName = viewerRows[0]?.name || 'A company';
+                        sendEmail(candidate.email, 'Your profile was viewed on SalesRoles.co', `<p>Hi ${candidate.name},</p><p><strong>${viewerName}</strong> viewed your profile on SalesRoles.co.</p><p><a href="https://salesroles.co/dashboard">View your profile activity</a></p><p>The SalesRoles.co team</p>`);
+                    }
+                }
+            }
+            catch { }
+        }
+        // Don't expose email in the response
+        const { email: _email, ...publicCandidate } = candidate;
+        return c.json(publicCandidate);
     }
     catch {
         return c.json({ error: 'Not found' }, 404);
@@ -943,6 +1068,57 @@ app.get('/api/payments/pro-checkout', async (c) => {
     }
     catch {
         return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+// --- Google OAuth ---
+app.get('/api/auth/google', (c) => {
+    const clientId = process.env.GOOGLE_CLIENT_ID || '';
+    const redirectUri = `${process.env.SITE_URL || 'https://salesroles.co'}/api/auth/google/callback`;
+    const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('openid email profile')}&access_type=offline&prompt=consent`;
+    return c.redirect(url);
+});
+app.get('/api/auth/google/callback', async (c) => {
+    if (!pool)
+        return c.redirect('/?error=db');
+    const code = c.req.query('code');
+    const siteUrl = process.env.SITE_URL || 'https://salesroles.co';
+    if (!code)
+        return c.redirect(`${siteUrl}/login?error=no_code`);
+    const clientId = process.env.GOOGLE_CLIENT_ID || '';
+    const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+    const redirectUri = `${siteUrl}/api/auth/google/callback`;
+    try {
+        const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+        });
+        const tokens = await tokenRes.json();
+        if (!tokens.access_token)
+            return c.redirect(`${siteUrl}/login?error=token`);
+        const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+            headers: { Authorization: `Bearer ${tokens.access_token}` },
+        });
+        const googleUser = await userRes.json();
+        if (!googleUser.email)
+            return c.redirect(`${siteUrl}/login?error=no_email`);
+        const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [googleUser.email]);
+        let dbUser = rows[0];
+        if (!dbUser) {
+            const [result] = await pool.execute('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)', [googleUser.name || googleUser.email, googleUser.email, '', 'candidate']);
+            const [newRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [result.insertId]);
+            dbUser = newRows[0];
+        }
+        const token = await new SignJWT({ id: dbUser.id.toString(), email: dbUser.email, role: dbUser.role })
+            .setProtectedHeader({ alg: 'HS256' })
+            .setExpirationTime('7d')
+            .sign(JWT_SECRET);
+        const userData = encodeURIComponent(JSON.stringify({ id: dbUser.id.toString(), email: dbUser.email, displayName: dbUser.name, role: dbUser.role }));
+        return c.redirect(`${siteUrl}/auth/callback?token=${encodeURIComponent(token)}&user=${userData}`);
+    }
+    catch (err) {
+        console.error('Google OAuth error:', err);
+        return c.redirect(`${siteUrl}/login?error=oauth`);
     }
 });
 // --- Test endpoint: simulate Stripe webhook payment completion ---

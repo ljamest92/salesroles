@@ -35,6 +35,8 @@
     @apply bg-background text-foreground;
     font-family: 'Manrope', var(--font-sans), sans-serif;
     letter-spacing: var(--tracking-normal);
+    background-color: hsl(222, 47%, 4%);
+    color: hsl(210, 40%, 98%);
   }
 }
 

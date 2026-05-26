@@ -93,6 +93,18 @@ try {
   pool.execute(`ALTER TABLE users ADD COLUMN is_public TINYINT DEFAULT 0`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN is_pro TINYINT DEFAULT 0`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN phone VARCHAR(50)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN linkedin_url VARCHAR(500)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN target_role VARCHAR(255)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN years_experience INT`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN skills TEXT`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN target_salary VARCHAR(100)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN availability VARCHAR(100)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN achievements TEXT`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN industries TEXT`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN deal_sizes TEXT`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN sales_methodology TEXT`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => {})
   pool.execute(`
     CREATE TABLE IF NOT EXISTS profile_views (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -258,11 +270,26 @@ app.get('/api/auth/me', async (c) => {
   try {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
     const [rows] = await pool.execute(
-      'SELECT id, name, email, role, headline, cv_filename, avatar_url, is_pro, is_public FROM users WHERE id = ?',
+      `SELECT id, name, email, role, headline, location, cv_filename, avatar_url, is_pro, is_public,
+              phone, linkedin_url, target_role, years_experience, skills, target_salary,
+              availability, achievements, industries, deal_sizes, sales_methodology, current_ote
+       FROM users WHERE id = ?`,
       [String(payload.id)]
     ) as any[]
-    const user = rows[0]
+    const user = (rows as any[])[0]
     if (!user) return c.json({ error: 'User not found' }, 404)
+
+    let company_name: string | null = null
+    if (user.role === 'company') {
+      const [jobRows] = await pool.execute(
+        'SELECT company_name FROM jobs WHERE company_id = ? LIMIT 1',
+        [String(payload.id)]
+      ) as any[]
+      company_name = (jobRows as any[])[0]?.company_name || null
+    }
+
+    const safeParse = (v: any) => { try { return v ? JSON.parse(v) : [] } catch { return [] } }
+
     return c.json({
       id: user.id.toString(),
       email: user.email,
@@ -270,10 +297,24 @@ app.get('/api/auth/me', async (c) => {
       displayName: user.name,
       role: user.role,
       headline: user.headline || null,
+      location: user.location || null,
       cv_filename: user.cv_filename || null,
       avatar_url: user.avatar_url || null,
       is_pro: !!user.is_pro,
       is_public: !!user.is_public,
+      phone: user.phone || null,
+      linkedin_url: user.linkedin_url || null,
+      target_role: user.target_role || null,
+      years_experience: user.years_experience || null,
+      skills: safeParse(user.skills),
+      target_salary: user.target_salary || null,
+      availability: user.availability || null,
+      achievements: user.achievements || null,
+      industries: safeParse(user.industries),
+      deal_sizes: safeParse(user.deal_sizes),
+      sales_methodology: safeParse(user.sales_methodology),
+      current_ote: user.current_ote || null,
+      company_name,
     })
   } catch {
     return c.json({ error: 'Invalid token' }, 401)
@@ -876,7 +917,13 @@ app.put('/api/candidate/profile', async (c) => {
     const userId = String(payload.id)
     const data = await c.req.json()
     await pool.execute(
-      `UPDATE users SET headline=?, location=?, years_in_sales=?, total_revenue=?, companies_closed=?, current_roles=?, looking_for=?, bio=?, work_history=?, is_public=? WHERE id=?`,
+      `UPDATE users SET
+        headline=?, location=?, years_in_sales=?, total_revenue=?, companies_closed=?,
+        current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
+        phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
+        target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
+        sales_methodology=?, current_ote=?
+       WHERE id=?`,
       [
         data.headline || null,
         data.location || null,
@@ -888,6 +935,18 @@ app.put('/api/candidate/profile', async (c) => {
         data.bio || null,
         JSON.stringify(data.work_history || []),
         data.is_public ? 1 : 0,
+        data.phone || null,
+        data.linkedin_url || null,
+        data.target_role || null,
+        data.years_experience || null,
+        JSON.stringify(data.skills || []),
+        data.target_salary || null,
+        data.availability || null,
+        data.achievements || null,
+        JSON.stringify(data.industries || []),
+        JSON.stringify(data.deal_sizes || []),
+        JSON.stringify(data.sales_methodology || []),
+        data.current_ote || null,
         userId,
       ]
     )
@@ -1070,6 +1129,65 @@ app.get('/api/payments/pro-checkout', async (c) => {
     return c.redirect(session.url!)
   } catch {
     return c.json({ error: 'Unauthorized' }, 401)
+  }
+})
+
+// --- Google OAuth ---
+
+app.get('/api/auth/google', (c) => {
+  const clientId = process.env.GOOGLE_CLIENT_ID || ''
+  const redirectUri = `${process.env.SITE_URL || 'https://salesroles.co'}/api/auth/google/callback`
+  const url = `https://accounts.google.com/o/oauth2/v2/auth?client_id=${encodeURIComponent(clientId)}&redirect_uri=${encodeURIComponent(redirectUri)}&response_type=code&scope=${encodeURIComponent('openid email profile')}&access_type=offline&prompt=consent`
+  return c.redirect(url)
+})
+
+app.get('/api/auth/google/callback', async (c) => {
+  if (!pool) return c.redirect('/?error=db')
+  const code = c.req.query('code')
+  const siteUrl = process.env.SITE_URL || 'https://salesroles.co'
+  if (!code) return c.redirect(`${siteUrl}/login?error=no_code`)
+
+  const clientId = process.env.GOOGLE_CLIENT_ID || ''
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET || ''
+  const redirectUri = `${siteUrl}/api/auth/google/callback`
+
+  try {
+    const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ code, client_id: clientId, client_secret: clientSecret, redirect_uri: redirectUri, grant_type: 'authorization_code' }),
+    })
+    const tokens = await tokenRes.json() as any
+    if (!tokens.access_token) return c.redirect(`${siteUrl}/login?error=token`)
+
+    const userRes = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    })
+    const googleUser = await userRes.json() as any
+    if (!googleUser.email) return c.redirect(`${siteUrl}/login?error=no_email`)
+
+    const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [googleUser.email]) as any[]
+    let dbUser = (rows as any[])[0]
+
+    if (!dbUser) {
+      const [result] = await pool.execute(
+        'INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)',
+        [googleUser.name || googleUser.email, googleUser.email, '', 'candidate']
+      ) as any[]
+      const [newRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [(result as any).insertId]) as any[]
+      dbUser = (newRows as any[])[0]
+    }
+
+    const token = await new SignJWT({ id: dbUser.id.toString(), email: dbUser.email, role: dbUser.role })
+      .setProtectedHeader({ alg: 'HS256' })
+      .setExpirationTime('7d')
+      .sign(JWT_SECRET)
+
+    const userData = encodeURIComponent(JSON.stringify({ id: dbUser.id.toString(), email: dbUser.email, displayName: dbUser.name, role: dbUser.role }))
+    return c.redirect(`${siteUrl}/auth/callback?token=${encodeURIComponent(token)}&user=${userData}`)
+  } catch (err) {
+    console.error('Google OAuth error:', err)
+    return c.redirect(`${siteUrl}/login?error=oauth`)
   }
 })
 
