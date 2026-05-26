@@ -118,6 +118,7 @@ try {
   pool.execute(`ALTER TABLE users ADD COLUMN company_industry VARCHAR(100)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_website VARCHAR(500)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_logo_url VARCHAR(500)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN company_domain VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users MODIFY COLUMN is_public TINYINT DEFAULT 1`).catch(() => {})
   // Backfill slugs for existing users who have none
   pool.execute(`
@@ -174,6 +175,16 @@ try {
 const JWT_SECRET = new TextEncoder().encode(
   process.env.JWT_SECRET || 'salesroles-dev-secret-change-in-prod'
 )
+
+function extractDomainFromUrl(url: string): string {
+  if (!url) return ''
+  try {
+    const withProtocol = url.trim().startsWith('http') ? url.trim() : `https://${url.trim()}`
+    return new URL(withProtocol).hostname.replace(/^www\./, '')
+  } catch {
+    return url.replace(/^https?:\/\//, '').replace(/^www\./, '').split('/')[0]
+  }
+}
 
 // --- Email ---
 const transporter = nodemailer.createTransport({
@@ -460,6 +471,7 @@ app.get('/api/jobs', async (c) => {
     const jobs = (rows as any[]).map(row => ({
       ...row,
       company: row.company_name,
+      domain: extractDomainFromUrl(row.company_website || ''),
       job_type: row.work_type,
       application_url: row.application_url || '',
       contact_email: row.contact_email || '',
@@ -552,7 +564,7 @@ app.get('/api/jobs/:id', async (c) => {
     const [rows] = await pool.execute('SELECT * FROM jobs WHERE id = ?', [id]) as any[]
     const row = (rows as any[])[0]
     if (!row) return c.json({ error: 'Job not found' }, 404)
-    return c.json({ job: { ...row, company: row.company_name, job_type: row.work_type, featured: !!row.featured } })
+    return c.json({ job: { ...row, company: row.company_name, domain: extractDomainFromUrl(row.company_website || ''), job_type: row.work_type, featured: !!row.featured } })
   } catch {
     return c.json({ error: 'Failed to fetch job' }, 500)
   }
@@ -885,7 +897,7 @@ app.get('/api/company/profile', async (c) => {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
     const [rows] = await pool.execute(
       `SELECT name, email, company_name, company_website, company_logo_url,
-              company_size, company_industry, location, bio
+              company_domain, company_size, company_industry, location, bio
        FROM users WHERE id = ? AND role = 'company'`,
       [String(payload.id)]
     ) as any[]
@@ -905,11 +917,13 @@ app.put('/api/company/profile', async (c) => {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
     if ((payload as any).role !== 'company') return c.json({ error: 'Company account required' }, 403)
     const data = await c.req.json()
+    const companyDomain = extractDomainFromUrl(data.company_website || '')
     await pool.execute(
       `UPDATE users SET
         company_name = ?,
         company_website = ?,
         company_logo_url = ?,
+        company_domain = ?,
         company_size = ?,
         company_industry = ?,
         location = ?,
@@ -919,6 +933,7 @@ app.put('/api/company/profile', async (c) => {
         data.company_name || null,
         data.company_website || null,
         data.company_logo_url || null,
+        companyDomain || null,
         data.company_size || null,
         data.company_industry || null,
         data.location || null,

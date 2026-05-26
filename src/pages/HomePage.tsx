@@ -2,11 +2,33 @@ import React, { useEffect, useState } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button, Card, Badge, Container } from '@blinkdotnew/ui'
 import { Briefcase, DollarSign, TrendingUp, Quote, Star, MapPin } from 'lucide-react'
-import { fetchPartnerJobs, type Job } from '../lib/jobs'
+import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
 import { getDomain } from '../utils/getDomain'
 import AnimatedCounter from '../components/AnimatedCounter'
+
+// Verified domains for well-known companies — used to correct Arbeitnow guesses
+const KNOWN_DOMAINS: Record<string, string> = {
+  ...SEED_COMPANY_DOMAINS,
+  okta: 'okta.com',
+  datadog: 'datadoghq.com',
+  outreach: 'outreach.io',
+  salesloft: 'salesloft.com',
+  'apollo.io': 'apollo.io',
+  apollo: 'apollo.io',
+  monday: 'monday.com',
+  'monday.com': 'monday.com',
+}
+
+const FALLBACK_COMPANIES = [
+  { name: 'Salesforce', domain: 'salesforce.com', count: 3 },
+  { name: 'HubSpot',    domain: 'hubspot.com',    count: 2 },
+  { name: 'Gong',       domain: 'gong.io',        count: 2 },
+  { name: 'Okta',       domain: 'okta.com',       count: 1 },
+  { name: 'Datadog',    domain: 'datadoghq.com',  count: 1 },
+  { name: 'Snowflake',  domain: 'snowflake.com',  count: 1 },
+]
 
 const marqueeCompanies = [
   { name: 'Salesforce', domain: 'salesforce.com' },
@@ -114,7 +136,8 @@ export function HomePage() {
               const name = (j.company_name || '').trim()
               if (!name) return
               const slug = name.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
-              const domain = `${slug}.com`
+              // Use verified domain if known, otherwise fall back to slug.com guess
+              const domain = KNOWN_DOMAINS[slug] || KNOWN_DOMAINS[name.toLowerCase()] || `${slug}.com`
               const existing = cMap.get(name)
               if (existing) {
                 cMap.set(name, { count: existing.count + 1, domain: existing.domain })
@@ -131,20 +154,25 @@ export function HomePage() {
         } catch {}
 
         if (!companiesSet) {
+          // Build from live DB/partner jobs first; use KNOWN_DOMAINS to get correct domains
           const seedMap = new Map<string, { count: number; domain: string | null }>()
           allJobs.forEach(j => {
             const existing = seedMap.get(j.company)
+            const slug = j.company.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
+            const knownDomain = KNOWN_DOMAINS[slug] || KNOWN_DOMAINS[j.company.toLowerCase()] || null
+            const domain = j.domain || knownDomain
             if (existing) {
-              seedMap.set(j.company, { count: existing.count + 1, domain: existing.domain })
+              seedMap.set(j.company, { count: existing.count + 1, domain: existing.domain || domain })
             } else {
-              seedMap.set(j.company, { count: 1, domain: j.domain || null })
+              seedMap.set(j.company, { count: 1, domain })
             }
           })
-          const fallback6 = Array.from(seedMap.entries())
+          const fromJobs = Array.from(seedMap.entries())
             .map(([name, { count, domain }]) => ({ name, count, domain }))
             .sort((a, b) => b.count - a.count)
             .slice(0, 6)
-          setTopCompanies(fallback6)
+          // If we still have nothing useful, use the static fallback with verified domains
+          setTopCompanies(fromJobs.length > 0 ? fromJobs : FALLBACK_COMPANIES)
         }
       } catch (error) {
         console.error('Error loading homepage data:', error)
@@ -284,7 +312,7 @@ export function HomePage() {
                     <div className="flex flex-col md:flex-row justify-between gap-6 md:gap-8">
                       <div className="flex gap-4 md:gap-6 min-w-0">
                         <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/50 overflow-hidden relative">
-                          <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
+                          <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} />
                         </div>
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -395,7 +423,7 @@ export function HomePage() {
                     <div className="bg-card p-10 rounded-[32px] border border-white/5 text-center space-y-6 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_50px_rgba(16,185,129,0.12)] relative overflow-hidden h-full">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
                       <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground border border-white/5 group-hover:border-primary/30 transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden relative">
-                        <CompanyLogo domain={getDomain(company.domain, company.name)} name={company.name} />
+                        <CompanyLogo domain={company.domain} name={company.name} />
                       </div>
                       <div>
                         <h3 className="font-black group-hover:text-primary transition-colors text-xl tracking-tight leading-none">{company.name}</h3>

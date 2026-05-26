@@ -1,32 +1,43 @@
-import React, { useState } from 'react'
-import { getCompanyLogoUrl } from '../lib/utils'
+import { useState } from 'react'
+import { getLogoUrl } from '../lib/domain'
 
 interface CompanyLogoProps {
   domain?: string | null
   name: string
-  /** Extra classes added to the <img> only (e.g. grayscale, transition) */
+  size?: 'sm' | 'md' | 'lg'
+  className?: string
   imgClassName?: string
 }
 
-export function CompanyLogo({ domain, name, imgClassName = '' }: CompanyLogoProps) {
-  const [failed, setFailed] = useState(false)
-  const url = getCompanyLogoUrl(domain)
+const sizeMap = {
+  sm: 'w-8 h-8 text-xs',
+  md: 'w-12 h-12 text-sm',
+  lg: 'w-16 h-16 text-base',
+}
 
-  if (!url || failed) {
+export function CompanyLogo({ domain, name, size = 'md', className = '', imgClassName = '' }: CompanyLogoProps) {
+  const [failed, setFailed] = useState(false)
+  const initials = name
+    .split(' ')
+    .slice(0, 2)
+    .map((w) => w[0])
+    .join('')
+    .toUpperCase()
+
+  if (!domain || failed) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-[#0f1629] text-[#10B981] font-black text-xl leading-none select-none rounded-inherit">
-        {name.charAt(0).toUpperCase()}
+      <div className={`${sizeMap[size]} ${className} rounded-lg bg-[#0f1629] border border-white/10 flex items-center justify-center font-semibold text-emerald-400`}>
+        {initials}
       </div>
     )
   }
 
   return (
     <img
-      src={url}
-      alt={name}
-      className={`w-full h-full object-contain ${imgClassName}`.trim()}
+      src={getLogoUrl(domain)}
+      alt={`${name} logo`}
       onError={() => setFailed(true)}
-      loading="lazy"
+      className={`${sizeMap[size]} ${className} ${imgClassName} rounded-lg object-contain bg-white p-1`.trim()}
     />
   )
 }

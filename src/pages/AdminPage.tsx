@@ -438,7 +438,7 @@ export function AdminPage() {
               <Card key={job.id} className="p-6 border border-white/5 bg-card/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-primary/20 transition-all">
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center border border-white/5 overflow-hidden shrink-0">
-                    <CompanyLogo domain={getDomain(job.company_website, job.company_name || 'company')} name={job.company_name || 'Company'} size={32} />
+                    <CompanyLogo domain={getDomain(job.company_website, job.company_name || 'company')} name={job.company_name || 'Company'} size="sm" />
                   </div>
                   <div>
                     <p className="font-black text-sm">{job.title}</p>

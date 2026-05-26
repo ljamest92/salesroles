@@ -327,7 +327,7 @@ export function RemoteSalesJobsPage() {
                       <div className="flex flex-col md:flex-row justify-between gap-8 md:gap-10">
                         <div className="flex gap-6 md:gap-8 min-w-0">
                           <div className="w-16 h-16 md:w-20 md:h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl group-hover:scale-105 transition-all duration-500 overflow-hidden">
-                            <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
+                            <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} />
                           </div>
                           <div className="space-y-2 min-w-0">
                             <div className="flex flex-wrap items-center gap-3">

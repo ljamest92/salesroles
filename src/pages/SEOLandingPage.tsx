@@ -67,7 +67,7 @@ export function SEOLandingPage({ title, description, keyword }: SEOLandingPagePr
                   <Card className="job-card-hover p-10 border border-white/5 bg-card/30 flex flex-col md:flex-row justify-between gap-10 rounded-[32px] group cursor-pointer">
                     <div className="flex gap-8">
                       <div className="w-20 h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl transition-all group-hover:scale-105 duration-500 overflow-hidden">
-                        <CompanyLogo domain={getDomain(job.domain, job.company)} name={job.company} />
+                        <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} />
                       </div>
                       <div className="space-y-2">
                         <div className="flex flex-wrap items-center gap-3">
