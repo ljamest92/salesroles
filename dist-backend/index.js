@@ -8,6 +8,7 @@ import Stripe from 'stripe';
 import nodemailer from 'nodemailer';
 import path, { extname } from 'path';
 import { readFileSync, createReadStream, existsSync } from 'fs';
+import { promises as fsPromises } from 'fs';
 import { fileURLToPath } from 'url';
 import { randomBytes } from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
@@ -78,6 +79,10 @@ try {
   `).catch(() => { });
     pool.execute(`ALTER TABLE jobs ADD COLUMN company_id INT DEFAULT NULL`).catch(() => { });
     pool.execute(`ALTER TABLE jobs ADD COLUMN screening_questions TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE jobs ADD COLUMN external_id VARCHAR(255) DEFAULT NULL`).catch(() => { });
+    pool.execute(`ALTER TABLE jobs ADD COLUMN source VARCHAR(50) DEFAULT 'manual'`).catch(() => { });
+    pool.execute(`ALTER TABLE jobs ADD COLUMN url VARCHAR(500) DEFAULT NULL`).catch(() => { });
+    pool.execute(`CREATE UNIQUE INDEX idx_jobs_external_id ON jobs (external_id)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN cv_filename VARCHAR(255)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN headline VARCHAR(255)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN location VARCHAR(255)`).catch(() => { });
@@ -104,6 +109,7 @@ try {
     pool.execute(`ALTER TABLE users ADD COLUMN sales_methodology TEXT`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN profile_slug VARCHAR(100)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN company_name VARCHAR(255)`).catch(() => { });
     pool.execute(`ALTER TABLE users MODIFY COLUMN is_public TINYINT DEFAULT 1`).catch(() => { });
     // Backfill slugs for existing users who have none
     pool.execute(`
@@ -888,11 +894,17 @@ app.post('/api/candidate/upload-avatar', async (c) => {
         const file = formData.get('avatar');
         if (!file)
             return c.json({ error: 'No file' }, 400);
-        const filename = `avatar-${payload.id}-${Date.now()}.jpg`;
+        const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || 'jpg' : 'jpg';
+        const filename = `avatar-${payload.id}-${Date.now()}.${ext}`;
+        const uploadsDir = path.join(__dirname, '..', 'uploads', 'avatars');
+        await fsPromises.mkdir(uploadsDir, { recursive: true });
+        const arrayBuffer = await file.arrayBuffer();
+        await fsPromises.writeFile(path.join(uploadsDir, filename), Buffer.from(arrayBuffer));
         await pool.execute('UPDATE users SET avatar_url = ? WHERE id = ?', [filename, String(payload.id)]);
         return c.json({ ok: true, avatar_url: filename });
     }
-    catch {
+    catch (err) {
+        console.error('Avatar upload error:', err);
         return c.json({ error: 'Upload failed' }, 500);
     }
 });
@@ -1212,10 +1224,20 @@ app.get('/api/auth/google/callback', async (c) => {
             return c.redirect(`${siteUrl}/login?error=no_email`);
         const [rows] = await pool.execute('SELECT * FROM users WHERE email = ?', [googleUser.email]);
         let dbUser = rows[0];
-        if (!dbUser) {
-            const [result] = await pool.execute('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)', [googleUser.name || googleUser.email, googleUser.email, '', 'candidate']);
+        const isNewUser = !dbUser;
+        if (isNewUser) {
+            const namePart = (googleUser.name || googleUser.email).toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+            const profileSlug = `${namePart}-${randomBytes(3).toString('hex')}`;
+            const [result] = await pool.execute('INSERT INTO users (name, email, password_hash, role, is_public, profile_slug) VALUES (?, ?, ?, ?, 1, ?)', [googleUser.name || googleUser.email, googleUser.email, '', 'candidate', profileSlug]);
             const [newRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [result.insertId]);
             dbUser = newRows[0];
+            // Send welcome email to new Google OAuth users
+            sendEmail(googleUser.email, 'Welcome to SalesRoles.co — your career starts here', `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0a0f1e;color:#fff;border-radius:16px;">
+          <h1 style="color:#10B981;font-size:28px;margin:0 0 8px;">Welcome, ${googleUser.name?.split(' ')[0] || 'there'}! 👋</h1>
+          <p style="color:#9ca3af;margin:0 0 24px;">You've joined the UK's most transparent sales job board. Let's get your profile set up so companies can find you.</p>
+          <a href="https://salesroles.co/dashboard/profile?mode=candidate" style="display:inline-block;background:#10B981;color:#fff;padding:14px 28px;border-radius:8px;font-weight:700;text-decoration:none;margin-bottom:24px;">Complete Your Profile →</a>
+          <p style="color:#6b7280;font-size:13px;">SalesRoles.co · Built for sales professionals</p>
+        </div>`).catch(() => { });
         }
         const token = await new SignJWT({ id: dbUser.id.toString(), email: dbUser.email, role: dbUser.role })
             .setProtectedHeader({ alg: 'HS256' })
@@ -1318,9 +1340,9 @@ app.get('/api/test/profile-view-notification', async (c) => {
         const candidate = candidates[0];
         if (!candidate)
             return c.json({ error: 'No candidate found in database' });
-        const [companies] = await pool.execute("SELECT id, name, company_name FROM users WHERE role = 'company' LIMIT 1");
+        const [companies] = await pool.execute("SELECT id, name FROM users WHERE role = 'company' LIMIT 1");
         const viewer = companies[0];
-        const viewerName = viewer?.company_name || viewer?.name || 'Test Company';
+        const viewerName = viewer?.name || 'Test Company';
         await pool.execute('INSERT INTO profile_views (candidate_id, viewer_id, viewer_name, viewer_company, action) VALUES (?, ?, ?, ?, ?)', [candidate.id, viewer?.id || null, viewerName, viewerName, 'view']);
         const [views] = await pool.execute('SELECT * FROM profile_views WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1', [candidate.id]);
         let emailResult = 'skipped - candidate is not pro';
@@ -1357,6 +1379,20 @@ app.post('/api/test/simulate-payment', async (c) => {
     const { jobId } = await c.req.json();
     await pool.execute("UPDATE jobs SET status = 'pending' WHERE id = ?", [jobId]);
     return c.json({ ok: true, message: `Job ${jobId} moved to pending` });
+});
+// --- Avatar static serving ---
+app.get('/uploads/avatars/:filename', (c) => {
+    const filename = c.req.param('filename');
+    // Sanitize: no path traversal
+    if (filename.includes('..') || filename.includes('/'))
+        return c.notFound();
+    const filePath = path.join(__dirname, '..', 'uploads', 'avatars', filename);
+    if (!existsSync(filePath))
+        return c.notFound();
+    const ext = extname(filename).toLowerCase();
+    const mime = ext === '.png' ? 'image/png' : ext === '.gif' ? 'image/gif' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+    const stream = createReadStream(filePath);
+    return new Response(stream, { headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000' } });
 });
 // --- Static file serving (production) ---
 const mimeTypes = {
@@ -1397,6 +1433,57 @@ app.get('*', (c) => {
         return c.text('App not built. Run npm run build first.', 404);
     }
 });
+// --- Arbeitnow job sync ---
+async function syncArbeitnowJobs() {
+    if (!pool)
+        return;
+    try {
+        console.log('[arbeitnow] Starting sync...');
+        const res = await fetch('https://www.arbeitnow.com/api/job-board-api?page=1');
+        if (!res.ok) {
+            console.warn('[arbeitnow] API error:', res.status);
+            return;
+        }
+        const json = await res.json();
+        const jobs = Array.isArray(json.data) ? json.data : [];
+        // Filter for sales-relevant roles
+        const salesKeywords = ['sales', 'account executive', 'account manager', 'bdr', 'sdr', 'business development', 'revenue', 'commercial', 'account director', 'partnership'];
+        const filtered = jobs.filter(j => {
+            const text = `${j.title} ${j.tags?.join(' ') || ''}`.toLowerCase();
+            return salesKeywords.some(kw => text.includes(kw));
+        });
+        let inserted = 0;
+        for (const job of filtered) {
+            const externalId = `arbeitnow-${job.slug}`;
+            // Check if already exists
+            const [existing] = await pool.execute('SELECT id FROM jobs WHERE external_id = ?', [externalId]);
+            if (existing.length > 0)
+                continue;
+            const id = externalId;
+            const title = job.title || 'Untitled';
+            const companyName = job.company_name || 'Unknown Company';
+            const location = job.location || 'Remote';
+            const description = job.description || '';
+            const url = job.url || `https://www.arbeitnow.com/jobs/${job.slug}`;
+            const workType = job.remote ? 'Remote' : 'On-site';
+            try {
+                await pool.execute(`INSERT INTO jobs (id, title, company_name, location, work_type, description, status, source, external_id, url, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'live', 'arbeitnow', ?, ?, NOW())`, [id, title, companyName, location, workType, description, externalId, url]);
+                inserted++;
+            }
+            catch {
+                // Ignore duplicate key or other insert errors
+            }
+        }
+        console.log(`[arbeitnow] Sync complete — ${inserted} new jobs inserted from ${filtered.length} sales-relevant (${jobs.length} total)`);
+    }
+    catch (err) {
+        console.error('[arbeitnow] Sync failed:', err);
+    }
+}
+// Run on startup then every 6 hours
+syncArbeitnowJobs();
+setInterval(syncArbeitnowJobs, 6 * 60 * 60 * 1000);
 // --- Server ---
 const port = parseInt(process.env.PORT || '4000');
 serve({ fetch: app.fetch, port }, () => console.log(`Server running on http://localhost:${port}`));

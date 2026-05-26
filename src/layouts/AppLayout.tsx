@@ -16,7 +16,7 @@ export function AppLayout() {
         <Navbar className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between bg-transparent border-none">
           <NavbarBrand>
             <Link to="/" className="text-2xl font-black tracking-tighter flex items-center gap-0 group">
-              <span className="text-primary transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]">SalesRoles.co</span>
+              <span className="text-primary transition-all duration-300 drop-shadow-[0_0_14px_rgba(16,185,129,0.55)] group-hover:drop-shadow-none">SalesRoles.co</span>
             </Link>
           </NavbarBrand>
 
@@ -88,7 +88,7 @@ export function AppLayout() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-20">
             <div className="space-y-8 col-span-1 md:col-span-1">
               <Link to="/" className="text-2xl font-black tracking-tighter flex items-center gap-0 group">
-                <span className="text-primary transition-all duration-300 group-hover:drop-shadow-[0_0_12px_rgba(16,185,129,0.6)]">SalesRoles.co</span>
+                <span className="text-primary transition-all duration-300 drop-shadow-[0_0_14px_rgba(16,185,129,0.55)] group-hover:drop-shadow-none">SalesRoles.co</span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed font-medium">
                 The ultimate premium job board dedicated exclusively to sales professionals. 

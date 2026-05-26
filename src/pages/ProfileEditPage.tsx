@@ -242,7 +242,7 @@ export function ProfileEditPage() {
           <div className="flex items-center gap-6">
             <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xl">
               {avatarUrl ? (
-                <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                <img src={`/uploads/avatars/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
               ) : (
                 <span className="text-white font-black text-2xl">{(name || '?')[0]?.toUpperCase()}</span>
               )}

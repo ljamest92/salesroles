@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -149,6 +149,21 @@ export function DashboardPage() {
       headers: { Authorization: `Bearer ${token}` },
     }).catch(() => {})
     setCvFilename('')
+  }
+
+  const handleAvatarUpload = async (file: File) => {
+    const token = localStorage.getItem('salesroles_token')
+    const formData = new FormData()
+    formData.append('avatar', file)
+    try {
+      const res = await fetch('/api/candidate/upload-avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.ok && data.avatar_url) setAvatarUrl(data.avatar_url)
+    } catch {}
   }
 
   // Load candidate profile data (cv, pro status)
@@ -413,13 +428,19 @@ export function DashboardPage() {
 
               {/* Avatar */}
               <div className="px-6 -mt-10 mb-4">
-                <div className="w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 border-4 border-card flex items-center justify-center overflow-hidden shadow-xl">
-                  {avatarUrl ? (
-                    <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
-                  ) : (
-                    <span className="text-white font-black text-2xl">{(profileName || user?.displayName || '?')[0]?.toUpperCase()}</span>
-                  )}
-                </div>
+                <label className="cursor-pointer group/avatar block w-20 h-20">
+                  <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f) }} />
+                  <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 border-4 border-card flex items-center justify-center overflow-hidden shadow-xl">
+                    {avatarUrl ? (
+                      <img src={`/uploads/avatars/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white font-black text-2xl">{(profileName || user?.displayName || '?')[0]?.toUpperCase()}</span>
+                    )}
+                    <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity rounded-full">
+                      <Camera size={18} className="text-white" />
+                    </div>
+                  </div>
+                </label>
               </div>
 
               <div className="px-6 pb-6 space-y-5">
