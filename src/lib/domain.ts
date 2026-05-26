@@ -12,5 +12,5 @@ export function extractDomain(url: string): string {
 
 export function getLogoUrl(domain: string): string {
   if (!domain) return ''
-  return `https://logos-api.apistemic.com/domain:${domain}`
+  return `https://img.logo.dev/${domain}?token=pk_KSqA6sEaS5GsuUtYktgY4g&size=80&format=png`
 }
