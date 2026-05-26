@@ -54,7 +54,7 @@ const privacyRoute = createRoute({ getParentRoute: () => rootRoute, path: '/priv
 const cookiesRoute = createRoute({ getParentRoute: () => rootRoute, path: '/cookies', component: CookiePolicyPage })
 const salaryInsightsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/salary-insights', component: SalaryInsightsPage })
 
-const candidateProfileRoute = createRoute({ getParentRoute: () => rootRoute, path: '/profile/$id', component: CandidateProfilePage })
+const candidateProfileRoute = createRoute({ getParentRoute: () => rootRoute, path: '/profile/$identifier', component: CandidateProfilePage })
 const candidateSearchRoute = createRoute({ getParentRoute: () => rootRoute, path: '/companies/candidates', component: CandidateSearchPage })
 const authCallbackRoute = createRoute({ getParentRoute: () => rootRoute, path: '/auth/callback', component: AuthCallbackPage })
 

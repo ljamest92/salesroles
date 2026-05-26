@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams } from '@tanstack/react-router'
 import { Container, Card, Badge } from '@blinkdotnew/ui'
-import { MapPin, Star, Share2, Briefcase, TrendingUp, Building2 } from 'lucide-react'
+import { MapPin, Star, Share2, Briefcase, TrendingUp, Building2, FileText, Link2, DollarSign, Target, Zap, Award } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 interface WorkEntry {
@@ -22,6 +22,7 @@ interface CandidateProfile {
   headline: string
   location: string
   years_in_sales: number
+  years_experience: number
   total_revenue: string
   companies_closed: number
   current_roles: string
@@ -30,10 +31,43 @@ interface CandidateProfile {
   work_history: string
   cv_filename: string
   is_pro: number
+  avatar_url: string
+  linkedin_url: string
+  target_role: string
+  skills: string
+  target_salary: string
+  current_ote: string
+  availability: string
+  achievements: string
+  industries: string
+  deal_sizes: string
+  sales_methodology: string
+  profile_slug: string
+}
+
+function safeList(v: string | null | undefined): string[] {
+  if (!v) return []
+  try { const p = JSON.parse(v); return Array.isArray(p) ? p : [] } catch {}
+  return v.split(',').map(s => s.trim()).filter(Boolean)
+}
+
+function AvailabilityBadge({ status }: { status: string }) {
+  if (!status || status === 'Not looking') return null
+  const isActive = status === 'Actively looking'
+  return (
+    <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border ${
+      isActive
+        ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+        : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+    }`}>
+      <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+      {status}
+    </span>
+  )
 }
 
 export function CandidateProfilePage() {
-  const { id } = useParams({ strict: false }) as { id: string }
+  const { identifier } = useParams({ strict: false }) as { identifier: string }
   const { user } = useAuth()
   const [profile, setProfile] = useState<CandidateProfile | null>(null)
   const [loading, setLoading] = useState(true)
@@ -42,20 +76,23 @@ export function CandidateProfilePage() {
   const [cvMsg, setCvMsg] = useState('')
 
   useEffect(() => {
-    fetch(`/api/candidates/${id}`)
+    if (!identifier) return
+    fetch(`/api/candidates/${identifier}`)
       .then(r => r.json())
       .then(data => {
         if (data.error) { setNotFound(true); return }
         setProfile(data)
-        // Track view if logged in
         const token = localStorage.getItem('salesroles_token')
         if (token) {
-          fetch(`/api/candidates/${id}/view`, { method: 'POST', headers: { Authorization: `Bearer ${token}` } }).catch(() => {})
+          fetch(`/api/candidates/${identifier}/view`, {
+            method: 'POST',
+            headers: { Authorization: `Bearer ${token}` }
+          }).catch(() => {})
         }
       })
       .catch(() => setNotFound(true))
       .finally(() => setLoading(false))
-  }, [id])
+  }, [identifier])
 
   const handleShare = () => {
     navigator.clipboard.writeText(window.location.href)
@@ -66,7 +103,9 @@ export function CandidateProfilePage() {
   const handleDownloadCV = async () => {
     const token = localStorage.getItem('salesroles_token')
     if (!token) { setCvMsg('Please log in to download CV'); return }
-    const res = await fetch(`/api/candidates/${id}/download-cv`, { headers: { Authorization: `Bearer ${token}` } })
+    const res = await fetch(`/api/candidates/${identifier}/download-cv`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
     const data = await res.json()
     if (data.filename) {
       setCvMsg(`CV: ${data.filename}`)
@@ -88,49 +127,187 @@ export function CandidateProfilePage() {
     </Container>
   )
 
-  let currentRoles: string[] = []
-  let lookingFor: string[] = []
+  const currentRoles = safeList(profile.current_roles)
+  const lookingFor = safeList(profile.looking_for)
+  const skills = safeList(profile.skills)
+  const industries = safeList(profile.industries)
+  const dealSizes = safeList(profile.deal_sizes)
+  const achievements = safeList(profile.achievements)
+
   let workHistory: WorkEntry[] = []
-  try { currentRoles = JSON.parse(profile.current_roles || '[]') } catch {}
-  try { lookingFor = JSON.parse(profile.looking_for || '[]') } catch {}
   try { workHistory = JSON.parse(profile.work_history || '[]') } catch {}
+
+  const yearsExp = profile.years_experience ?? profile.years_in_sales
+
+  const initials = (profile.name || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)
 
   return (
     <Container className="pt-12 pb-16 md:pt-16 max-w-3xl mx-auto space-y-8 animate-fade-in">
+
       {/* Header card */}
       <Card className="p-8 md:p-10 border border-white/5 bg-card/50 rounded-[40px] space-y-6">
+
+        {/* Top row: avatar + name block + action buttons */}
         <div className="flex flex-col md:flex-row justify-between gap-6">
-          <div className="space-y-3">
-            <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-3xl md:text-4xl font-black tracking-tighter">{profile.name}</h1>
-              {profile.is_pro === 1 && (
-                <span className="flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold">
-                  <Star size={10} /> PRO
-                </span>
+          <div className="flex items-start gap-5">
+            {/* Avatar */}
+            <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-500/10 border border-emerald-500/20 flex items-center justify-center overflow-hidden">
+              {profile.avatar_url
+                ? <img src={profile.avatar_url} alt={profile.name} className="w-full h-full object-cover" />
+                : <span className="text-2xl font-black text-emerald-400">{initials}</span>
+              }
+            </div>
+
+            <div className="space-y-2 min-w-0">
+              {/* Name + PRO badge */}
+              <div className="flex items-center gap-3 flex-wrap">
+                <h1 className="text-3xl md:text-4xl font-black tracking-tighter leading-none">{profile.name}</h1>
+                {profile.is_pro === 1 && (
+                  <span className="flex items-center gap-1 text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2.5 py-1 rounded-full font-bold shrink-0">
+                    <Star size={10} /> PRO
+                  </span>
+                )}
+              </div>
+
+              {/* Headline */}
+              {profile.headline && (
+                <p className="text-white/70 font-medium text-lg leading-snug">{profile.headline}</p>
+              )}
+
+              {/* Target role if different from headline */}
+              {profile.target_role && profile.target_role !== profile.headline && (
+                <p className="text-sm text-white/40 flex items-center gap-1.5">
+                  <Target size={13} className="text-emerald-500/60" />
+                  Targeting: <span className="text-white/60 font-medium">{profile.target_role}</span>
+                </p>
+              )}
+
+              {/* Availability badge */}
+              {profile.availability && profile.availability !== 'Not looking' && (
+                <AvailabilityBadge status={profile.availability} />
+              )}
+
+              {/* Location */}
+              {profile.location && (
+                <p className="flex items-center gap-1.5 text-sm text-white/40">
+                  <MapPin size={13} className="text-primary" /> {profile.location}
+                </p>
               )}
             </div>
-            {profile.headline && <p className="text-white/60 font-medium">{profile.headline}</p>}
-            {profile.location && (
-              <p className="flex items-center gap-2 text-sm text-white/40">
-                <MapPin size={14} className="text-primary" /> {profile.location}
-              </p>
-            )}
           </div>
-          <div className="flex gap-3 shrink-0">
-            <button onClick={handleShare} className="flex items-center gap-2 text-xs font-bold border border-white/10 px-4 py-2 rounded-lg text-white/60 hover:text-white hover:border-white/30 transition-colors">
-              <Share2 size={14} /> {copied ? 'Copied!' : 'Share'}
+
+          {/* Action buttons */}
+          <div className="flex flex-row md:flex-col gap-2 shrink-0 items-start md:items-end">
+            <button
+              onClick={handleShare}
+              className="flex items-center gap-2 text-xs font-bold border border-white/10 px-4 py-2 rounded-lg text-white/60 hover:text-white hover:border-white/30 transition-colors"
+            >
+              <Share2 size={13} /> {copied ? 'Copied!' : 'Share'}
             </button>
             {profile.cv_filename && (
-              <button onClick={handleDownloadCV} className="flex items-center gap-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg transition-colors">
-                Download CV
+              <button
+                onClick={handleDownloadCV}
+                className="flex items-center gap-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <FileText size={13} /> Download CV
               </button>
+            )}
+            {profile.linkedin_url && (
+              <a
+                href={profile.linkedin_url}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 text-xs font-bold border border-white/10 px-4 py-2 rounded-lg text-white/60 hover:text-white hover:border-white/30 transition-colors"
+              >
+                <Link2 size={13} /> LinkedIn
+              </a>
             )}
           </div>
         </div>
 
-        {cvMsg && <p className="text-xs text-white/40">{cvMsg}</p>}
+        {cvMsg && <p className="text-xs text-white/40 -mt-2">{cvMsg}</p>}
 
-        {/* Role tags */}
+        {/* Stats grid */}
+        {(yearsExp != null || profile.target_salary || profile.current_ote || profile.total_revenue || profile.companies_closed != null) && (
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-2">
+            {yearsExp != null && (
+              <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
+                <p className="text-2xl font-black text-emerald-400">{yearsExp}</p>
+                <p className="text-[10px] font-bold tracking-widest text-white/40">YRS EXP</p>
+              </div>
+            )}
+            {profile.target_salary && (
+              <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
+                <p className="text-xl font-black text-emerald-400 truncate">{profile.target_salary}</p>
+                <p className="text-[10px] font-bold tracking-widest text-white/40">TARGET OTE</p>
+              </div>
+            )}
+            {profile.current_ote && (
+              <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
+                <p className="text-xl font-black text-white/80 truncate">{profile.current_ote}</p>
+                <p className="text-[10px] font-bold tracking-widest text-white/40">CURRENT OTE</p>
+              </div>
+            )}
+            {profile.total_revenue && (
+              <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
+                <p className="text-xl font-black text-emerald-400 truncate">{profile.total_revenue}</p>
+                <p className="text-[10px] font-bold tracking-widest text-white/40">TOTAL REVENUE</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Deal sizes + methodology */}
+        {(dealSizes.length > 0 || profile.sales_methodology) && (
+          <div className="flex flex-wrap gap-6 pt-1">
+            {dealSizes.length > 0 && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold tracking-widest text-white/30">DEAL SIZES</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {dealSizes.map(d => (
+                    <span key={d} className="flex items-center gap-1 text-xs bg-white/5 text-white/60 border border-white/10 px-2.5 py-1 rounded-full">
+                      <DollarSign size={11} className="text-emerald-500/60" /> {d}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {profile.sales_methodology && (
+              <div className="space-y-1.5">
+                <p className="text-[10px] font-bold tracking-widest text-white/30">METHODOLOGY</p>
+                <span className="inline-flex items-center gap-1 text-xs bg-white/5 text-white/60 border border-white/10 px-2.5 py-1 rounded-full">
+                  <Zap size={11} className="text-emerald-500/60" /> {profile.sales_methodology}
+                </span>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Industries */}
+        {industries.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold tracking-widest text-white/30">INDUSTRIES</p>
+            <div className="flex flex-wrap gap-2">
+              {industries.map(ind => (
+                <Badge key={ind} variant="outline" className="text-xs border-white/10 text-white/50">{ind}</Badge>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Skills */}
+        {skills.length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold tracking-widest text-white/30">SKILLS</p>
+            <div className="flex flex-wrap gap-2">
+              {skills.map(s => (
+                <span key={s} className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-medium">{s}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Role tags (legacy) */}
         {currentRoles.length > 0 && (
           <div className="space-y-2">
             <p className="text-[10px] font-bold tracking-widest text-white/30">CURRENT ROLES</p>
@@ -148,36 +325,30 @@ export function CandidateProfilePage() {
           </div>
         )}
 
-        {/* Stats */}
-        <div className="grid grid-cols-3 gap-4 pt-2">
-          {profile.years_in_sales != null && (
-            <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
-              <p className="text-2xl font-black text-emerald-400">{profile.years_in_sales}</p>
-              <p className="text-[10px] font-bold tracking-widest text-white/40">YRS IN SALES</p>
-            </div>
-          )}
-          {profile.total_revenue && (
-            <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
-              <p className="text-2xl font-black text-emerald-400">{profile.total_revenue}</p>
-              <p className="text-[10px] font-bold tracking-widest text-white/40">TOTAL REVENUE</p>
-            </div>
-          )}
-          {profile.companies_closed != null && (
-            <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
-              <p className="text-2xl font-black text-emerald-400">{profile.companies_closed}</p>
-              <p className="text-[10px] font-bold tracking-widest text-white/40">COMPANIES</p>
-            </div>
-          )}
-        </div>
-
         {/* Bio */}
         {profile.bio && (
           <div className="space-y-2 pt-2 border-t border-white/5">
             <p className="text-[10px] font-bold tracking-widest text-white/30">ABOUT</p>
-            <p className="text-sm text-white/60 leading-relaxed">{profile.bio}</p>
+            <p className="text-sm text-white/60 leading-relaxed whitespace-pre-line">{profile.bio}</p>
           </div>
         )}
       </Card>
+
+      {/* Key achievements */}
+      {achievements.length > 0 && (
+        <Card className="p-6 md:p-8 border border-white/5 bg-card/30 rounded-[32px] space-y-4">
+          <h2 className="text-lg font-black tracking-tight flex items-center gap-2">
+            <Award size={16} className="text-emerald-400" /> Key Achievements
+          </h2>
+          <ul className="space-y-2">
+            {achievements.map((a, i) => (
+              <li key={i} className="flex items-start gap-2.5 text-sm text-white/60">
+                <TrendingUp size={14} className="text-emerald-400 mt-0.5 shrink-0" /> {a}
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
 
       {/* Work history */}
       {workHistory.length > 0 && (
@@ -196,7 +367,9 @@ export function CandidateProfilePage() {
                   </p>
                 </div>
                 {(entry.start || entry.end) && (
-                  <p className="text-sm text-white/30 font-medium shrink-0">{entry.start}{entry.start && entry.end ? ' – ' : ''}{entry.end}</p>
+                  <p className="text-sm text-white/30 font-medium shrink-0">
+                    {entry.start}{entry.start && entry.end ? ' – ' : ''}{entry.end}
+                  </p>
                 )}
               </div>
 
@@ -217,7 +390,9 @@ export function CandidateProfilePage() {
                 </div>
               )}
 
-              {entry.description && <p className="text-sm text-white/50 leading-relaxed">{entry.description}</p>}
+              {entry.description && (
+                <p className="text-sm text-white/50 leading-relaxed">{entry.description}</p>
+              )}
 
               {entry.highlights && (
                 <ul className="space-y-1.5">

@@ -7,7 +7,7 @@ import { CheckCircle2, Camera } from 'lucide-react'
 const TOKEN_KEY = 'salesroles_token'
 
 const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'Head of Sales', 'CSM', 'Full Cycle AE', 'RevOps', 'Closer']
-const AVAILABILITY_OPTIONS = ['Immediately', 'Within 1 month', 'Within 3 months', 'Open to opportunities', 'Not looking']
+const AVAILABILITY_OPTIONS = ['Actively looking', 'Open to opportunities', 'Not looking']
 const INDUSTRY_OPTIONS = ['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'HR Tech', 'MarTech', 'Cybersecurity', 'Enterprise Software', 'E-commerce', 'Logistics', 'Real Estate Tech', 'InsurTech']
 const DEAL_SIZE_OPTIONS = ['<$10K', '$10K–$50K', '$50K–$100K', '$100K–$500K', '$500K–$1M', '$1M+']
 const METHODOLOGY_OPTIONS = ['MEDDIC', 'SPIN Selling', 'Challenger Sale', 'Solution Selling', 'Command of the Message', 'Sandler', 'Value-Based Selling', 'SPIN', 'Gap Selling']
@@ -106,7 +106,7 @@ export function ProfileEditPage() {
 
   // CV + visibility
   const [cvFilename, setCvFilename] = useState('')
-  const [isPublic, setIsPublic] = useState(false)
+  const [isPublic, setIsPublic] = useState(true)
 
   // Legacy fields (kept for backwards compat with existing backend)
   const [yearsInSales, setYearsInSales] = useState('')
@@ -304,6 +304,20 @@ export function ProfileEditPage() {
                 <option value="">Select availability</option>
                 {AVAILABILITY_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
+              <div className="mt-2 space-y-1">
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
+                  Actively Looking: appear first in search with a green badge
+                </p>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
+                  Open to Opportunities: visible in search without the active badge
+                </p>
+                <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                  <span className="w-1.5 h-1.5 rounded-full bg-white/20 inline-block" />
+                  Not Looking: hidden from all company searches
+                </p>
+              </div>
             </Field>
           </div>
 

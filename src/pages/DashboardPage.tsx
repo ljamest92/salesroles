@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -430,6 +430,29 @@ export function DashboardPage() {
                   {profileData?.location && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><MapPin size={12} /> {profileData.location}</p>
                   )}
+                  {profileData?.availability ? (
+                    <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold mt-2 ${
+                      profileData.availability === 'Actively looking'
+                        ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                        : profileData.availability === 'Open to opportunities'
+                        ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                        : 'bg-white/5 text-white/30 border-white/10'
+                    }`}>
+                      <span className={`w-1.5 h-1.5 rounded-full ${
+                        profileData.availability === 'Actively looking' ? 'bg-emerald-400 animate-pulse'
+                        : profileData.availability === 'Open to opportunities' ? 'bg-yellow-400'
+                        : 'bg-white/20'
+                      }`} />
+                      {profileData.availability}
+                    </div>
+                  ) : (
+                    <Link to="/dashboard/profile" search={{ mode: 'candidate' } as any}>
+                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border border-dashed border-white/20 text-white/30 hover:text-white/50 text-[10px] mt-2 transition-colors cursor-pointer">
+                        <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
+                        Set your availability
+                      </div>
+                    </Link>
+                  )}
                 </div>
 
                 <Separator className="bg-border" />
@@ -584,45 +607,76 @@ export function DashboardPage() {
                 </TabsContent>
 
                 <TabsContent value="pro" className="mt-6">
-                  {!isPro ? (
-                    <div className="bg-white/5 border border-emerald-500/20 rounded-xl p-6">
-                      <div className="flex items-center gap-2 mb-3">
-                        <Star size={18} className="text-emerald-400" />
-                        <h3 className="text-white font-bold text-lg">Go Pro</h3>
-                      </div>
-                      <p className="text-white/60 text-sm mb-4">See exactly which companies are viewing your profile and downloading your CV.</p>
-                      <ul className="space-y-2 mb-6">
-                        {['See who viewed your profile', 'See who downloaded your CV', 'Pro badge on your profile', 'Priority placement in search'].map(b => (
-                          <li key={b} className="flex items-center gap-2 text-sm text-white/70">
-                            <span className="text-emerald-400">✓</span>{b}
-                          </li>
-                        ))}
-                      </ul>
-                      <a
-                        href={`/api/payments/pro-checkout?token=${localStorage.getItem('salesroles_token') || ''}`}
-                        className="w-full block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3 rounded-lg transition-colors"
-                      >
-                        Upgrade to Pro — $49/month
-                      </a>
-                    </div>
-                  ) : (
+                  {isPro ? (
                     <div className="space-y-4">
-                      <h3 className="text-lg font-black tracking-tight text-emerald-400 flex items-center gap-2"><Star size={16} /> Pro Activity</h3>
+                      <div className="flex items-center gap-2">
+                        <Eye size={16} className="text-emerald-400" />
+                        <h3 className="text-base font-black tracking-tight text-emerald-400">Who Viewed Your Profile</h3>
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">PRO</span>
+                      </div>
                       {profileViews.length === 0 ? (
                         <p className="text-white/40 text-sm p-8 text-center border border-dashed border-white/10 rounded-xl">No profile views yet. Make your profile public to start appearing in company searches.</p>
                       ) : (
-                        profileViews.map((v, i) => (
+                        profileViews.map((v: any, i: number) => (
                           <Card key={i} className="p-4 border border-white/5 bg-card/30 rounded-xl">
                             <div className="flex justify-between items-center">
-                              <div>
-                                <p className="text-sm font-bold">{v.viewer_name || 'A company'}</p>
-                                <p className="text-xs text-white/40">{v.action === 'cv_download' ? 'Downloaded your CV' : 'Viewed your profile'}</p>
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
+                                  <Building2 size={14} className="text-emerald-400" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-bold">{v.viewer_name || 'A company'}</p>
+                                  <p className="text-xs text-white/40">{v.action === 'cv_download' ? 'Downloaded your CV' : 'Viewed your profile'}</p>
+                                </div>
                               </div>
-                              <p className="text-xs text-white/30">{new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                              <p className="text-xs text-white/30 shrink-0">{new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                             </div>
                           </Card>
                         ))
                       )}
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {/* Locked teaser */}
+                      <div className="border border-white/10 rounded-xl p-6 bg-white/5 relative overflow-hidden">
+                        <div className="flex items-center gap-2 mb-4">
+                          <Eye size={16} className="text-white/30" />
+                          <h3 className="text-white/30 font-bold text-sm">Who Viewed Your Profile</h3>
+                          <span className="text-[10px] bg-white/5 text-white/30 border border-white/10 px-2 py-0.5 rounded-full">PRO</span>
+                        </div>
+                        <div className="space-y-3 blur-sm pointer-events-none select-none" aria-hidden>
+                          {[1,2,3].map(i => (
+                            <div key={i} className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <div className="w-8 h-8 rounded-full bg-white/10" />
+                                <div className={`h-3 bg-white/10 rounded w-${i === 1 ? '28' : i === 2 ? '36' : '24'}`} />
+                              </div>
+                              <div className="h-3 w-12 bg-white/10 rounded" />
+                            </div>
+                          ))}
+                        </div>
+                        <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/70 gap-3">
+                          <Star size={20} className="text-emerald-400" />
+                          <p className="text-white/70 text-sm font-medium text-center px-4">Upgrade to Pro to see who's viewing your profile</p>
+                          <a
+                            href={`/api/payments/pro-checkout?token=${localStorage.getItem('salesroles_token') || ''}`}
+                            className="text-xs bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-4 py-2 rounded-lg transition-colors"
+                          >
+                            Upgrade to Pro — $49/month
+                          </a>
+                        </div>
+                      </div>
+                      {/* Benefits list */}
+                      <div className="bg-white/5 border border-emerald-500/20 rounded-xl p-5">
+                        <h4 className="text-sm font-bold mb-3 text-emerald-400">Pro includes</h4>
+                        <ul className="space-y-2">
+                          {['See who viewed your profile', 'See who downloaded your CV', 'Pro badge in search results', 'Priority placement in candidate search'].map(b => (
+                            <li key={b} className="flex items-center gap-2 text-sm text-white/60">
+                              <CheckCircle2 size={14} className="text-emerald-400 shrink-0" />{b}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
                     </div>
                   )}
                 </TabsContent>

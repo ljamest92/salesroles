@@ -1,173 +1,409 @@
-import React, { useEffect, useState } from 'react'
-import { Link } from '@tanstack/react-router'
-import { Container, Card, Badge } from '@blinkdotnew/ui'
-import { Search, MapPin, Star, Download } from 'lucide-react'
+import React, { useEffect, useState, useCallback, useRef } from 'react'
+import { useNavigate } from '@tanstack/react-router'
+import { Container } from '@blinkdotnew/ui'
+import { Search, MapPin, Star, ChevronRight, FileText, Link2, SlidersHorizontal, X } from 'lucide-react'
 
 interface Candidate {
   id: number
   name: string
   headline: string
   location: string
-  years_in_sales: number
-  total_revenue: string
-  current_roles: string
-  looking_for: string
+  target_role: string
+  years_experience: string
+  skills: string
+  target_salary: string
+  availability: string
+  industries: string
+  deal_sizes: string
+  sales_methodology: string
+  avatar_url: string
   cv_filename: string
   is_pro: number
+  profile_slug: string
+  achievements: string
+  current_ote: string
+  linkedin_url: string
 }
 
-const CANDIDATES_PER_PAGE = 12
+const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Senior Account Executive', 'Enterprise Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'BDM']
+const EXPERIENCE_OPTIONS = ['Less than 1', '1-2', '3-5', '5-10', '10+']
+const AVAILABILITY_OPTIONS = ['Actively looking', 'Open to opportunities']
+const INDUSTRY_OPTIONS = ['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'HR Tech', 'MarTech', 'Cybersecurity', 'Enterprise Software', 'E-commerce', 'Logistics', 'Real Estate Tech', 'InsurTech']
+const DEAL_SIZE_OPTIONS = ['<$10K', '$10K–$50K', '$50K–$100K', '$100K–$500K', '$500K–$1M', '$1M+']
+const METHODOLOGY_OPTIONS = ['MEDDIC', 'SPIN Selling', 'Challenger Sale', 'Command of the Message', 'Sandler', 'Gap Selling']
+
+const defaultFilters = {
+  search: '',
+  target_role: '',
+  years_experience: '',
+  availability: '',
+  industry: '',
+  deal_size: '',
+  methodology: '',
+  location: '',
+  sort_by: 'relevance',
+}
+
+const selCls = "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50 text-white"
+const inpCls = "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50 text-white"
 
 export function CandidateSearchPage() {
+  const navigate = useNavigate()
+  const [filters, setFilters] = useState({ ...defaultFilters })
   const [candidates, setCandidates] = useState<Candidate[]>([])
+  const [total, setTotal] = useState(0)
+  const [page, setPage] = useState(1)
+  const [pages, setPages] = useState(0)
   const [loading, setLoading] = useState(true)
-  const [searchQuery, setSearchQuery] = useState('')
-  const [currentPage, setCurrentPage] = useState(1)
-  const [cvMessages, setCvMessages] = useState<Record<number, string>>({})
+  const [showFilters, setShowFilters] = useState(false)
+  const searchTimer = useRef<any>(null)
 
-  useEffect(() => {
+  const fetchCandidates = useCallback(async (f: typeof filters, p: number) => {
     setLoading(true)
-    fetch(`/api/candidates?search=${encodeURIComponent(searchQuery)}`)
-      .then(r => r.json())
-      .then(data => { setCandidates(Array.isArray(data) ? data : []); setCurrentPage(1) })
-      .catch(() => setCandidates([]))
-      .finally(() => setLoading(false))
-  }, [searchQuery])
+    const params = new URLSearchParams()
+    if (f.search) params.set('search', f.search)
+    if (f.target_role) params.set('target_role', f.target_role)
+    if (f.years_experience) params.set('years_experience', f.years_experience)
+    if (f.availability) params.set('availability', f.availability)
+    if (f.industry) params.set('industry', f.industry)
+    if (f.deal_size) params.set('deal_size', f.deal_size)
+    if (f.methodology) params.set('methodology', f.methodology)
+    if (f.location) params.set('location', f.location)
+    params.set('sort_by', f.sort_by)
+    params.set('page', String(p))
+    try {
+      const res = await fetch(`/api/candidates?${params}`)
+      const data = await res.json()
+      setCandidates(data.candidates || [])
+      setTotal(data.total || 0)
+      setPages(data.pages || 0)
+    } catch {
+      setCandidates([])
+    } finally {
+      setLoading(false)
+    }
+  }, [])
 
-  const handleDownloadCV = async (candidateId: number) => {
-    const token = localStorage.getItem('salesroles_token')
-    if (!token) { setCvMessages(m => ({ ...m, [candidateId]: 'Log in to download' })); return }
-    const res = await fetch(`/api/candidates/${candidateId}/download-cv`, { headers: { Authorization: `Bearer ${token}` } })
-    const data = await res.json()
-    setCvMessages(m => ({ ...m, [candidateId]: data.filename ? `CV: ${data.filename}` : (data.error || 'No CV') }))
+  // Debounce search, instant for other filters
+  const updateFilter = (key: string, value: string) => {
+    const next = { ...filters, [key]: value }
+    setFilters(next)
+    setPage(1)
+    if (key === 'search') {
+      clearTimeout(searchTimer.current)
+      searchTimer.current = setTimeout(() => fetchCandidates(next, 1), 350)
+    } else {
+      fetchCandidates(next, 1)
+    }
   }
 
-  const totalPages = Math.ceil(candidates.length / CANDIDATES_PER_PAGE)
-  const paginated = candidates.slice((currentPage - 1) * CANDIDATES_PER_PAGE, currentPage * CANDIDATES_PER_PAGE)
+  const clearFilters = () => {
+    setFilters({ ...defaultFilters })
+    setPage(1)
+    fetchCandidates({ ...defaultFilters }, 1)
+  }
+
+  useEffect(() => {
+    fetchCandidates(filters, page)
+  }, [page]) // eslint-disable-line
+
+  const activeFilterCount = Object.entries(filters).filter(([k, v]) => k !== 'sort_by' && v !== '').length
+
+  const safeList = (v: string | null | undefined): string[] => {
+    if (!v) return []
+    try { return JSON.parse(v) } catch { return v.split(',').map(s => s.trim()).filter(Boolean) }
+  }
+
+  const FilterSidebar = () => (
+    <div className="space-y-5">
+      <div className="flex items-center justify-between">
+        <h3 className="text-xs font-black tracking-widest text-muted-foreground">FILTERS</h3>
+        {activeFilterCount > 0 && (
+          <button onClick={clearFilters} className="text-xs text-white/40 hover:text-white/70 flex items-center gap-1 transition-colors">
+            <X size={12} /> Clear all
+          </button>
+        )}
+      </div>
+
+      {/* Search */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">SEARCH</label>
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+          <input type="text" placeholder="Name, headline, skills..." value={filters.search}
+            onChange={e => updateFilter('search', e.target.value)}
+            className={inpCls + ' pl-9'} />
+        </div>
+      </div>
+
+      {/* Role */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">ROLE</label>
+        <select value={filters.target_role} onChange={e => updateFilter('target_role', e.target.value)} className={selCls}>
+          <option value="">All Roles</option>
+          {TARGET_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        </select>
+      </div>
+
+      {/* Experience */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">EXPERIENCE</label>
+        <select value={filters.years_experience} onChange={e => updateFilter('years_experience', e.target.value)} className={selCls}>
+          <option value="">Any</option>
+          {EXPERIENCE_OPTIONS.map(o => <option key={o} value={o}>{o.replace('-', '–')} years</option>)}
+        </select>
+      </div>
+
+      {/* Availability */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">AVAILABILITY</label>
+        <select value={filters.availability} onChange={e => updateFilter('availability', e.target.value)} className={selCls}>
+          <option value="">Any</option>
+          {AVAILABILITY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+
+      {/* Industry */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">INDUSTRY</label>
+        <select value={filters.industry} onChange={e => updateFilter('industry', e.target.value)} className={selCls}>
+          <option value="">Any</option>
+          {INDUSTRY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+
+      {/* Deal Size */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">DEAL SIZE</label>
+        <select value={filters.deal_size} onChange={e => updateFilter('deal_size', e.target.value)} className={selCls}>
+          <option value="">Any</option>
+          {DEAL_SIZE_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+
+      {/* Methodology */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">METHODOLOGY</label>
+        <select value={filters.methodology} onChange={e => updateFilter('methodology', e.target.value)} className={selCls}>
+          <option value="">Any</option>
+          {METHODOLOGY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        </select>
+      </div>
+
+      {/* Location */}
+      <div className="space-y-1.5">
+        <label className="text-[10px] font-black tracking-widest text-white/40">LOCATION</label>
+        <input type="text" placeholder="City or country..." value={filters.location}
+          onChange={e => updateFilter('location', e.target.value)} className={inpCls} />
+      </div>
+    </div>
+  )
 
   return (
-    <Container className="pt-12 pb-16 md:pt-16 space-y-10 animate-fade-in">
-      <div className="space-y-4">
+    <Container className="pt-12 pb-16 md:pt-16 animate-fade-in">
+      {/* Header */}
+      <div className="space-y-3 mb-8">
         <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
           Find <span className="text-primary">Sales Talent.</span>
         </h1>
         <p className="text-white/50 text-lg font-medium">Browse verified sales professionals open to new opportunities.</p>
       </div>
 
-      <div className="relative max-w-xl">
-        <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-white/30" size={18} />
-        <input
-          type="text"
-          value={searchQuery}
-          onChange={e => setSearchQuery(e.target.value)}
-          placeholder="Search by name, headline, or role type..."
-          className="w-full bg-card/50 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors"
-        />
-      </div>
+      <div className="flex gap-8">
+        {/* Filter sidebar — desktop */}
+        <aside className="hidden lg:block w-64 shrink-0">
+          <div className="sticky top-8 bg-card/30 border border-white/5 rounded-2xl p-5">
+            <FilterSidebar />
+          </div>
+        </aside>
 
-      {!loading && candidates.length > 0 && (
-        <p className="text-white/30 text-sm">
-          Showing {(currentPage - 1) * CANDIDATES_PER_PAGE + 1}–{Math.min(currentPage * CANDIDATES_PER_PAGE, candidates.length)} of {candidates.length} candidates
-        </p>
-      )}
+        {/* Main content */}
+        <div className="flex-1 min-w-0 space-y-5">
+          {/* Mobile filter button + sort bar */}
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 flex-1">
+              <button
+                onClick={() => setShowFilters(!showFilters)}
+                className="lg:hidden flex items-center gap-2 border border-white/10 text-white/60 hover:text-white px-3 py-2 rounded-lg text-sm transition-colors"
+              >
+                <SlidersHorizontal size={14} />
+                Filters
+                {activeFilterCount > 0 && (
+                  <span className="bg-emerald-500 text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">{activeFilterCount}</span>
+                )}
+              </button>
+              <p className="text-white/40 text-sm">
+                {total} candidate{total !== 1 ? 's' : ''}
+                {activeFilterCount > 0 && <span className="text-emerald-400 ml-1">({activeFilterCount} filter{activeFilterCount !== 1 ? 's' : ''} active)</span>}
+              </p>
+            </div>
+            <select
+              value={filters.sort_by}
+              onChange={e => updateFilter('sort_by', e.target.value)}
+              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 shrink-0"
+            >
+              <option value="relevance">Most Relevant</option>
+              <option value="newest">Newest First</option>
+              <option value="experience_high">Most Experienced</option>
+              <option value="experience_low">Least Experienced</option>
+            </select>
+          </div>
 
-      {loading ? (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {Array(6).fill(0).map((_, i) => <Card key={i} className="h-48 animate-pulse bg-card/20 rounded-[28px]" />)}
-        </div>
-      ) : paginated.length === 0 ? (
-        <div className="py-20 text-center border border-dashed border-white/10 rounded-[40px]">
-          <p className="text-white/40 font-medium">No candidates found. Try a different search.</p>
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {paginated.map(c => {
-            let roles: string[] = []
-            let lookingFor: string[] = []
-            try { roles = JSON.parse(c.current_roles || '[]') } catch {}
-            try { lookingFor = JSON.parse(c.looking_for || '[]') } catch {}
+          {/* Mobile filters drawer */}
+          {showFilters && (
+            <div className="lg:hidden bg-card/50 border border-white/10 rounded-2xl p-5">
+              <FilterSidebar />
+            </div>
+          )}
 
-            return (
-              <Card key={c.id} className="p-6 border border-white/5 bg-card/30 rounded-[28px] space-y-4 flex flex-col">
-                <div className="space-y-1 flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-black text-lg tracking-tight">{c.name}</h3>
-                    {c.is_pro === 1 && (
-                      <span className="flex items-center gap-0.5 text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full font-bold">
-                        <Star size={8} /> PRO
+          {/* Candidates grid */}
+          {loading ? (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {Array(6).fill(0).map((_, i) => (
+                <div key={i} className="h-56 rounded-xl bg-white/5 animate-pulse" />
+              ))}
+            </div>
+          ) : candidates.length === 0 ? (
+            <div className="py-20 text-center border border-dashed border-white/10 rounded-2xl">
+              <p className="text-white/40 font-medium mb-2">No candidates found.</p>
+              {activeFilterCount > 0 && (
+                <button onClick={clearFilters} className="text-primary text-sm font-bold hover:underline">Clear filters</button>
+              )}
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 xl:grid-cols-3 gap-4">
+              {candidates.map(c => {
+                const skills = safeList(c.skills)
+                const industries = safeList(c.industries)
+                const dealSizes = safeList(c.deal_sizes)
+                const slug = c.profile_slug || String(c.id)
+
+                return (
+                  <div
+                    key={c.id}
+                    onClick={() => navigate({ to: `/profile/${slug}` as any })}
+                    className="bg-white/5 border border-white/10 hover:border-emerald-500/30 rounded-xl p-5 transition-all duration-200 group cursor-pointer flex flex-col gap-3"
+                  >
+                    {/* Header */}
+                    <div className="flex items-start gap-3">
+                      <div className="w-11 h-11 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden">
+                        {c.avatar_url ? (
+                          <img src={`/uploads/avatars/${c.avatar_url}`} alt={c.name} className="w-full h-full object-cover" />
+                        ) : (
+                          <span className="text-emerald-400 font-bold text-sm">{c.name?.[0]?.toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <h3 className="text-white font-semibold text-sm">{c.name}</h3>
+                          {c.is_pro === 1 && (
+                            <span className="text-[9px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 rounded-full flex items-center gap-0.5 font-bold">
+                              <Star size={8} /> PRO
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-white/50 text-xs truncate mt-0.5">{c.headline || c.target_role || 'Sales Professional'}</p>
+                        {c.location && (
+                          <p className="text-white/30 text-xs flex items-center gap-1 mt-0.5">
+                            <MapPin size={10} /> {c.location}
+                          </p>
+                        )}
+                      </div>
+                      {c.availability && c.availability !== 'Not looking' && (
+                        <span className={`shrink-0 text-[9px] px-1.5 py-0.5 rounded-full border font-bold ${
+                          c.availability === 'Actively looking'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                            : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
+                        }`}>
+                          {c.availability === 'Actively looking' ? 'Active' : 'Open'}
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Stats */}
+                    {(c.years_experience || c.target_salary || dealSizes.length > 0) && (
+                      <div className="grid grid-cols-3 gap-2">
+                        {c.years_experience && (
+                          <div className="bg-white/5 rounded-lg p-2 text-center">
+                            <p className="text-emerald-400 font-bold text-sm">{c.years_experience}</p>
+                            <p className="text-white/30 text-[9px]">Yrs Exp</p>
+                          </div>
+                        )}
+                        {c.target_salary && (
+                          <div className="bg-white/5 rounded-lg p-2 text-center">
+                            <p className="text-emerald-400 font-bold text-xs truncate">{c.target_salary}</p>
+                            <p className="text-white/30 text-[9px]">Target OTE</p>
+                          </div>
+                        )}
+                        {dealSizes.length > 0 && (
+                          <div className="bg-white/5 rounded-lg p-2 text-center">
+                            <p className="text-emerald-400 font-bold text-xs truncate">{dealSizes[0]}</p>
+                            <p className="text-white/30 text-[9px]">Deal Size</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* Industries */}
+                    {industries.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {industries.slice(0, 3).map((ind, i) => (
+                          <span key={i} className="text-[10px] bg-white/5 border border-white/10 text-white/50 px-2 py-0.5 rounded-full">{ind}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Skills */}
+                    {skills.length > 0 && (
+                      <div className="flex flex-wrap gap-1">
+                        {skills.slice(0, 4).map((s, i) => (
+                          <span key={i} className="text-[10px] bg-emerald-500/10 border border-emerald-500/20 text-emerald-400/80 px-2 py-0.5 rounded-full">{s}</span>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* Footer */}
+                    <div className="flex items-center justify-between pt-2 border-t border-white/5 mt-auto">
+                      <div className="flex items-center gap-2">
+                        {c.cv_filename && (
+                          <span className="flex items-center gap-1 text-[10px] text-white/30"><FileText size={10} /> CV</span>
+                        )}
+                        {c.linkedin_url && (
+                          <span className="flex items-center gap-1 text-[10px] text-white/30"><Link2 size={10} /> LinkedIn</span>
+                        )}
+                      </div>
+                      <span className="text-[10px] text-emerald-400 group-hover:text-emerald-300 flex items-center gap-0.5 transition-colors font-bold">
+                        View <ChevronRight size={10} />
                       </span>
-                    )}
+                    </div>
                   </div>
-                  {c.headline && <p className="text-sm text-white/50">{c.headline}</p>}
-                  {c.location && <p className="flex items-center gap-1.5 text-xs text-white/30"><MapPin size={12} className="text-primary" /> {c.location}</p>}
-                </div>
+                )
+              })}
+            </div>
+          )}
 
-                {roles.length > 0 && (
-                  <div className="flex flex-wrap gap-1.5">
-                    {roles.slice(0, 3).map(r => <Badge key={r} variant="outline" className="text-[10px] border-white/10 text-white/50">{r}</Badge>)}
-                    {roles.length > 3 && <span className="text-[10px] text-white/30">+{roles.length - 3}</span>}
-                  </div>
-                )}
-
-                {(c.years_in_sales != null || c.total_revenue) && (
-                  <div className="flex gap-4 text-center">
-                    {c.years_in_sales != null && (
-                      <div>
-                        <p className="text-sm font-black text-emerald-400">{c.years_in_sales}</p>
-                        <p className="text-[9px] font-bold text-white/30 tracking-widest">YRS</p>
-                      </div>
-                    )}
-                    {c.total_revenue && (
-                      <div>
-                        <p className="text-sm font-black text-emerald-400">{c.total_revenue}</p>
-                        <p className="text-[9px] font-bold text-white/30 tracking-widest">REVENUE</p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {cvMessages[c.id] && <p className="text-[11px] text-white/40">{cvMessages[c.id]}</p>}
-
-                <div className="flex gap-2 pt-1">
-                  <Link to={`/profile/${c.id}`} className="flex-1 text-center text-xs font-bold bg-white/5 hover:bg-white/10 text-white py-2 rounded-lg transition-colors">
-                    View Profile
-                  </Link>
-                  {c.cv_filename && (
-                    <button onClick={() => handleDownloadCV(c.id)} className="flex items-center gap-1.5 text-xs font-bold border border-white/10 hover:border-emerald-500/40 hover:text-emerald-400 text-white/50 px-3 py-2 rounded-lg transition-colors">
-                      <Download size={12} /> CV
-                    </button>
-                  )}
-                </div>
-              </Card>
-            )
-          })}
+          {/* Pagination */}
+          {pages > 1 && (
+            <div className="flex items-center justify-center gap-2 pt-4">
+              <button
+                onClick={() => setPage(p => Math.max(1, p - 1))}
+                disabled={page === 1}
+                className="px-4 py-2 border border-white/10 rounded-lg text-white/50 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-sm transition-colors"
+              >
+                Previous
+              </button>
+              <span className="text-white/30 text-sm">Page {page} of {pages}</span>
+              <button
+                onClick={() => setPage(p => Math.min(pages, p + 1))}
+                disabled={page === pages}
+                className="px-4 py-2 border border-white/10 rounded-lg text-white/50 hover:text-white hover:border-white/20 disabled:opacity-30 disabled:cursor-not-allowed text-sm transition-colors"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
-      )}
-
-      {totalPages > 1 && (
-        <div className="flex items-center justify-center gap-2 pt-4">
-          <button onClick={() => setCurrentPage(p => Math.max(1, p - 1))} disabled={currentPage === 1}
-            className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm">
-            Previous
-          </button>
-          {Array.from({ length: totalPages }, (_, i) => i + 1)
-            .filter(p => p === 1 || p === totalPages || Math.abs(p - currentPage) <= 1)
-            .map((page, idx, arr) => (
-              <React.Fragment key={page}>
-                {idx > 0 && arr[idx - 1] !== page - 1 && <span className="text-white/30 px-1">...</span>}
-                <button onClick={() => setCurrentPage(page)}
-                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${currentPage === page ? 'bg-emerald-500 text-white' : 'border border-white/20 text-white/60 hover:text-white'}`}>
-                  {page}
-                </button>
-              </React.Fragment>
-            ))
-          }
-          <button onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))} disabled={currentPage === totalPages}
-            className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm">
-            Next
-          </button>
-        </div>
-      )}
+      </div>
     </Container>
   )
 }

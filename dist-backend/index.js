@@ -9,6 +9,7 @@ import nodemailer from 'nodemailer';
 import path, { extname } from 'path';
 import { readFileSync, createReadStream, existsSync } from 'fs';
 import { fileURLToPath } from 'url';
+import { randomBytes } from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, '..', 'dist');
@@ -102,6 +103,18 @@ try {
     pool.execute(`ALTER TABLE users ADD COLUMN deal_sizes TEXT`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN sales_methodology TEXT`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN profile_slug VARCHAR(100)`).catch(() => { });
+    pool.execute(`ALTER TABLE users MODIFY COLUMN is_public TINYINT DEFAULT 1`).catch(() => { });
+    // Backfill slugs for existing users who have none
+    pool.execute(`
+    SELECT id, name FROM users WHERE profile_slug IS NULL OR profile_slug = ''
+  `).then(([rows]) => {
+        for (const row of rows) {
+            const namePart = (row.name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+            const slug = `${namePart}-${randomBytes(3).toString('hex')}`;
+            pool.execute('UPDATE users SET profile_slug = ? WHERE id = ?', [slug, row.id]).catch(() => { });
+        }
+    }).catch(() => { });
     pool.execute(`
     CREATE TABLE IF NOT EXISTS profile_views (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -196,7 +209,9 @@ app.post('/api/auth/register', async (c) => {
         if (!name || !email || !password)
             return c.json({ error: 'Missing required fields' }, 400);
         const hash = await bcrypt.hash(password, 10);
-        const [result] = await pool.execute('INSERT INTO users (name, email, password_hash, role) VALUES (?, ?, ?, ?)', [name, email, hash, role || 'candidate']);
+        const namePart = (name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+        const profileSlug = `${namePart}-${randomBytes(3).toString('hex')}`;
+        const [result] = await pool.execute('INSERT INTO users (name, email, password_hash, role, is_public, profile_slug) VALUES (?, ?, ?, ?, 1, ?)', [name, email, hash, role || 'candidate', profileSlug]);
         const userId = result.insertId.toString();
         const token = await new SignJWT({ id: userId, email, role: role || 'candidate' })
             .setProtectedHeader({ alg: 'HS256' })
@@ -249,11 +264,17 @@ app.get('/api/auth/me', async (c) => {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, cv_filename, avatar_url, is_pro, is_public,
               phone, linkedin_url, target_role, years_experience, skills, target_salary,
-              availability, achievements, industries, deal_sizes, sales_methodology, current_ote
+              availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug
        FROM users WHERE id = ?`, [String(payload.id)]);
         const user = rows[0];
         if (!user)
             return c.json({ error: 'User not found' }, 404);
+        // Generate slug if missing
+        if (!user.profile_slug) {
+            const namePart = (user.name || 'user').toLowerCase().replace(/[^a-z0-9]/g, '').slice(0, 20);
+            user.profile_slug = `${namePart}-${randomBytes(3).toString('hex')}`;
+            await pool.execute('UPDATE users SET profile_slug = ? WHERE id = ?', [user.profile_slug, user.id]).catch(() => { });
+        }
         let company_name = null;
         if (user.role === 'company') {
             const [jobRows] = await pool.execute('SELECT company_name FROM jobs WHERE company_id = ? LIMIT 1', [String(payload.id)]);
@@ -289,6 +310,7 @@ app.get('/api/auth/me', async (c) => {
             deal_sizes: safeParse(user.deal_sizes),
             sales_methodology: safeParse(user.sales_methodology),
             current_ote: user.current_ote || null,
+            profile_slug: user.profile_slug || null,
             company_name,
         });
     }
@@ -915,7 +937,11 @@ app.get('/api/candidate/me', async (c) => {
     try {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const userId = String(payload.id);
-        const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro FROM users WHERE id = ?`, [userId]);
+        const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed,
+              current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro,
+              phone, linkedin_url, target_role, years_experience, skills, target_salary, availability,
+              achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug
+       FROM users WHERE id = ?`, [userId]);
         const user = rows[0];
         if (!user)
             return c.json({ error: 'Not found' }, 404);
@@ -928,18 +954,81 @@ app.get('/api/candidate/me', async (c) => {
 // --- Public candidate search & profiles ---
 app.get('/api/candidates', async (c) => {
     if (!pool)
-        return c.json([]);
-    const search = c.req.query('search') || '';
+        return c.json({ candidates: [], total: 0, page: 1, pages: 0 });
     try {
-        const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, current_roles, looking_for, cv_filename, is_pro
-       FROM users
-       WHERE role = 'candidate' AND (is_public = 1 OR is_public IS NULL)
-       AND (name LIKE ? OR headline LIKE ? OR current_roles LIKE ? OR looking_for LIKE ?)
-       ORDER BY is_pro DESC, created_at DESC`, [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]);
-        return c.json(rows);
+        const search = c.req.query('search') || '';
+        const targetRole = c.req.query('target_role') || '';
+        const yearsExp = c.req.query('years_experience') || '';
+        const availability = c.req.query('availability') || '';
+        const industry = c.req.query('industry') || '';
+        const dealSize = c.req.query('deal_size') || '';
+        const methodology = c.req.query('methodology') || '';
+        const location = c.req.query('location') || '';
+        const sortBy = c.req.query('sort_by') || 'relevance';
+        const page = Math.max(1, parseInt(c.req.query('page') || '1'));
+        const limit = 12;
+        const offset = (page - 1) * limit;
+        let where = `WHERE u.role = 'candidate' AND (u.is_public = 1 OR u.is_public IS NULL) AND (u.availability IS NULL OR u.availability != 'Not looking')`;
+        const params = [];
+        if (search) {
+            where += ` AND (u.name LIKE ? OR u.headline LIKE ? OR u.target_role LIKE ? OR u.skills LIKE ? OR u.bio LIKE ?)`;
+            const s = `%${search}%`;
+            params.push(s, s, s, s, s);
+        }
+        if (targetRole) {
+            where += ` AND u.target_role = ?`;
+            params.push(targetRole);
+        }
+        if (yearsExp) {
+            where += ` AND u.years_experience = ?`;
+            params.push(yearsExp);
+        }
+        if (availability) {
+            where += ` AND u.availability = ?`;
+            params.push(availability);
+        }
+        if (industry) {
+            where += ` AND u.industries LIKE ?`;
+            params.push(`%${industry}%`);
+        }
+        if (dealSize) {
+            where += ` AND u.deal_sizes LIKE ?`;
+            params.push(`%${dealSize}%`);
+        }
+        if (methodology) {
+            where += ` AND u.sales_methodology LIKE ?`;
+            params.push(`%${methodology}%`);
+        }
+        if (location) {
+            where += ` AND u.location LIKE ?`;
+            params.push(`%${location}%`);
+        }
+        const baseOrder = `u.is_pro DESC, CASE WHEN u.availability = 'Actively looking' THEN 1 WHEN u.availability = 'Open to opportunities' THEN 2 ELSE 3 END ASC`;
+        let orderBy = `ORDER BY ${baseOrder}, u.created_at DESC`;
+        if (sortBy === 'experience_high')
+            orderBy = `ORDER BY u.is_pro DESC, CAST(COALESCE(u.years_experience,'0') AS UNSIGNED) DESC`;
+        if (sortBy === 'experience_low')
+            orderBy = `ORDER BY u.is_pro DESC, CAST(COALESCE(u.years_experience,'0') AS UNSIGNED) ASC`;
+        if (sortBy === 'newest')
+            orderBy = `ORDER BY u.created_at DESC`;
+        const countSql = `SELECT COUNT(*) as total FROM users u ${where}`;
+        const [countRows] = await pool.execute(countSql, params);
+        const total = countRows[0]?.total || 0;
+        const sql = `
+      SELECT u.id, u.name, u.headline, u.location, u.target_role, u.years_experience,
+             u.skills, u.target_salary, u.availability, u.industries, u.deal_sizes,
+             u.sales_methodology, u.avatar_url, u.cv_filename, u.is_pro, u.profile_slug,
+             u.achievements, u.current_ote, u.linkedin_url, u.created_at
+      FROM users u
+      ${where}
+      ${orderBy}
+      LIMIT ? OFFSET ?`;
+        const [rows] = await pool.execute(sql, [...params, limit, offset]);
+        return c.json({ candidates: rows, total, page, pages: Math.ceil(total / limit) });
     }
-    catch {
-        return c.json([]);
+    catch (err) {
+        console.error('/api/candidates error:', err);
+        return c.json({ candidates: [], total: 0, page: 1, pages: 0 });
     }
 });
 app.get('/api/candidates/:id/download-cv', async (c) => {
@@ -952,7 +1041,8 @@ app.get('/api/candidates/:id/download-cv', async (c) => {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const viewerId = String(payload.id);
         const candidateId = c.req.param('id');
-        const [rows] = await pool.execute('SELECT cv_filename FROM users WHERE id = ?', [candidateId]);
+        const isNumericId = /^\d+$/.test(candidateId);
+        const [rows] = await pool.execute(`SELECT cv_filename FROM users WHERE ${isNumericId ? 'id' : 'profile_slug'} = ?`, [candidateId]);
         const user = rows[0];
         if (!user?.cv_filename)
             return c.json({ error: 'No CV on file' }, 404);
@@ -967,9 +1057,11 @@ app.get('/api/candidates/:id', async (c) => {
     if (!pool)
         return c.json({ error: 'Database not configured' }, 503);
     const id = c.req.param('id');
+    const isNumeric = /^\d+$/.test(id);
     try {
-        const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro, email
-       FROM users WHERE id = ? AND (is_public = 1 OR is_public IS NULL)`, [id]);
+        const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro, email,
+              target_role, years_experience, skills, target_salary, availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug, avatar_url, linkedin_url
+       FROM users WHERE ${isNumeric ? 'id' : 'profile_slug'} = ? AND (is_public = 1 OR is_public IS NULL)`, [id]);
         if (!rows.length)
             return c.json({ error: 'Not found' }, 404);
         const candidate = rows[0];
