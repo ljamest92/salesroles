@@ -11,7 +11,7 @@
  *                    Rendered as-is. Used when a company has uploaded a logo file.
  *
  *   2. Domain      → contains "." but no leading slash or protocol
- *                    e.g. "salesforce.com" → https://logos.apistemic.com/salesforce.com
+ *                    e.g. "salesforce.com" → https://logos-api.apistemic.com/domain:salesforce.com
  *
  *   3. Fallback    → null / undefined / empty / failed image load
  *                    Dark navy background (#0f1629) with the first letter of
@@ -29,13 +29,13 @@
  */
 import React, { useState } from 'react'
 
-const LOGO_BASE = 'https://logos.apistemic.com'
+const LOGO_BASE = 'https://logos-api.apistemic.com'
 
 interface CompanyLogoProps {
   /**
    * Accepts three formats (auto-detected):
    *   "/uploads/logos/file.png" or "https://…"  → used as direct image src
-   *   "salesforce.com"                           → logos.apistemic.com/salesforce.com
+   *   "salesforce.com"                           → logos-api.apistemic.com/domain:salesforce.com
    *   null / undefined                           → initial-letter fallback
    */
   domain?: string | null
@@ -61,7 +61,7 @@ function resolveLogoSrc(domain?: string | null): string | null {
 
   // Case 2: bare domain — pass to Apistemic
   if (d.includes('.')) {
-    return `${LOGO_BASE}/${d}`
+    return `${LOGO_BASE}/domain:${d}`
   }
 
   // Unrecognised format — fall through to initial-letter fallback
