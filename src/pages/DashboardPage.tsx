@@ -72,6 +72,9 @@ export function DashboardPage() {
     baseSalary: string; ote: string; commissionStructure: string; workType: string
     description: string; saving: boolean; error: string
   }>({ open: false, jobId: null, title: '', location: '', baseSalary: '', ote: '', commissionStructure: '', workType: 'Remote', description: '', saving: false, error: '' })
+  const [profileModal, setProfileModal] = useState<{ open: boolean; candidateId: number | null; data: any | null; loading: boolean; appData: any | null }>({ open: false, candidateId: null, data: null, loading: false, appData: null })
+  const [appliedJobs, setAppliedJobs] = useState<any[]>([])
+  const [appliedLoading, setAppliedLoading] = useState(false)
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -89,6 +92,10 @@ export function DashboardPage() {
     if (!user || role !== 'company') return
     const token = localStorage.getItem('salesroles_token')
     if (!token) return
+    fetch('/api/company/stats', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => { if (data) setStats({ liveJobs: data.liveJobs || 0, totalViews: data.totalViews || 0, applyClicks: data.applyClicks || 0, avgCtr: data.avgCtr || 0 }) })
+      .catch(() => {})
     fetch('/api/company/pending-jobs', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => setPendingJobs(Array.isArray(data) ? data : []))
@@ -123,6 +130,45 @@ export function DashboardPage() {
       const data = await res.json()
       setApplications(Array.isArray(data) ? data : [])
     } catch {}
+  }
+
+  const updateApplicationStatus = async (appId: number, newStatus: string) => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    try {
+      await fetch(`/api/applications/${appId}/status`, {
+        method: 'PATCH',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: newStatus })
+      })
+      setApplications(prev => prev.map((a: any) => a.id === appId ? { ...a, status: newStatus } : a))
+    } catch {}
+  }
+
+  const openProfileModal = async (candidateId: number, appData: any) => {
+    setProfileModal({ open: true, candidateId, data: null, loading: true, appData })
+    const token = localStorage.getItem('salesroles_token')
+    try {
+      const res = await fetch(`/api/company/applicant/${candidateId}`, {
+        headers: { Authorization: `Bearer ${token || ''}` }
+      })
+      const data = await res.json()
+      setProfileModal(prev => ({ ...prev, data: data.error ? null : data, loading: false }))
+    } catch {
+      setProfileModal(prev => ({ ...prev, loading: false }))
+    }
+  }
+
+  const fetchAppliedJobs = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    setAppliedLoading(true)
+    try {
+      const res = await fetch('/api/candidate/applications', { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      setAppliedJobs(Array.isArray(data) ? data : [])
+    } catch {}
+    setAppliedLoading(false)
   }
 
   const downloadCandidatesCSV = () => {
@@ -313,6 +359,12 @@ export function DashboardPage() {
     }
   }, [])
 
+  // Fetch applied jobs for candidate
+  useEffect(() => {
+    if (!user || role !== 'candidate') return
+    fetchAppliedJobs()
+  }, [user, role])
+
   // FIX 1: fetch saved jobs for candidate view
   useEffect(() => {
     if (!user || role !== 'candidate') return
@@ -371,7 +423,7 @@ export function DashboardPage() {
             <p className="text-muted-foreground font-medium">Please sign in to access your dashboard.</p>
           </div>
           <div className="flex flex-col gap-4">
-            <Link to="/register" search={{ login: 'true' } as any}>
+            <Link to="/login">
               <Button className="w-full bg-primary text-primary-foreground font-black h-14 cta-glow text-xs tracking-widest">
                 Sign In
               </Button>
@@ -536,42 +588,67 @@ export function DashboardPage() {
                       Download Blinded CSV
                     </button>
                   </div>
-                  {applications.map((a: any) => (
-                    <Card key={a.id} className="p-6 border border-white/5 bg-card/30 rounded-2xl space-y-3">
-                      <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                        <div className="space-y-1 flex-1 min-w-0">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            <p className="font-bold">{a.candidate_name}</p>
-                            <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${a.status === 'new' ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border-blue-500/30'}`}>
-                              {a.status === 'new' ? 'New' : 'Reviewed'}
-                            </span>
+                  {(() => {
+                    const statusColors: Record<string, string> = {
+                      'New': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                      'new': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                      'Reviewing': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+                      'Contacting': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+                      'Interviewing': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+                      'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
+                      'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
+                    }
+                    return applications.map((a: any) => (
+                      <Card key={a.id} className="p-5 border border-white/5 bg-card/30 rounded-2xl">
+                        <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                          <div className="space-y-1 flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <p className="font-bold">{a.candidate_name}</p>
+                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${statusColors[a.status] || statusColors['New']}`}>
+                                {a.status === 'new' ? 'New' : (a.status || 'New')}
+                              </span>
+                            </div>
+                            <p className="text-sm text-muted-foreground">{a.candidate_email}</p>
+                            <p className="text-xs text-muted-foreground">Applied for <span className="font-bold text-foreground">{a.job_title}</span> · {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                            {a.cover_note && (
+                              <p className="text-sm text-muted-foreground mt-2">
+                                {expandedNotes.has(a.id) ? a.cover_note : a.cover_note.slice(0, 120)}
+                                {a.cover_note.length > 120 && (
+                                  <button
+                                    onClick={() => setExpandedNotes(prev => {
+                                      const next = new Set(prev)
+                                      next.has(a.id) ? next.delete(a.id) : next.add(a.id)
+                                      return next
+                                    })}
+                                    className="ml-1 text-primary text-xs font-bold"
+                                  >
+                                    {expandedNotes.has(a.id) ? 'Show less' : '...more'}
+                                  </button>
+                                )}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-sm text-muted-foreground">{a.candidate_email}</p>
-                          <p className="text-xs text-muted-foreground">Applied for <span className="font-bold text-foreground">{a.job_title}</span></p>
-                          {a.cover_note && (
-                            <p className="text-sm text-muted-foreground mt-2">
-                              {expandedNotes.has(a.id) ? a.cover_note : a.cover_note.slice(0, 100)}
-                              {a.cover_note.length > 100 && (
-                                <button
-                                  onClick={() => setExpandedNotes(prev => {
-                                    const next = new Set(prev)
-                                    next.has(a.id) ? next.delete(a.id) : next.add(a.id)
-                                    return next
-                                  })}
-                                  className="ml-1 text-primary text-xs font-bold"
-                                >
-                                  {expandedNotes.has(a.id) ? 'Show less' : '...more'}
-                                </button>
-                              )}
-                            </p>
-                          )}
+                          <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+                            <select
+                              value={a.status === 'new' ? 'New' : (a.status || 'New')}
+                              onChange={e => updateApplicationStatus(a.id, e.target.value)}
+                              className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                            >
+                              {['New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
+                                <option key={s} value={s}>{s}</option>
+                              ))}
+                            </select>
+                            <button
+                              onClick={() => openProfileModal(a.candidate_id, a)}
+                              className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold w-full sm:w-auto text-center"
+                            >
+                              View Profile
+                            </button>
+                          </div>
                         </div>
-                        <p className="text-xs text-muted-foreground shrink-0">
-                          {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                        </p>
-                      </div>
-                    </Card>
-                  ))}
+                      </Card>
+                    ))
+                  })()}
                 </>
               )}
             </TabsContent>
@@ -877,9 +954,10 @@ export function DashboardPage() {
 
             <div className="col-span-1 md:col-span-2 space-y-8 w-full min-w-0">
               <Tabs defaultValue="saved">
-                <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex">
-                  <TabsTrigger value="saved" className="px-6 font-bold tracking-tight whitespace-nowrap">Saved Jobs</TabsTrigger>
-                  <TabsTrigger value="pro" className="px-6 font-bold tracking-tight whitespace-nowrap flex items-center gap-1.5">
+                <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex flex-wrap gap-0.5">
+                  <TabsTrigger value="saved" className="px-4 sm:px-6 font-bold tracking-tight whitespace-nowrap text-sm">Saved Jobs</TabsTrigger>
+                  <TabsTrigger value="applied" className="px-4 sm:px-6 font-bold tracking-tight whitespace-nowrap text-sm">Applied {appliedJobs.length > 0 && `(${appliedJobs.length})`}</TabsTrigger>
+                  <TabsTrigger value="pro" className="px-4 sm:px-6 font-bold tracking-tight whitespace-nowrap text-sm flex items-center gap-1.5">
                     <Star size={12} className="text-emerald-400" /> Pro
                   </TabsTrigger>
                 </TabsList>
@@ -919,6 +997,57 @@ export function DashboardPage() {
                           </Card>
                         </Link>
                       ))
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="applied" className="mt-6">
+                  <div className="space-y-3">
+                    {appliedLoading ? (
+                      Array(2).fill(0).map((_, i) => (
+                        <Card key={i} className="p-5 h-20 animate-pulse bg-card/20 rounded-2xl" />
+                      ))
+                    ) : appliedJobs.length === 0 ? (
+                      <EmptyState
+                        icon={<Briefcase size={40} />}
+                        title="No Applications Yet"
+                        description="Jobs you apply to will appear here so you can track their status."
+                        action={{ label: "Browse Jobs", onClick: () => { window.location.href = '/jobs' } }}
+                        className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
+                      />
+                    ) : (
+                      (() => {
+                        const appStatusColors: Record<string, string> = {
+                          'New': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                          'new': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                          'Reviewing': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+                          'Contacting': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+                          'Interviewing': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+                          'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
+                          'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
+                        }
+                        return appliedJobs.map((app: any) => (
+                          <Link key={app.id} to={`/jobs/${app.job_id}`}>
+                            <Card className="job-card-hover p-5 border border-white/5 group rounded-2xl">
+                              <div className="flex flex-col sm:flex-row justify-between gap-3">
+                                <div className="space-y-1 flex-1 min-w-0">
+                                  <h4 className="font-bold group-hover:text-primary transition-colors truncate">{app.job_title}</h4>
+                                  <div className="flex flex-wrap gap-3 text-xs text-muted-foreground font-medium">
+                                    <span className="flex items-center gap-1"><Building2 size={12} className="text-primary" /> {app.company_name}</span>
+                                    {app.location && <span className="flex items-center gap-1"><MapPin size={12} className="text-primary" /> {app.location}</span>}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3 shrink-0">
+                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${appStatusColors[app.status] || appStatusColors['New']}`}>
+                                    {app.status === 'new' ? 'New' : (app.status || 'New')}
+                                  </span>
+                                  <span className="text-xs text-muted-foreground">{new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
+                                </div>
+                              </div>
+                            </Card>
+                          </Link>
+                        ))
+                      })()
                     )}
                   </div>
                 </TabsContent>
@@ -1003,6 +1132,103 @@ export function DashboardPage() {
                 </TabsContent>
               </Tabs>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* View Applicant Profile Modal */}
+      {profileModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setProfileModal(prev => ({ ...prev, open: false }))} />
+          <div className="relative bg-card border border-white/10 rounded-[24px] p-6 sm:p-8 w-full max-w-lg space-y-5 shadow-2xl my-8">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-black tracking-tight">Candidate Profile</h2>
+              <button onClick={() => setProfileModal(prev => ({ ...prev, open: false }))} className="text-white/40 hover:text-white transition-colors text-2xl leading-none">×</button>
+            </div>
+            {profileModal.loading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="w-8 h-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            ) : (
+              (() => {
+                const d = profileModal.data
+                const app = profileModal.appData
+                const skills = (() => { try { const p = JSON.parse(d?.skills || '[]'); return Array.isArray(p) ? p : [] } catch { return (d?.skills || '').split(',').map((s: string) => s.trim()).filter(Boolean) } })()
+                return (
+                  <div className="space-y-4">
+                    <div className="space-y-1">
+                      <h3 className="text-xl font-black">{d?.name || app?.candidate_name}</h3>
+                      {d?.headline && <p className="text-emerald-400 text-sm font-medium">{d.headline}</p>}
+                      {d?.location && <p className="text-sm text-muted-foreground flex items-center gap-1.5"><MapPin size={12} /> {d.location}</p>}
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      {(d?.years_experience || d?.years_in_sales) && (
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <p className="text-[10px] text-white/40 font-black tracking-widest mb-0.5">EXPERIENCE</p>
+                          <p className="font-bold">{d.years_experience || d.years_in_sales} years</p>
+                        </div>
+                      )}
+                      {d?.target_role && (
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <p className="text-[10px] text-white/40 font-black tracking-widest mb-0.5">TARGET ROLE</p>
+                          <p className="font-bold text-xs">{d.target_role}</p>
+                        </div>
+                      )}
+                      {d?.target_salary && (
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <p className="text-[10px] text-white/40 font-black tracking-widest mb-0.5">TARGET OTE</p>
+                          <p className="font-bold">{d.target_salary}</p>
+                        </div>
+                      )}
+                      {d?.availability && (
+                        <div className="bg-white/5 rounded-xl p-3">
+                          <p className="text-[10px] text-white/40 font-black tracking-widest mb-0.5">AVAILABILITY</p>
+                          <p className="font-bold text-xs">{d.availability}</p>
+                        </div>
+                      )}
+                    </div>
+                    {skills.length > 0 && (
+                      <div>
+                        <p className="text-[10px] text-white/40 font-black tracking-widest mb-2">SKILLS</p>
+                        <div className="flex flex-wrap gap-1.5">
+                          {skills.slice(0, 8).map((s: string) => (
+                            <span key={s} className="text-[10px] bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded-full font-bold">{s}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                    {app?.cover_note && (
+                      <div>
+                        <p className="text-[10px] text-white/40 font-black tracking-widest mb-2">COVER LETTER</p>
+                        <p className="text-sm text-muted-foreground leading-relaxed">{app.cover_note}</p>
+                      </div>
+                    )}
+                    <div className="flex flex-wrap gap-2 pt-1">
+                      {(d?.cv_filename || app?.cv_filename) && (
+                        <a
+                          href={`/api/candidates/${profileModal.candidateId}/download-cv`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-4 py-2 rounded-lg transition-colors font-bold"
+                        >
+                          Download CV
+                        </a>
+                      )}
+                      {d?.profile_slug && (
+                        <a
+                          href={`/profile/${d.profile_slug}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-xs border border-white/10 text-white/60 hover:text-white px-4 py-2 rounded-lg transition-colors font-bold"
+                        >
+                          Full Profile →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )
+              })()
+            )}
           </div>
         </div>
       )}

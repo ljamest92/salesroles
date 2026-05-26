@@ -21,6 +21,7 @@ import { CompanyLogo } from '../components/CompanyLogo'
 import { getDomain } from '../utils/getDomain'
 import { motion } from 'framer-motion'
 import { ReportModal } from '../components/ReportModal'
+import { useAuth } from '../hooks/useAuth'
 
 const SelectTrigger = UISelectTrigger as any
 const SelectContent = UISelectContent as any
@@ -29,6 +30,7 @@ const SelectItem = UISelectItem as any
 const JOBS_PER_PAGE = 10
 
 export function JobsPage() {
+  const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
   const [searchQuery, setSearchQuery] = useState('')
@@ -42,6 +44,7 @@ export function JobsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedOTERange, setSelectedOTERange] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     const fetchAllJobs = async () => {
@@ -114,6 +117,16 @@ export function JobsPage() {
     }
     fetchAllJobs()
   }, [])
+
+  // Fetch applied job IDs for the logged-in candidate
+  useEffect(() => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token || !user || (user as any).role !== 'candidate') return
+    fetch('/api/candidate/applied-job-ids', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(ids => { if (Array.isArray(ids)) setAppliedJobIds(new Set(ids)) })
+      .catch(() => {})
+  }, [user])
 
   const toggle = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
@@ -403,6 +416,11 @@ export function JobsPage() {
                               {job.via_partner && (
                                 <span className="text-xs border border-emerald-500/30 text-emerald-400/70 px-2 py-0.5 rounded-full">
                                   Via Partner
+                                </span>
+                              )}
+                              {appliedJobIds.has(job.id) && (
+                                <span className="text-[9px] font-black tracking-widest bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
+                                  ✓ Applied
                                 </span>
                               )}
                             </div>

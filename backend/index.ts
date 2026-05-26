@@ -168,6 +168,7 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => {})
   pool.execute(`ALTER TABLE applications ADD COLUMN screening_answers TEXT`).catch(() => {})
+  pool.execute(`ALTER TABLE jobs ADD COLUMN IF NOT EXISTS views INT DEFAULT 0`).catch(() => {})
   // Add viewer_name and viewer_company columns to profile_views if missing
   pool.execute(`ALTER TABLE profile_views ADD COLUMN viewer_name VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE profile_views ADD COLUMN viewer_company VARCHAR(255)`).catch(() => {})
@@ -578,6 +579,8 @@ app.get('/api/jobs/:id', async (c) => {
     const [rows] = await pool.execute('SELECT * FROM jobs WHERE id = ?', [id]) as any[]
     const row = (rows as any[])[0]
     if (!row) return c.json({ error: 'Job not found' }, 404)
+    // Increment view counter (fire-and-forget)
+    pool.execute('UPDATE jobs SET views = COALESCE(views, 0) + 1 WHERE id = ?', [id]).catch(() => {})
     return c.json({ job: { ...row, company: row.company_name, domain: extractDomainFromUrl(row.company_website || ''), job_type: row.work_type, featured: !!row.featured } })
   } catch {
     return c.json({ error: 'Failed to fetch job' }, 500)
@@ -885,6 +888,60 @@ app.delete('/api/admin/users/:id', async (c) => {
 
 // --- Company dashboard ---
 
+app.get('/api/company/stats', async (c) => {
+  if (!pool) return c.json({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 })
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 })
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const userId = String(payload.id)
+    const [liveRows] = await pool.execute(
+      "SELECT COUNT(*) as count FROM jobs WHERE status = 'live' AND company_id = ?", [userId]
+    ) as any[]
+    const [viewRows] = await pool.execute(
+      "SELECT COALESCE(SUM(views), 0) as total FROM jobs WHERE company_id = ?", [userId]
+    ) as any[]
+    const [appRows] = await pool.execute(
+      "SELECT COUNT(*) as count FROM applications a JOIN jobs j ON a.job_id = j.id WHERE j.company_id = ?", [userId]
+    ) as any[]
+    const liveJobs = Number((liveRows as any[])[0]?.count || 0)
+    const totalViews = Number((viewRows as any[])[0]?.total || 0)
+    const applyClicks = Number((appRows as any[])[0]?.count || 0)
+    const avgCtr = totalViews > 0 ? Math.round((applyClicks / totalViews) * 100) : 0
+    return c.json({ liveJobs, totalViews, applyClicks, avgCtr })
+  } catch {
+    return c.json({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 })
+  }
+})
+
+app.get('/api/company/applicant/:id', async (c) => {
+  if (!pool) return c.json({ error: 'Not found' }, 404)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const companyId = String(payload.id)
+    const candidateId = c.req.param('id')
+    // Verify this candidate applied to at least one of this company's jobs
+    const [check] = await pool.execute(
+      'SELECT a.id FROM applications a JOIN jobs j ON a.job_id = j.id WHERE a.candidate_id = ? AND j.company_id = ? LIMIT 1',
+      [candidateId, companyId]
+    ) as any[]
+    if ((check as any[]).length === 0) return c.json({ error: 'Not found' }, 404)
+    const [rows] = await pool.execute(
+      `SELECT id, name, headline, location, years_experience, target_role, skills,
+              availability, cv_filename, profile_slug, linkedin_url, bio, target_salary, email
+       FROM users WHERE id = ?`,
+      [candidateId]
+    ) as any[]
+    const candidate = (rows as any[])[0]
+    if (!candidate) return c.json({ error: 'Not found' }, 404)
+    return c.json(candidate)
+  } catch {
+    return c.json({ error: 'Failed to fetch applicant' }, 500)
+  }
+})
+
 app.get('/api/company/pending-jobs', async (c) => {
   if (!pool) return c.json([])
   const auth = c.req.header('Authorization')
@@ -962,6 +1019,69 @@ app.post('/api/applications', async (c) => {
     return c.json({ ok: true })
   } catch (err: any) {
     return c.json({ error: err.message || 'Failed to submit application' }, 500)
+  }
+})
+
+app.patch('/api/applications/:id/status', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const companyId = String(payload.id)
+    const applicationId = c.req.param('id')
+    const { status } = await c.req.json()
+    const validStatuses = ['New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired']
+    if (!validStatuses.includes(status)) return c.json({ error: 'Invalid status' }, 400)
+    // Verify the company owns the job this application belongs to
+    const [check] = await pool.execute(
+      'SELECT a.id FROM applications a JOIN jobs j ON a.job_id = j.id WHERE a.id = ? AND j.company_id = ?',
+      [applicationId, companyId]
+    ) as any[]
+    if ((check as any[]).length === 0) return c.json({ error: 'Not found' }, 404)
+    await pool.execute('UPDATE applications SET status = ? WHERE id = ?', [status, applicationId])
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ error: 'Failed to update status' }, 500)
+  }
+})
+
+app.get('/api/candidate/applications', async (c) => {
+  if (!pool) return c.json([])
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json([])
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const candidateId = String(payload.id)
+    const [rows] = await pool.execute(
+      `SELECT a.id, a.job_id, a.status, a.created_at,
+              j.title as job_title, j.company_name, j.location, j.work_type
+       FROM applications a
+       JOIN jobs j ON a.job_id = j.id
+       WHERE a.candidate_id = ?
+       ORDER BY a.created_at DESC`,
+      [candidateId]
+    ) as any[]
+    return c.json(rows)
+  } catch {
+    return c.json([])
+  }
+})
+
+app.get('/api/candidate/applied-job-ids', async (c) => {
+  if (!pool) return c.json([])
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json([])
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const candidateId = String(payload.id)
+    const [rows] = await pool.execute(
+      'SELECT job_id FROM applications WHERE candidate_id = ?',
+      [candidateId]
+    ) as any[]
+    return c.json((rows as any[]).map((r: any) => r.job_id))
+  } catch {
+    return c.json([])
   }
 })
 

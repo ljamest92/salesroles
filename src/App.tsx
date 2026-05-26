@@ -37,6 +37,7 @@ const jobDetailRoute = createRoute({ getParentRoute: () => rootRoute, path: '/jo
 const postJobRoute = createRoute({ getParentRoute: () => rootRoute, path: '/post-job', component: PostJobPage })
 const pricingRoute = createRoute({ getParentRoute: () => rootRoute, path: '/pricing', component: PricingPage })
 const registerRoute = createRoute({ getParentRoute: () => rootRoute, path: '/register', component: RegistrationPage })
+const loginRoute = createRoute({ getParentRoute: () => rootRoute, path: '/login', component: RegistrationPage })
 const dashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/dashboard', component: DashboardPage })
 const companyDashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/company/dashboard', component: DashboardPage })
 const candidateDashboardRoute = createRoute({ getParentRoute: () => rootRoute, path: '/candidate/dashboard', component: DashboardPage })
@@ -102,6 +103,7 @@ const routeTree = rootRoute.addChildren([
   postJobRoute, 
   pricingRoute, 
   registerRoute,
+  loginRoute,
   dashboardRoute, 
   companyDashboardRoute,
   candidateDashboardRoute,
