@@ -2,7 +2,7 @@ export interface Job {
   id: string
   title: string
   company: string
-  logo_url?: string
+  /** Company's primary domain (e.g. "salesforce.com"). Passed to <CompanyLogo domain={...} /> for logo rendering. */
   domain?: string
   company_website?: string
   via_partner?: boolean
@@ -49,7 +49,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Enterprise Account Executive',
     company: 'Salesforce',
     domain: 'salesforce.com',
-    logo_url: 'https://logos.apistemic.com/salesforce.com',
     location: 'San Francisco, CA',
     job_type: 'Hybrid',
     sector: 'SaaS',
@@ -74,7 +73,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Sales Development Representative',
     company: 'HubSpot',
     domain: 'hubspot.com',
-    logo_url: 'https://logos.apistemic.com/hubspot.com',
     location: 'Remote (US)',
     job_type: 'Remote',
     sector: 'SaaS',
@@ -99,7 +97,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Strategic Account Manager',
     company: 'Stripe',
     domain: 'stripe.com',
-    logo_url: 'https://logos.apistemic.com/stripe.com',
     location: 'New York, NY',
     job_type: 'Hybrid',
     sector: 'FinTech',
@@ -124,7 +121,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Business Development Manager',
     company: 'Gong',
     domain: 'gong.io',
-    logo_url: 'https://logos.apistemic.com/gong.io',
     location: 'Chicago, IL',
     job_type: 'Hybrid',
     sector: 'SaaS',
@@ -149,7 +145,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Regional Sales Manager',
     company: 'Snowflake',
     domain: 'snowflake.com',
-    logo_url: 'https://logos.apistemic.com/snowflake.com',
     location: 'Austin, TX',
     job_type: 'Hybrid',
     sector: 'SaaS',
@@ -174,7 +169,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Inside Sales Executive',
     company: 'Zendesk',
     domain: 'zendesk.com',
-    logo_url: 'https://logos.apistemic.com/zendesk.com',
     location: 'Boston, MA',
     job_type: 'On-site',
     sector: 'SaaS',
@@ -199,7 +193,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Account Executive — EMEA',
     company: 'Datadog',
     domain: 'datadog.com',
-    logo_url: 'https://logos.apistemic.com/datadog.com',
     location: 'London, UK',
     job_type: 'Hybrid',
     sector: 'SaaS',
@@ -224,7 +217,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Sales Engineer',
     company: 'Okta',
     domain: 'okta.com',
-    logo_url: 'https://logos.apistemic.com/okta.com',
     location: 'Remote (US)',
     job_type: 'Remote',
     sector: 'Cybersecurity',
@@ -248,7 +240,6 @@ export const SEED_JOBS: Job[] = [
     title: 'Customer Success Director',
     company: 'Intercom',
     domain: 'intercom.com',
-    logo_url: 'https://logos.apistemic.com/intercom.com',
     location: 'Dublin, Ireland',
     job_type: 'Hybrid',
     sector: 'SaaS',
@@ -273,7 +264,6 @@ export const SEED_JOBS: Job[] = [
     title: 'VP of Sales',
     company: 'Linear',
     domain: 'linear.app',
-    logo_url: 'https://logos.apistemic.com/linear.app',
     location: 'Remote (Global)',
     job_type: 'Remote',
     sector: 'SaaS',
@@ -348,8 +338,7 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
             id: job.slug,
             title: toTitleCase(job.title),
             company: toTitleCase(job.company_name),
-            domain,
-            logo_url: `https://logos.apistemic.com/${domain}`,
+            domain, // passed to <CompanyLogo domain={...} /> — URL is built inside the component
             location: toTitleCase(job.location),
             job_type: job.remote ? 'Remote' : 'On-site',
             sector: 'Sales',
