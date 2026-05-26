@@ -534,55 +534,8 @@ function isSalesTitle(title: string): boolean {
   return SALES_TITLE_PATTERNS.some(p => p.test(title))
 }
 
-const ARBEITNOW_ALLOWED_LOCATIONS = [
-  'united kingdom', 'uk', 'england', 'scotland', 'wales',
-  'united states', 'usa', 'u.s.', 'australia', 'canada',
-  'remote', 'worldwide', 'global', 'anywhere',
-]
-
 app.get('/api/jobs/external', async (c) => {
   const results: any[] = []
-
-  // --- Arbeitnow ---
-  try {
-    const res = await fetch('https://arbeitnow.com/api/job-board-api')
-    const data = await res.json()
-    const salesJobs = data.data.filter((job: any) => {
-      if (!job.remote) {
-        const loc = (job.location || '').toLowerCase()
-        if (!ARBEITNOW_ALLOWED_LOCATIONS.some(l => loc.includes(l))) return false
-      }
-      if (!isSalesTitle(job.title || '')) return false
-      return (job.salary_from && job.salary_from > 0) || (job.salary_to && job.salary_to > 0)
-    })
-    for (const job of salesJobs) {
-      const cleanName = (job.company_name || '').replace(LANG_SUFFIX, '').trim()
-      const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
-      const salaryStr = job.salary_from && job.salary_to
-        ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
-        : job.salary_from ? `${curr}${Math.round(job.salary_from / 1000)}k+` : null
-      results.push({
-        id: `arbeitnow-${job.slug}`,
-        title: job.title,
-        company_name: cleanName,
-        company_website: '',
-        location: job.location || 'Remote',
-        work_type: job.remote ? 'Remote' : 'On-site',
-        sector: 'Sales',
-        seniority: 'Mid-Level',
-        description: job.description,
-        base_salary: salaryStr,
-        ote: salaryStr,
-        apply_url: job.url,
-        via_partner: true,
-        created_at: job.created_at,
-        domain: '',
-        source_tag: 'Via Arbeitnow',
-      })
-    }
-  } catch (e) {
-    console.error('Arbeitnow fetch failed:', e)
-  }
 
   // --- Adzuna ---
   const adzunaAppId = process.env.ADZUNA_APP_ID
@@ -597,16 +550,25 @@ app.get('/api/jobs/external', async (c) => {
           .then((d: any) => ({ country, jobs: (d.results || []) as any[] }))
       )
     )
+    let adzunaTotal = 0
     for (const settled of adzunaSettled) {
-      if (settled.status !== 'fulfilled') continue
+      if (settled.status !== 'fulfilled') {
+        console.warn('[adzuna] A country fetch failed:', settled.reason)
+        continue
+      }
       const { country, jobs: countryJobs } = settled.value
       const curr = adzunaCurrMap[country]
+      let skippedKeyword = 0, skippedSalary = 0
+      console.log(`[adzuna][${country}] Raw jobs from API: ${countryJobs.length}`)
+      if (countryJobs.length === 0) {
+        console.warn(`[adzuna][${country}] Zero raw jobs returned`)
+      }
       for (const job of countryJobs) {
-        if (!isSalesTitle(job.title || '')) continue
+        if (!isSalesTitle(job.title || '')) { skippedKeyword++; continue }
         const salaryStr = job.salary_min && job.salary_max
           ? `${curr}${Math.round(job.salary_min / 1000)}k – ${curr}${Math.round(job.salary_max / 1000)}k`
           : job.salary_min ? `${curr}${Math.round(job.salary_min / 1000)}k+` : null
-        if (!salaryStr) continue
+        if (!salaryStr) { skippedSalary++; continue }
         results.push({
           id: `adzuna-${job.id}`,
           title: job.title,
@@ -625,8 +587,14 @@ app.get('/api/jobs/external', async (c) => {
           domain: '',
           source_tag: 'Via Adzuna',
         })
+        adzunaTotal++
+      }
+      console.log(`[adzuna][${country}] Kept: ${countryJobs.length - skippedKeyword - skippedSalary} | Excl keyword: ${skippedKeyword} | Excl salary: ${skippedSalary}`)
+      if (countryJobs.length > 0 && countryJobs.length - skippedKeyword - skippedSalary === 0) {
+        console.warn(`[adzuna][${country}] Zero after filters — sample:`, countryJobs.slice(0, 3).map((j: any) => ({ title: j.title, salary_min: j.salary_min, salary_max: j.salary_max })))
       }
     }
+    console.log(`[adzuna] Total kept across all countries: ${adzunaTotal}`)
   }
 
   // --- Remotive ---
@@ -634,10 +602,14 @@ app.get('/api/jobs/external', async (c) => {
     const remRes = await fetch('https://remotive.com/api/remote-jobs?category=sales')
     if (remRes.ok) {
       const remData = await remRes.json()
-      const remJobs = (remData.jobs || [])
-        .filter((job: any) => typeof job.salary === 'string' && job.salary.trim() !== '')
-        .filter((job: any) => isSalesTitle(job.title || ''))
-      for (const job of remJobs) {
+      const allRem: any[] = remData.jobs || []
+      const afterSalary = allRem.filter((job: any) => typeof job.salary === 'string' && job.salary.trim() !== '')
+      const afterKeyword = afterSalary.filter((job: any) => isSalesTitle(job.title || ''))
+      console.log(`[remotive] Raw: ${allRem.length} | After salary: ${afterSalary.length} | After keyword: ${afterKeyword.length} | Excl salary: ${allRem.length - afterSalary.length} | Excl keyword: ${afterSalary.length - afterKeyword.length}`)
+      if (allRem.length > 0 && afterKeyword.length === 0) {
+        console.warn('[remotive] Zero after filters — sample:', allRem.slice(0, 3).map((j: any) => ({ title: j.title, salary: j.salary })))
+      }
+      for (const job of afterKeyword) {
         results.push({
           id: `remotive-${job.id}`,
           title: job.title,
@@ -662,47 +634,12 @@ app.get('/api/jobs/external', async (c) => {
     console.error('Remotive fetch failed:', e)
   }
 
+  console.log(`[/api/jobs/external] Total results: ${results.length}`)
   return c.json(results)
 })
 
 app.get('/api/jobs/:id', async (c) => {
   const id = c.req.param('id')
-
-  if (id.startsWith('arbeitnow-')) {
-    const slug = id.replace('arbeitnow-', '')
-    try {
-      const res = await fetch('https://arbeitnow.com/api/job-board-api')
-      const data = await res.json()
-      const job = data.data.find((j: any) => j.slug === slug)
-      if (!job) return c.json({ error: 'Job not found' }, 404)
-      const cleanName = (job.company_name || '').replace(LANG_SUFFIX, '').trim()
-      return c.json({ job: {
-        id: `arbeitnow-${job.slug}`,
-        title: job.title,
-        company: cleanName,
-        company_name: cleanName,
-        company_website: '', // Arbeitnow job URLs are arbeitnow.com links — not the company's site
-        location: job.location || 'Remote',
-        job_type: job.remote ? 'Remote' : 'On-site',
-        work_type: job.remote ? 'Remote' : 'On-site',
-        description: job.description,
-        application_url: job.url,
-        base_salary: null,
-        ote: null,
-        via_partner: true,
-        created_at: job.created_at,
-        domain: '', // Never use arbeitnow.com as the company logo domain
-        sector: 'Sales',
-        seniority: 'Mid-Level',
-        currency: null,
-        commission_structure: null,
-        status: 'live',
-        featured: false,
-      }})
-    } catch {
-      return c.json({ error: 'Failed to fetch job' }, 500)
-    }
-  }
 
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   try {
@@ -2096,66 +2033,6 @@ app.get('*', (c) => {
   }
 })
 
-// --- Arbeitnow job sync ---
-
-async function syncArbeitnowJobs() {
-  if (!pool) return
-  try {
-    console.log('[arbeitnow] Starting sync...')
-    const res = await fetch('https://www.arbeitnow.com/api/job-board-api?page=1')
-    if (!res.ok) { console.warn('[arbeitnow] API error:', res.status); return }
-    const json = await res.json() as any
-    const jobs: any[] = Array.isArray(json.data) ? json.data : []
-
-    // Filter: sales keywords + UK/US/AU/CA/Remote only + salary required
-    const filtered = jobs.filter(j => {
-      if (!j.remote) {
-        const loc = (j.location || '').toLowerCase()
-        if (!ARBEITNOW_ALLOWED_LOCATIONS.some(l => loc.includes(l))) return false
-      }
-      if (!isSalesTitle(j.title || '')) return false
-      return (j.salary_from && j.salary_from > 0) || (j.salary_to && j.salary_to > 0)
-    })
-
-    let inserted = 0
-    for (const job of filtered) {
-      const externalId = `arbeitnow-${job.slug}`
-      // Check if already exists
-      const [existing] = await pool.execute(
-        'SELECT id FROM jobs WHERE external_id = ?',
-        [externalId]
-      ) as any[]
-      if ((existing as any[]).length > 0) continue
-
-      const id = externalId
-      const title = job.title || 'Untitled'
-      const companyName = job.company_name || 'Unknown Company'
-      const location = job.location || 'Remote'
-      const description = job.description || ''
-      const url = job.url || `https://www.arbeitnow.com/jobs/${job.slug}`
-      const workType = job.remote ? 'Remote' : 'On-site'
-      const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
-      const salaryStr = job.salary_from && job.salary_to
-        ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
-        : job.salary_from ? `${curr}${Math.round(job.salary_from / 1000)}k+` : null
-
-      try {
-        await pool.execute(
-          `INSERT INTO jobs (id, title, company_name, location, work_type, description, status, source, external_id, url, base_salary, ote, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, 'live', 'arbeitnow', ?, ?, ?, ?, NOW())`,
-          [id, title, companyName, location, workType, description, externalId, url, salaryStr, salaryStr]
-        )
-        inserted++
-      } catch {
-        // Ignore duplicate key or other insert errors
-      }
-    }
-    console.log(`[arbeitnow] Sync complete — ${inserted} new jobs inserted from ${filtered.length} sales-relevant (${jobs.length} total)`)
-  } catch (err) {
-    console.error('[arbeitnow] Sync failed:', err)
-  }
-}
-
 // --- Adzuna job sync ---
 
 async function syncAdzunaJobs() {
@@ -2244,10 +2121,8 @@ async function syncRemotiveJobs() {
 }
 
 // Run on startup then every 6 hours
-syncArbeitnowJobs()
 syncAdzunaJobs()
 syncRemotiveJobs()
-setInterval(syncArbeitnowJobs, 6 * 60 * 60 * 1000)
 setInterval(syncAdzunaJobs, 6 * 60 * 60 * 1000)
 setInterval(syncRemotiveJobs, 6 * 60 * 60 * 1000)
 

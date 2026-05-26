@@ -8,7 +8,7 @@ import { motion } from 'framer-motion'
 import { getDomain } from '../utils/getDomain'
 import AnimatedCounter from '../components/AnimatedCounter'
 
-// Verified domains for well-known companies — used to correct Arbeitnow guesses
+// Verified domains for well-known companies — used to resolve partner job company logos
 const KNOWN_DOMAINS: Record<string, string> = {
   ...SEED_COMPANY_DOMAINS,
   okta: 'okta.com',
@@ -126,54 +126,24 @@ export function HomePage() {
           avgOteNum: allJobs.length > 0 ? Math.round(totalOte / allJobs.length) : 0
         })
 
-        let companiesSet = false
-        try {
-          const arbRes = await fetch('https://arbeitnow.com/api/job-board-api')
-          if (arbRes.ok) {
-            const arbData = await arbRes.json()
-            const cMap = new Map<string, { count: number; domain: string }>()
-            arbData.data.forEach((j: any) => {
-              const name = (j.company_name || '').trim()
-              if (!name) return
-              const slug = name.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
-              // Use verified domain if known, otherwise fall back to slug.com guess
-              const domain = KNOWN_DOMAINS[slug] || KNOWN_DOMAINS[name.toLowerCase()] || `${slug}.com`
-              const existing = cMap.get(name)
-              if (existing) {
-                cMap.set(name, { count: existing.count + 1, domain: existing.domain })
-              } else {
-                cMap.set(name, { count: 1, domain })
-              }
-            })
-            const top6 = Array.from(cMap.entries())
-              .map(([name, { count, domain }]) => ({ name, count, domain }))
-              .sort((a, b) => b.count - a.count)
-              .slice(0, 6)
-            if (top6.length > 0) { setTopCompanies(top6); companiesSet = true }
+        // Build top companies from live jobs; use KNOWN_DOMAINS to get correct logo domains
+        const seedMap = new Map<string, { count: number; domain: string | null }>()
+        allJobs.forEach(j => {
+          const existing = seedMap.get(j.company)
+          const slug = j.company.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
+          const knownDomain = KNOWN_DOMAINS[slug] || KNOWN_DOMAINS[j.company.toLowerCase()] || null
+          const domain = j.domain || knownDomain
+          if (existing) {
+            seedMap.set(j.company, { count: existing.count + 1, domain: existing.domain || domain })
+          } else {
+            seedMap.set(j.company, { count: 1, domain })
           }
-        } catch {}
-
-        if (!companiesSet) {
-          // Build from live DB/partner jobs first; use KNOWN_DOMAINS to get correct domains
-          const seedMap = new Map<string, { count: number; domain: string | null }>()
-          allJobs.forEach(j => {
-            const existing = seedMap.get(j.company)
-            const slug = j.company.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
-            const knownDomain = KNOWN_DOMAINS[slug] || KNOWN_DOMAINS[j.company.toLowerCase()] || null
-            const domain = j.domain || knownDomain
-            if (existing) {
-              seedMap.set(j.company, { count: existing.count + 1, domain: existing.domain || domain })
-            } else {
-              seedMap.set(j.company, { count: 1, domain })
-            }
-          })
-          const fromJobs = Array.from(seedMap.entries())
-            .map(([name, { count, domain }]) => ({ name, count, domain }))
-            .sort((a, b) => b.count - a.count)
-            .slice(0, 6)
-          // If we still have nothing useful, use the static fallback with verified domains
-          setTopCompanies(fromJobs.length > 0 ? fromJobs : FALLBACK_COMPANIES)
-        }
+        })
+        const fromJobs = Array.from(seedMap.entries())
+          .map(([name, { count, domain }]) => ({ name, count, domain }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 6)
+        setTopCompanies(fromJobs.length > 0 ? fromJobs : FALLBACK_COMPANIES)
       } catch (error) {
         console.error('Error loading homepage data:', error)
       }

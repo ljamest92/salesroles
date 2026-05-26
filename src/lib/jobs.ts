@@ -338,63 +338,6 @@ function isSalesTitle(title: string): boolean {
   return SALES_PATTERNS.some(p => p.test(title))
 }
 
-const ARBEITNOW_ALLOWED_LOCATIONS = [
-  'united kingdom', 'uk', 'england', 'scotland', 'wales',
-  'united states', 'usa', 'u.s.', 'australia', 'canada',
-  'remote', 'worldwide', 'global', 'anywhere',
-]
-
-async function fetchArbeitnowJobs(): Promise<Job[]> {
-  try {
-    const response = await fetch('https://arbeitnow.com/api/job-board-api')
-    if (!response.ok) throw new Error('API down')
-    const result = await response.json()
-
-    return result.data
-      .filter((job: any) => {
-        if (job.remote) return true
-        const loc = (job.location || '').toLowerCase()
-        return ARBEITNOW_ALLOWED_LOCATIONS.some(l => loc.includes(l))
-      })
-      .filter((job: any) => isSalesTitle(job.title || ''))
-      .filter((job: any) => (job.salary_from && job.salary_from > 0) || (job.salary_to && job.salary_to > 0))
-      .map((job: any) => {
-        const domain = extractDomain(job.company_name)
-        const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
-        const salaryStr = job.salary_from && job.salary_to
-          ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
-          : job.salary_from
-            ? `${curr}${Math.round(job.salary_from / 1000)}k+`
-            : null
-        return {
-          id: job.slug,
-          title: toTitleCase(job.title),
-          company: toTitleCase(job.company_name),
-          domain,
-          location: toTitleCase(job.location),
-          job_type: job.remote ? 'Remote' : 'On-site',
-          sector: 'Sales',
-          seniority: 'Mid-Level',
-          description: job.description,
-          base_salary: salaryStr || 'Salary Not Disclosed',
-          ote: salaryStr || 'Salary Not Disclosed',
-          commission_structure: 'Uncapped commission with accelerators.',
-          currency: job.salary_currency || 'USD',
-          application_url: job.url,
-          contact_email: 'apply@partner.com',
-          status: 'live',
-          featured: false,
-          created_at: new Date().toISOString(),
-          is_partner: true,
-          source_tag: 'Via Arbeitnow',
-        } as Job
-      })
-  } catch {
-    console.warn('Arbeitnow API unavailable')
-    return []
-  }
-}
-
 async function fetchAdzunaJobs(): Promise<Job[]> {
   const appId = import.meta.env.VITE_ADZUNA_APP_ID
   const appKey = import.meta.env.VITE_ADZUNA_APP_KEY
@@ -416,20 +359,32 @@ async function fetchAdzunaJobs(): Promise<Job[]> {
 
   const jobs: Job[] = []
   for (const result of settled) {
-    if (result.status !== 'fulfilled') continue
+    if (result.status !== 'fulfilled') {
+      console.warn('[adzuna] A country fetch failed:', result.reason)
+      continue
+    }
     const { country, results: countryJobs } = result.value
     const curr = currencyMap[country]
     const currCode = currencyCodeMap[country]
 
+    let skippedKeyword = 0, skippedSalary = 0
+    console.log(`[adzuna][${country}] Raw jobs from API: ${countryJobs.length}`)
+    if (countryJobs.length === 0) {
+      console.warn(`[adzuna][${country}] Zero raw jobs — no results returned`)
+    }
+    if (countryJobs.length > 0 && countryJobs.length <= 3) {
+      console.log(`[adzuna][${country}] Sample raw jobs:`, countryJobs.map((j: any) => ({ title: j.title, salary_min: j.salary_min, salary_max: j.salary_max })))
+    }
+
     for (const job of countryJobs) {
-      if (!isSalesTitle(job.title || '')) continue
+      if (!isSalesTitle(job.title || '')) { skippedKeyword++; continue }
 
       const salaryStr = job.salary_min && job.salary_max
         ? `${curr}${Math.round(job.salary_min / 1000)}k – ${curr}${Math.round(job.salary_max / 1000)}k`
         : job.salary_min
           ? `${curr}${Math.round(job.salary_min / 1000)}k+`
           : null
-      if (!salaryStr) continue
+      if (!salaryStr) { skippedSalary++; continue }
 
       jobs.push({
         id: `adzuna-${job.id}`,
@@ -454,8 +409,13 @@ async function fetchAdzunaJobs(): Promise<Job[]> {
         source_tag: 'Via Adzuna',
       })
     }
+    console.log(`[adzuna][${country}] After filters: ${countryJobs.length - skippedKeyword - skippedSalary} kept | ${skippedKeyword} excluded by keyword | ${skippedSalary} excluded by missing salary`)
+    if (countryJobs.length > 0 && countryJobs.length - skippedKeyword - skippedSalary === 0) {
+      console.warn(`[adzuna][${country}] Zero jobs after filtering — sample of 3 raw:`, countryJobs.slice(0, 3).map((j: any) => ({ title: j.title, salary_min: j.salary_min, salary_max: j.salary_max })))
+    }
   }
 
+  console.log(`[adzuna] Total jobs returned: ${jobs.length}`)
   return jobs
 }
 
@@ -465,10 +425,16 @@ async function fetchRemotiveJobs(): Promise<Job[]> {
     if (!res.ok) throw new Error('Remotive API down')
     const data = await res.json()
 
-    return (data.jobs || [])
-      .filter((job: any) => typeof job.salary === 'string' && job.salary.trim() !== '')
-      .filter((job: any) => isSalesTitle(job.title || ''))
-      .map((job: any) => ({
+    const all: any[] = data.jobs || []
+    console.log(`[remotive] Raw jobs from API: ${all.length}`)
+    const afterSalary = all.filter((job: any) => typeof job.salary === 'string' && job.salary.trim() !== '')
+    const afterKeyword = afterSalary.filter((job: any) => isSalesTitle(job.title || ''))
+    console.log(`[remotive] After salary filter: ${afterSalary.length} | After keyword filter: ${afterKeyword.length} | Excluded by salary: ${all.length - afterSalary.length} | Excluded by keyword: ${afterSalary.length - afterKeyword.length}`)
+    if (all.length > 0 && afterKeyword.length === 0) {
+      console.warn('[remotive] Zero jobs after filtering — sample of 3 raw:', all.slice(0, 3).map((j: any) => ({ title: j.title, salary: j.salary })))
+    }
+
+    return afterKeyword.map((job: any) => ({
         id: `remotive-${job.id}`,
         title: toTitleCase(job.title || ''),
         company: toTitleCase(job.company_name || 'Unknown'),
@@ -506,13 +472,13 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
       }
     }
 
-    const [arbeitnowJobs, adzunaJobs, remotiveJobs] = await Promise.all([
-      fetchArbeitnowJobs(),
+    const [adzunaJobs, remotiveJobs] = await Promise.all([
       fetchAdzunaJobs(),
       fetchRemotiveJobs(),
     ])
+    console.log(`[fetchPartnerJobs] Adzuna: ${adzunaJobs.length} | Remotive: ${remotiveJobs.length}`)
 
-    const combined = [...SEED_JOBS, ...arbeitnowJobs, ...adzunaJobs, ...remotiveJobs]
+    const combined = [...SEED_JOBS, ...adzunaJobs, ...remotiveJobs]
 
     const uniqueById = new Map<string, Job>()
     combined.forEach(job => {
