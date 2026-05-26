@@ -116,7 +116,17 @@ try {
     pool.execute(`ALTER TABLE users ADD COLUMN company_website VARCHAR(500)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN company_logo_url VARCHAR(500)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN company_domain VARCHAR(255)`).catch(() => { });
+    pool.execute(`ALTER TABLE jobs ADD COLUMN edit_note VARCHAR(255)`).catch(() => { });
     pool.execute(`ALTER TABLE users MODIFY COLUMN is_public TINYINT DEFAULT 1`).catch(() => { });
+    // Demo company account (INSERT IGNORE — no-op if already exists)
+    pool.execute(`INSERT IGNORE INTO users (name, email, password_hash, role, company_name, created_at)
+     VALUES ('SalesRoles Demo', 'demo@salesroles.co', '$2b$10$nSHW9/N3aDwoWhEQSYW.x.DgNOU4FdWhVnBkaE97tC4Mvi.RpKe9W', 'company', 'SalesRoles Demo Co', NOW())`).catch(() => { });
+    // Demo job linked to demo company (INSERT IGNORE — idempotent via primary key)
+    pool.execute(`INSERT IGNORE INTO jobs (id, title, company_name, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, featured, company_id, created_at)
+     SELECT 'demo-sr-senior-ae', 'Senior Account Executive', 'SalesRoles Demo Co', 'Remote (Global)', 'Remote', 'Senior', 'SaaS',
+       'We are looking for a Senior AE to join our growing sales team. You will own the full sales cycle from qualified lead to close, targeting mid-market SaaS companies.',
+       '$120k - $150k', '$240k - $300k', '20% of ARR, uncapped, paid monthly', 'USD', 'live', 1, id, NOW()
+     FROM users WHERE email = 'demo@salesroles.co' LIMIT 1`).catch(() => { });
     // Backfill slugs for existing users who have none
     pool.execute(`
     SELECT id, name FROM users WHERE profile_slug IS NULL OR profile_slug = ''
@@ -592,6 +602,29 @@ app.get('/api/dashboard/stats', async (c) => {
     }
     catch {
         return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+// Company edits a live job → resets to pending for re-approval
+app.put('/api/jobs/:id', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const id = c.req.param('id');
+        const { title, location, base_salary, ote, commission_structure, work_type, description } = await c.req.json();
+        // Verify the company owns this job
+        const [rows] = await pool.execute('SELECT id FROM jobs WHERE id = ? AND company_id = ?', [id, userId]);
+        if (rows.length === 0)
+            return c.json({ error: 'Job not found or unauthorized' }, 404);
+        await pool.execute(`UPDATE jobs SET title=?, location=?, base_salary=?, ote=?, commission_structure=?, work_type=?, description=?, status='pending', edit_note='Edited — awaiting re-approval' WHERE id=? AND company_id=?`, [title, location, base_salary, ote, commission_structure, work_type, description, id, userId]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Update failed' }, 500);
     }
 });
 app.put('/api/auth/profile', async (c) => {

@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -66,6 +66,11 @@ export function DashboardPage() {
   })
   const [cpSaving, setCpSaving] = useState(false)
   const [cpToast, setCpToast] = useState<string | null>(null)
+  const [editModal, setEditModal] = useState<{
+    open: boolean; jobId: string | null; title: string; location: string
+    baseSalary: string; ote: string; commissionStructure: string; workType: string
+    description: string; saving: boolean; error: string
+  }>({ open: false, jobId: null, title: '', location: '', baseSalary: '', ote: '', commissionStructure: '', workType: 'Remote', description: '', saving: false, error: '' })
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -220,6 +225,59 @@ export function DashboardPage() {
     }
   }
 
+  const openEditModal = (job: any) => {
+    setEditModal({
+      open: true, jobId: job.id,
+      title: job.title || '',
+      location: job.location || '',
+      baseSalary: job.base_salary || '',
+      ote: job.ote || '',
+      commissionStructure: job.commission_structure || '',
+      workType: job.work_type || 'Remote',
+      description: job.description || '',
+      saving: false, error: ''
+    })
+  }
+
+  const saveEditJob = async () => {
+    if (!editModal.jobId) return
+    setEditModal(prev => ({ ...prev, saving: true, error: '' }))
+    const token = localStorage.getItem('salesroles_token')
+    try {
+      const res = await fetch(`/api/jobs/${editModal.jobId}`, {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: editModal.title, location: editModal.location,
+          base_salary: editModal.baseSalary, ote: editModal.ote,
+          commission_structure: editModal.commissionStructure,
+          work_type: editModal.workType, description: editModal.description,
+        }),
+      })
+      if (res.ok) {
+        const original = liveJobs.find(j => j.id === editModal.jobId)
+        setLiveJobs(prev => prev.filter(j => j.id !== editModal.jobId))
+        if (original) {
+          setPendingJobs(prev => [...prev, {
+            ...original,
+            title: editModal.title, location: editModal.location,
+            base_salary: editModal.baseSalary, ote: editModal.ote,
+            commission_structure: editModal.commissionStructure,
+            work_type: editModal.workType, description: editModal.description,
+            status: 'pending', edit_note: 'Edited — awaiting re-approval',
+          }])
+        }
+        setEditModal(prev => ({ ...prev, open: false }))
+        setCpToast('Your changes have been submitted for review')
+        setTimeout(() => setCpToast(null), 4000)
+      } else {
+        setEditModal(prev => ({ ...prev, saving: false, error: 'Failed to save changes. Please try again.' }))
+      }
+    } catch {
+      setEditModal(prev => ({ ...prev, saving: false, error: 'Failed to save changes. Please try again.' }))
+    }
+  }
+
   // Load candidate profile data (cv, pro status)
   useEffect(() => {
     if (!user || role !== 'candidate') return
@@ -359,7 +417,7 @@ export function DashboardPage() {
 
       {role === 'company' ? (
         <div className="space-y-16">
-          <StatGroup className="grid grid-cols-2 md:grid-cols-4 gap-8">
+          <StatGroup className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-6">
             <Stat label="Live Jobs" value={String(stats.liveJobs)} icon={<Briefcase size={20} className="text-primary" />} />
             <Stat label="Total Views" value={String(stats.totalViews)} icon={<Eye size={20} className="text-primary" />} />
             <Stat label="Apply Clicks" value={String(stats.applyClicks)} icon={<MousePointer2 size={20} className="text-primary" />} />
@@ -414,6 +472,12 @@ export function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Live</span>
+                        <button
+                          onClick={() => openEditModal(job)}
+                          className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 font-bold"
+                        >
+                          <Pencil size={12} /> Edit
+                        </button>
                         <Link to={`/jobs/${job.id}`}>
                           <button className="text-xs border border-white/10 text-white/50 hover:text-white px-3 py-1.5 rounded-lg transition-colors">View →</button>
                         </Link>
@@ -442,7 +506,7 @@ export function DashboardPage() {
                         </p>
                       </div>
                       <span className="text-xs bg-amber-500/20 text-amber-400 border border-amber-500/30 px-2 py-0.5 rounded-full shrink-0">
-                        Awaiting Review
+                        {(job as any).edit_note || 'Awaiting Review'}
                       </span>
                     </div>
                   </Card>
@@ -928,6 +992,117 @@ export function DashboardPage() {
                   )}
                 </TabsContent>
               </Tabs>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Edit Job Modal */}
+      {editModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditModal(prev => ({ ...prev, open: false }))} />
+          <div className="relative bg-card border border-white/10 rounded-[24px] p-8 w-full max-w-xl space-y-6 shadow-2xl my-8">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <Pencil size={18} className="text-primary" />
+              </div>
+              <div>
+                <h2 className="text-xl font-black tracking-tight">Edit Job Listing</h2>
+                <p className="text-muted-foreground text-xs font-medium mt-0.5">Changes will be submitted for admin re-approval before going live.</p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-foreground tracking-widest">JOB TITLE</label>
+                  <input
+                    value={editModal.title}
+                    onChange={e => setEditModal(prev => ({ ...prev, title: e.target.value }))}
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-foreground tracking-widest">LOCATION</label>
+                  <input
+                    value={editModal.location}
+                    onChange={e => setEditModal(prev => ({ ...prev, location: e.target.value }))}
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-foreground tracking-widest">BASE SALARY</label>
+                  <input
+                    value={editModal.baseSalary}
+                    onChange={e => setEditModal(prev => ({ ...prev, baseSalary: e.target.value }))}
+                    placeholder="e.g. $120k - $150k"
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-foreground tracking-widest">ON-TARGET EARNINGS</label>
+                  <input
+                    value={editModal.ote}
+                    onChange={e => setEditModal(prev => ({ ...prev, ote: e.target.value }))}
+                    placeholder="e.g. $240k - $300k"
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="grid sm:grid-cols-2 gap-4">
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-foreground tracking-widest">JOB TYPE</label>
+                  <select
+                    value={editModal.workType}
+                    onChange={e => setEditModal(prev => ({ ...prev, workType: e.target.value }))}
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors"
+                  >
+                    {['Remote', 'Hybrid', 'On-site'].map(t => <option key={t} value={t}>{t}</option>)}
+                  </select>
+                </div>
+                <div className="space-y-1.5">
+                  <label className="text-[10px] font-black text-muted-foreground tracking-widest">COMMISSION STRUCTURE</label>
+                  <input
+                    value={editModal.commissionStructure}
+                    onChange={e => setEditModal(prev => ({ ...prev, commissionStructure: e.target.value }))}
+                    placeholder="e.g. 20% of ARR, uncapped"
+                    className="w-full bg-background border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[10px] font-black text-muted-foreground tracking-widest">JOB DESCRIPTION</label>
+                <textarea
+                  value={editModal.description}
+                  onChange={e => setEditModal(prev => ({ ...prev, description: e.target.value }))}
+                  rows={5}
+                  className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors resize-none"
+                />
+              </div>
+
+              {editModal.error && <p className="text-destructive text-xs font-bold">{editModal.error}</p>}
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setEditModal(prev => ({ ...prev, open: false }))}
+                disabled={editModal.saving}
+                className="flex-1 border border-white/10 text-muted-foreground hover:text-foreground hover:bg-white/5 font-bold text-sm h-11 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={saveEditJob}
+                disabled={editModal.saving || !editModal.title.trim()}
+                className="flex-1 bg-primary text-primary-foreground font-black text-sm h-11 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-50"
+              >
+                {editModal.saving ? 'Saving...' : 'Submit for Review'}
+              </button>
             </div>
           </div>
         </div>
