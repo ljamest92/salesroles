@@ -66,19 +66,17 @@ export function FAQPage() {
           <div className="mb-12">
             <div className="bg-card border border-border p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full gap-0.5">
               {Object.keys(faqs).map((tab) => (
-                <button
+                <div
                   key={tab}
-                  type="button"
                   onClick={() => setActiveTab(tab)}
-                  {...(tab === 'companies' ? { style: { border: 'none', outline: 'none', boxShadow: 'none', background: 'transparent', WebkitAppearance: 'none', appearance: 'none' } } : {})}
-                  className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors${tab === 'companies' ? ' border-0 outline-none shadow-none ring-0 bg-transparent' : ''} ${
+                  className={`cursor-pointer w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors ${
                     activeTab === tab
                       ? 'bg-background text-foreground shadow-sm'
                       : 'text-muted-foreground hover:text-foreground'
                   }`}
                 >
                   {tabLabels[tab]}
-                </button>
+                </div>
               ))}
             </div>
           </div>
