@@ -14,7 +14,7 @@ export function CompanyLogo({ domain, name, imgClassName = '' }: CompanyLogoProp
 
   if (!url || failed) {
     return (
-      <div className="w-full h-full flex items-center justify-center bg-zinc-900 text-emerald-400 font-black text-xl leading-none select-none">
+      <div className="w-full h-full flex items-center justify-center bg-[#0f1629] text-[#10B981] font-black text-xl leading-none select-none rounded-inherit">
         {name.charAt(0).toUpperCase()}
       </div>
     )

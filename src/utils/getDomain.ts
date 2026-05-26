@@ -1,9 +1,11 @@
-export const getDomain = (website: string | undefined | null, companyName: string): string => {
-  if (website) {
-    try {
-      const url = website.startsWith('http') ? website : `https://${website}`;
-      return new URL(url).hostname.replace('www.', '');
-    } catch {}
-  }
-  return companyName.toLowerCase().replace(/[^a-z0-9]/g, '') + '.com';
+export const getDomain = (website: string | undefined | null, _companyName?: string): string => {
+  if (!website) return '';
+  try {
+    const url = website.startsWith('http') ? website : `https://${website}`;
+    const hostname = new URL(url).hostname.replace('www.', '');
+    // Never use a job board's own domain as the company logo domain
+    if (hostname === 'arbeitnow.com' || hostname === 'linkedin.com' || hostname === 'indeed.com') return '';
+    return hostname;
+  } catch {}
+  return '';
 };

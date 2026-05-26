@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Container } from '@blinkdotnew/ui'
 import { Search, MapPin, Star, ChevronRight, FileText, Link2, SlidersHorizontal, X } from 'lucide-react'
+import { useAuth } from '../hooks/useAuth'
 
 interface Candidate {
   id: number
@@ -49,6 +50,8 @@ const inpCls = "w-full bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2.
 
 export function CandidateSearchPage() {
   const navigate = useNavigate()
+  const { user, isLoading: authLoading } = useAuth()
+  const [accessChecked, setAccessChecked] = useState(false)
   const [filters, setFilters] = useState({ ...defaultFilters })
   const [candidates, setCandidates] = useState<Candidate[]>([])
   const [total, setTotal] = useState(0)
@@ -57,6 +60,18 @@ export function CandidateSearchPage() {
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
   const searchTimer = useRef<any>(null)
+
+  // Gate: company accounts only
+  useEffect(() => {
+    if (authLoading) return
+    if (!user || (user as any).role !== 'company') {
+      // Store toast message in sessionStorage so dashboard can display it
+      sessionStorage.setItem('dashboard_toast', 'This area is for hiring companies only.')
+      navigate({ to: '/dashboard', search: { mode: 'candidate' } as any })
+      return
+    }
+    setAccessChecked(true)
+  }, [user, authLoading, navigate])
 
   const fetchCandidates = useCallback(async (f: typeof filters, p: number) => {
     setLoading(true)
@@ -72,7 +87,10 @@ export function CandidateSearchPage() {
     params.set('sort_by', f.sort_by)
     params.set('page', String(p))
     try {
-      const res = await fetch(`/api/candidates?${params}`)
+      const token = localStorage.getItem('salesroles_token')
+      const res = await fetch(`/api/candidates?${params}`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      })
       const data = await res.json()
       setCandidates(data.candidates || [])
       setTotal(data.total || 0)
@@ -198,6 +216,15 @@ export function CandidateSearchPage() {
       </div>
     </div>
   )
+
+  // Don't render until access has been confirmed (prevents flash)
+  if (authLoading || !accessChecked) {
+    return (
+      <Container className="py-24 flex items-center justify-center min-h-[60vh]">
+        <div className="w-10 h-10 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" />
+      </Container>
+    )
+  }
 
   return (
     <Container className="pt-12 pb-16 md:pt-16 animate-fade-in">

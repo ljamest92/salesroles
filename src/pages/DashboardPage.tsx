@@ -57,6 +57,7 @@ export function DashboardPage() {
   const [headline, setHeadline] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
   const [profileData, setProfileData] = useState<any>(null)
+  const [redirectToast, setRedirectToast] = useState<string | null>(null)
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -189,6 +190,17 @@ export function DashboardPage() {
       .catch(() => {})
   }, [user, role, isPro])
 
+  // Show toast from sessionStorage (e.g. redirect from candidate search gate)
+  useEffect(() => {
+    const msg = sessionStorage.getItem('dashboard_toast')
+    if (msg) {
+      sessionStorage.removeItem('dashboard_toast')
+      // Render as a transient banner — reuse existing toast state pattern
+      setRedirectToast(msg)
+      setTimeout(() => setRedirectToast(null), 4000)
+    }
+  }, [])
+
   // FIX 1: fetch saved jobs for candidate view
   useEffect(() => {
     if (!user || role !== 'candidate') return
@@ -265,6 +277,12 @@ export function DashboardPage() {
 
   return (
     <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in">
+      {/* Redirect toast */}
+      {redirectToast && (
+        <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-xl backdrop-blur-sm">
+          {redirectToast}
+        </div>
+      )}
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Dashboard</h1>
@@ -634,22 +652,26 @@ export function DashboardPage() {
                       {profileViews.length === 0 ? (
                         <p className="text-white/40 text-sm p-8 text-center border border-dashed border-white/10 rounded-xl">No profile views yet. Make your profile public to start appearing in company searches.</p>
                       ) : (
-                        profileViews.map((v: any, i: number) => (
-                          <Card key={i} className="p-4 border border-white/5 bg-card/30 rounded-xl">
-                            <div className="flex justify-between items-center">
-                              <div className="flex items-center gap-3">
-                                <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
-                                  <Building2 size={14} className="text-emerald-400" />
+                        profileViews.map((v: any, i: number) => {
+                          const displayName = v.viewer_name || v.viewer_company || 'A company'
+                          const initial = displayName.charAt(0).toUpperCase()
+                          return (
+                            <Card key={i} className="p-4 border border-white/5 bg-card/30 rounded-xl">
+                              <div className="flex justify-between items-center">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-xl bg-[#0f1629] border border-white/10 flex items-center justify-center shrink-0 text-sm font-black text-emerald-400">
+                                    {initial}
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-bold leading-tight">{displayName}</p>
+                                    <p className="text-xs text-white/40 mt-0.5">{v.action === 'cv_download' ? 'Downloaded your CV' : 'Viewed your profile'}</p>
+                                  </div>
                                 </div>
-                                <div>
-                                  <p className="text-sm font-bold">{v.viewer_name || 'A company'}</p>
-                                  <p className="text-xs text-white/40">{v.action === 'cv_download' ? 'Downloaded your CV' : 'Viewed your profile'}</p>
-                                </div>
+                                <p className="text-xs text-white/30 shrink-0">{new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
                               </div>
-                              <p className="text-xs text-white/30 shrink-0">{new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
-                            </div>
-                          </Card>
-                        ))
+                            </Card>
+                          )
+                        })
                       )}
                     </div>
                   ) : (

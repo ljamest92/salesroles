@@ -433,16 +433,12 @@ app.get('/api/jobs/external', async (c) => {
         const salesJobs = data.data.filter((job) => SALES_KEYWORDS.some(kw => job.title.toLowerCase().includes(kw) ||
             job.tags?.some((t) => t.toLowerCase().includes(kw))));
         const mapped = salesJobs.map((job) => {
-            let domain = '';
-            try {
-                domain = extractDomain(job.url);
-            }
-            catch { }
+            const cleanName = (job.company_name || '').replace(LANG_SUFFIX, '').trim();
             return {
                 id: `arbeitnow-${job.slug}`,
                 title: job.title,
-                company_name: job.company_name.replace(LANG_SUFFIX, '').trim(),
-                company_website: domain ? `https://${domain}` : '',
+                company_name: cleanName,
+                company_website: '', // Arbeitnow job URLs are arbeitnow.com links — not the company's site
                 location: job.location || 'Remote',
                 work_type: job.remote ? 'Remote' : 'On-site',
                 sector: 'Sales',
@@ -453,7 +449,7 @@ app.get('/api/jobs/external', async (c) => {
                 apply_url: job.url,
                 via_partner: true,
                 created_at: job.created_at,
-                domain,
+                domain: '', // Never use arbeitnow.com as the company logo domain
             };
         });
         return c.json(mapped);
@@ -473,18 +469,13 @@ app.get('/api/jobs/:id', async (c) => {
             const job = data.data.find((j) => j.slug === slug);
             if (!job)
                 return c.json({ error: 'Job not found' }, 404);
-            let domain = '';
-            try {
-                domain = new URL(job.url).hostname.replace('www.', '');
-            }
-            catch { }
-            const cleanName = job.company_name.replace(LANG_SUFFIX, '').trim();
+            const cleanName = (job.company_name || '').replace(LANG_SUFFIX, '').trim();
             return c.json({ job: {
                     id: `arbeitnow-${job.slug}`,
                     title: job.title,
                     company: cleanName,
                     company_name: cleanName,
-                    company_website: domain ? `https://${domain}` : '',
+                    company_website: '', // Arbeitnow job URLs are arbeitnow.com links — not the company's site
                     location: job.location || 'Remote',
                     job_type: job.remote ? 'Remote' : 'On-site',
                     work_type: job.remote ? 'Remote' : 'On-site',
@@ -494,7 +485,7 @@ app.get('/api/jobs/:id', async (c) => {
                     ote: null,
                     via_partner: true,
                     created_at: job.created_at,
-                    domain,
+                    domain: '', // Never use arbeitnow.com as the company logo domain
                     sector: 'Sales',
                     seniority: 'Mid-Level',
                     currency: null,
@@ -985,6 +976,19 @@ app.get('/api/candidate/me', async (c) => {
 app.get('/api/candidates', async (c) => {
     if (!pool)
         return c.json({ candidates: [], total: 0, page: 1, pages: 0 });
+    // Require authenticated company account
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Company account required', candidates: [], total: 0, page: 1, pages: 0 }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company') {
+            return c.json({ error: 'Company account required', candidates: [], total: 0, page: 1, pages: 0 }, 403);
+        }
+    }
+    catch {
+        return c.json({ error: 'Unauthorized', candidates: [], total: 0, page: 1, pages: 0 }, 401);
+    }
     try {
         const search = c.req.query('search') || '';
         const targetRole = c.req.query('target_role') || '';
@@ -1076,7 +1080,9 @@ app.get('/api/candidates/:id/download-cv', async (c) => {
         const user = rows[0];
         if (!user?.cv_filename)
             return c.json({ error: 'No CV on file' }, 404);
-        await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action) VALUES (?, ?, ?)', [viewerId, candidateId, 'cv_download']).catch(() => { });
+        const [vRows2] = await pool.execute('SELECT name, company_name FROM users WHERE id = ?', [viewerId]);
+        const vi2 = vRows2[0];
+        await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action, viewer_name, viewer_company) VALUES (?, ?, ?, ?, ?)', [viewerId, candidateId, 'cv_download', vi2?.company_name || vi2?.name || null, vi2?.company_name || null]).catch(() => { });
         return c.json({ filename: user.cv_filename });
     }
     catch {
@@ -1101,12 +1107,15 @@ app.get('/api/candidates/:id', async (c) => {
             try {
                 const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
                 const viewerId = String(payload.id);
-                if (viewerId !== id) {
-                    await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action) VALUES (?, ?, ?)', [viewerId, id, 'view']).catch(() => { });
+                if (viewerId !== String(candidate.id)) {
+                    // Look up viewer's name and company so it's stored at view-time
+                    const [viewerRows] = await pool.execute('SELECT name, company_name FROM users WHERE id = ?', [viewerId]);
+                    const viewerInfo = viewerRows[0];
+                    const viewerName = viewerInfo?.company_name || viewerInfo?.name || null;
+                    const viewerCompany = viewerInfo?.company_name || null;
+                    await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action, viewer_name, viewer_company) VALUES (?, ?, ?, ?, ?)', [viewerId, candidate.id, 'view', viewerName, viewerCompany]).catch(() => { });
                     if (candidate.is_pro && candidate.email) {
-                        const [viewerRows] = await pool.execute('SELECT name FROM users WHERE id = ?', [viewerId]);
-                        const viewerName = viewerRows[0]?.name || 'A company';
-                        sendEmail(candidate.email, 'Your profile was viewed on SalesRoles.co', `<p>Hi ${candidate.name},</p><p><strong>${viewerName}</strong> viewed your profile on SalesRoles.co.</p><p><a href="https://salesroles.co/dashboard">View your profile activity</a></p><p>The SalesRoles.co team</p>`);
+                        sendEmail(candidate.email, 'Your profile was viewed on SalesRoles.co', `<p>Hi ${candidate.name},</p><p><strong>${viewerName || 'A company'}</strong> viewed your profile on SalesRoles.co.</p><p><a href="https://salesroles.co/dashboard">View your profile activity</a></p><p>The SalesRoles.co team</p>`).catch(() => { });
                     }
                 }
             }
@@ -1130,7 +1139,11 @@ app.post('/api/candidates/:id/view', async (c) => {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const viewerId = String(payload.id);
         const candidateId = c.req.param('id');
-        await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action) VALUES (?, ?, ?)', [viewerId, candidateId, 'view']).catch(() => { });
+        const [vRows] = await pool.execute('SELECT name, company_name FROM users WHERE id = ?', [viewerId]);
+        const vi = vRows[0];
+        const viewerName = vi?.company_name || vi?.name || null;
+        const viewerCompany = vi?.company_name || null;
+        await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action, viewer_name, viewer_company) VALUES (?, ?, ?, ?, ?)', [viewerId, candidateId, 'view', viewerName, viewerCompany]).catch(() => { });
     }
     catch { }
     return c.json({ ok: true });
@@ -1147,7 +1160,11 @@ app.get('/api/candidate/profile-views', async (c) => {
         const [userRows] = await pool.execute('SELECT is_pro FROM users WHERE id = ?', [userId]);
         if (!userRows[0]?.is_pro)
             return c.json({ error: 'Pro required' }, 403);
-        const [views] = await pool.execute(`SELECT pv.action, pv.created_at, u.name as viewer_name, u.email as viewer_email
+        const [views] = await pool.execute(`SELECT
+         pv.action,
+         pv.created_at,
+         COALESCE(pv.viewer_name, u.name) AS viewer_name,
+         COALESCE(pv.viewer_company, u.company_name) AS viewer_company
        FROM profile_views pv
        LEFT JOIN users u ON pv.viewer_id = u.id
        WHERE pv.candidate_id = ?
