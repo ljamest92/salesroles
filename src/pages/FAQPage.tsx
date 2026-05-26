@@ -1,33 +1,8 @@
-import React, { useState, useRef, useEffect } from 'react'
-import {
-  Container,
-  Card,
-  Badge,
-  Tabs as UITabs,
-  TabsContent as UITabsContent
-} from '@blinkdotnew/ui'
-
-const Tabs = UITabs as any;
-const TabsContent = UITabsContent as any;
+import React, { useState } from 'react'
+import { Container, Card, Badge } from '@blinkdotnew/ui'
 
 export function FAQPage() {
-  const [activeTab, setActiveTab] = useState('companies')
-  const tabScrollRef = useRef<HTMLDivElement>(null)
-
-  useEffect(() => {
-    if (tabScrollRef.current) {
-      const activeEl = tabScrollRef.current.children[1] as HTMLElement
-      if (activeEl) {
-        tabScrollRef.current.scrollLeft = activeEl.offsetLeft - tabScrollRef.current.clientWidth / 2 + activeEl.clientWidth / 2
-      }
-    }
-  }, [])
-
-  const tabLabels: Record<string, string> = {
-    candidates: 'For Candidates',
-    companies: 'For Companies',
-    about: 'About Us',
-  }
+  const [activeSection, setActiveSection] = useState('companies')
 
   const faqs: Record<string, { q: string; a: string }[]> = {
     candidates: [
@@ -72,59 +47,32 @@ export function FAQPage() {
       </Container>
 
       <Container className="max-w-4xl mx-auto">
-        <Tabs value={activeTab} onValueChange={setActiveTab}>
-          <div className="mb-12">
-            {/* Mobile: horizontal scrollable pills */}
-            <div
-              ref={tabScrollRef}
-              className="flex flex-row overflow-x-auto gap-3 w-full sm:hidden [&::-webkit-scrollbar]:hidden"
-              style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
-            >
-              {['candidates', 'companies', 'about'].map((tab) => (
-                <div
-                  key={tab}
-                  onClick={() => setActiveTab(tab)}
-                  className={`shrink-0 cursor-pointer px-5 py-2 rounded-full border text-sm font-medium transition-colors ${
-                    activeTab === tab
-                      ? 'bg-emerald-500 text-white border-emerald-500'
-                      : 'bg-transparent text-muted-foreground border-border'
-                  }`}
-                >
-                  {tabLabels[tab]}
-                </div>
-              ))}
-            </div>
-            {/* Desktop: segmented control */}
-            <div className="hidden sm:flex">
-              <div className="bg-card p-1 rounded-xl flex sm:flex-row sm:justify-center w-full gap-0.5 sm:border sm:border-border">
-                {Object.keys(faqs).map((tab) => (
-                  <div
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`cursor-pointer w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors ${
-                      activeTab === tab
-                        ? 'bg-background text-foreground shadow-sm'
-                        : 'text-muted-foreground hover:text-foreground'
-                    }`}
-                  >
-                    {tabLabels[tab]}
-                  </div>
-                ))}
+        <div className="mb-12">
+          <div className="flex flex-row gap-3 justify-center flex-wrap">
+            {(['candidates', 'companies', 'about'] as const).map((section) => (
+              <div
+                key={section}
+                onClick={() => setActiveSection(section)}
+                className={`cursor-pointer px-5 py-2 rounded-full border text-sm font-medium transition-colors ${
+                  activeSection === section
+                    ? 'bg-emerald-500 text-white border-emerald-500'
+                    : 'bg-transparent text-muted-foreground border-border hover:text-foreground'
+                }`}
+              >
+                {section === 'candidates' ? 'For Candidates' : section === 'companies' ? 'For Companies' : 'About Us'}
               </div>
-            </div>
+            ))}
           </div>
+        </div>
 
-          {Object.entries(faqs).map(([category, items]) => (
-            <TabsContent key={category} value={category} className="space-y-6 animate-fade-in">
-              {items.map((item, i) => (
-                <Card key={i} className="p-8 border border-border bg-card/30 space-y-4">
-                  <h3 className="text-xl font-bold text-foreground">"{item.q}"</h3>
-                  <p className="text-muted-foreground leading-relaxed">{item.a}</p>
-                </Card>
-              ))}
-            </TabsContent>
+        <div className="space-y-6">
+          {faqs[activeSection].map((item, i) => (
+            <Card key={i} className="p-8 border border-border bg-card/30 space-y-4">
+              <h3 className="text-xl font-bold text-foreground">"{item.q}"</h3>
+              <p className="text-muted-foreground leading-relaxed">{item.a}</p>
+            </Card>
           ))}
-        </Tabs>
+        </div>
       </Container>
     </div>
   )
