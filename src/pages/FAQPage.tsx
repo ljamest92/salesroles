@@ -69,6 +69,7 @@ export function FAQPage() {
                 <button
                   key={tab}
                   onClick={() => setActiveTab(tab)}
+                  {...(tab === 'companies' ? { style: { border: 'none', outline: 'none', boxShadow: 'none', background: 'transparent', WebkitAppearance: 'none', appearance: 'none' } } : {})}
                   className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors${tab === 'companies' ? ' border-0 outline-none shadow-none ring-0 bg-transparent' : ''} ${
                     activeTab === tab
                       ? 'bg-background text-foreground shadow-sm'
