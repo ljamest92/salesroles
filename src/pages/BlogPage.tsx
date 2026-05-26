@@ -128,7 +128,7 @@ export function BlogPage() {
               </div>
             ) : (
               <>
-                <div className="flex gap-3">
+                <div className="flex flex-col sm:flex-row gap-3 w-full">
                   <input
                     type="email"
                     value={subEmail}
@@ -136,7 +136,7 @@ export function BlogPage() {
                     placeholder="alex@example.com"
                     className="flex-1 md:w-80 bg-card/80 backdrop-blur-md border border-white/5 rounded-2xl px-6 py-5 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
                   />
-                  <Button size="lg" onClick={handleSubscribe} className="bg-primary text-primary-foreground font-black px-10 h-16 tracking-widest text-xs cta-glow">Subscribe</Button>
+                  <Button size="lg" onClick={handleSubscribe} className="bg-primary text-primary-foreground font-black px-10 h-16 tracking-widest text-xs cta-glow w-full sm:w-auto">Subscribe</Button>
                 </div>
                 {subError && <p className="text-red-400 text-xs pl-2">{subError}</p>}
               </>

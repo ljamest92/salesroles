@@ -917,8 +917,14 @@ app.post('/api/applications', async (c) => {
     return c.json({ error: 'Unauthorized' }, 401)
   }
   try {
-    const formData = await c.req.formData()
+    let formData: FormData
+    try {
+      formData = await c.req.formData()
+    } catch {
+      return c.json({ error: 'Invalid form data' }, 400)
+    }
     const jobId = formData.get('jobId') as string
+    if (!jobId) return c.json({ error: 'Missing jobId' }, 400)
     const coverLetter = (formData.get('coverLetter') as string) || ''
     const answers = (formData.get('answers') as string) || '[]'
     const cvFile = formData.get('cv') as File | null

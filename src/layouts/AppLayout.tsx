@@ -1,14 +1,20 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Link, Outlet, useLocation } from '@tanstack/react-router'
 import { Button, Navbar, NavbarBrand, NavbarContent, NavbarItem } from '@blinkdotnew/ui'
 import { useAuth } from '../hooks/useAuth'
-import { Briefcase, User, LogOut, Menu, ArrowRight } from 'lucide-react'
+import { Briefcase, User, LogOut, Menu, X, ArrowRight } from 'lucide-react'
 import { CookieConsent } from '../components/CookieConsent'
 import { motion, AnimatePresence } from 'framer-motion'
 
 export function AppLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
+  const [menuOpen, setMenuOpen] = useState(false)
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMenuOpen(false)
+  }, [location.pathname])
 
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-primary/30 selection:text-primary-foreground overflow-x-hidden">
@@ -40,31 +46,108 @@ export function AppLayout() {
             </NavbarItem>
           </NavbarContent>
 
-          <NavbarContent className="flex items-center gap-6">
+          <NavbarContent className="flex items-center gap-4">
+            {/* Desktop auth buttons */}
             {user ? (
               <>
-                <Link to="/dashboard" search={{ mode: (user as any).role === 'company' ? 'company' : 'candidate' } as any}>
+                <Link to="/dashboard" search={{ mode: (user as any).role === 'company' ? 'company' : 'candidate' } as any} className="hidden md:block">
                   <Button variant="ghost" size="sm" className="gap-2 font-black tracking-widest text-[10px] h-10 px-4 border border-white/5 hover:bg-white/5">
                     <User size={14} className="text-primary" />
                     <span>Dashboard</span>
                   </Button>
                 </Link>
-                <Button variant="ghost" size="sm" onClick={logout} className="h-10 w-10 p-0 border border-white/5 hover:bg-destructive/10 hover:text-destructive transition-all">
+                <Button variant="ghost" size="sm" onClick={logout} className="hidden md:flex h-10 w-10 p-0 border border-white/5 hover:bg-destructive/10 hover:text-destructive transition-all">
                   <LogOut size={16} />
                 </Button>
               </>
             ) : (
               <>
-                <Link to="/register">
-                  <Button variant="ghost" size="sm" className="font-bold tracking-widest text-[10px] hidden sm:flex">Log In</Button>
+                <Link to="/register" className="hidden md:block">
+                  <Button variant="ghost" size="sm" className="font-bold tracking-widest text-[10px]">Log In</Button>
                 </Link>
-                <Link to="/post-job">
+                <Link to="/post-job" className="hidden md:block">
                   <Button size="sm" className="bg-primary text-primary-foreground font-black tracking-widest text-[10px] h-11 px-6 cta-glow">Post a Job</Button>
                 </Link>
               </>
             )}
+
+            {/* Mobile hamburger button */}
+            <button
+              className="md:hidden flex items-center justify-center h-10 w-10 rounded-lg border border-white/10 hover:bg-white/5 transition-colors"
+              onClick={() => setMenuOpen(prev => !prev)}
+              aria-label="Toggle menu"
+            >
+              {menuOpen ? <X size={18} /> : <Menu size={18} />}
+            </button>
           </NavbarContent>
         </Navbar>
+
+        {/* Mobile dropdown menu */}
+        <AnimatePresence>
+          {menuOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.2, ease: 'easeInOut' }}
+              className="md:hidden overflow-hidden border-t border-white/10"
+              style={{ backgroundColor: 'rgba(10, 15, 30, 0.99)' }}
+            >
+              <nav className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
+                <Link to="/jobs" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                  Find Jobs
+                </Link>
+                <Link to="/pricing" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                  Pricing
+                </Link>
+                <Link to="/blog" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                  Blog
+                </Link>
+                <Link to="/post-job" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                  For Companies
+                </Link>
+                {(user as any)?.role === 'company' && (
+                  <Link to="/companies/candidates" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                    Find Candidates
+                  </Link>
+                )}
+
+                <div className="my-2 border-t border-white/10" />
+
+                {user ? (
+                  <>
+                    <Link
+                      to="/dashboard"
+                      search={{ mode: (user as any).role === 'company' ? 'company' : 'candidate' } as any}
+                      className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors flex items-center gap-3"
+                    >
+                      <User size={15} className="text-primary" /> Dashboard
+                    </Link>
+                    <button
+                      onClick={() => { logout(); setMenuOpen(false) }}
+                      className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-destructive/10 hover:text-destructive transition-colors flex items-center gap-3 text-left w-full"
+                    >
+                      <LogOut size={15} /> Log Out
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link to="/register" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                      Log In
+                    </Link>
+                    <div className="px-2 pt-2 pb-1">
+                      <Link to="/post-job">
+                        <Button size="sm" className="bg-primary text-primary-foreground font-black tracking-widest text-[10px] h-11 px-6 cta-glow w-full">
+                          Post a Job
+                        </Button>
+                      </Link>
+                    </div>
+                  </>
+                )}
+              </nav>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </header>
 
       <main className="flex-1 relative">
@@ -91,7 +174,7 @@ export function AppLayout() {
                 <span className="text-primary transition-all duration-300 drop-shadow-[0_0_14px_rgba(16,185,129,0.55)] group-hover:drop-shadow-none">SalesRoles.co</span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed font-medium">
-                The ultimate premium job board dedicated exclusively to sales professionals. 
+                The ultimate premium job board dedicated exclusively to sales professionals.
                 Transparency in compensation is mandatory.
               </p>
             </div>

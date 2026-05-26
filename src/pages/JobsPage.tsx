@@ -136,11 +136,11 @@ export function JobsPage() {
   const filteredJobs = jobs.filter(job => {
     const q = searchQuery.toLowerCase()
     const matchesSearch = !q ||
-      job.title.toLowerCase().includes(q) ||
-      job.company.toLowerCase().includes(q) ||
-      job.sector.toLowerCase().includes(q)
+      (job.title ?? '').toLowerCase().includes(q) ||
+      (job.company ?? '').toLowerCase().includes(q) ||
+      (job.sector ?? '').toLowerCase().includes(q)
     const matchesLocation = !locationQuery ||
-      job.location.toLowerCase().includes(locationQuery.toLowerCase())
+      (job.location ?? '').toLowerCase().includes(locationQuery.toLowerCase())
     const matchesWorkType = workTypeFilters.length === 0 || workTypeFilters.includes(job.job_type)
     const matchesSeniority = seniorityFilters.length === 0 || seniorityFilters.includes(job.seniority)
     const matchesSector = sectorFilters.length === 0 || sectorFilters.includes(job.sector)
@@ -407,7 +407,7 @@ export function JobsPage() {
                               )}
                             </div>
                             <div className="flex flex-wrap gap-6 text-muted-foreground font-bold text-[11px] tracking-[0.15em] pt-2">
-                              <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
+                              <Link to={`/company/${(job.company ?? '').toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
                               <span className="flex items-center gap-2"><MapPin size={16} className="text-primary" /> {job.location}</span>
                               <span className="flex items-center gap-2"><Briefcase size={16} className="text-primary" /> {job.sector}</span>
                             </div>
