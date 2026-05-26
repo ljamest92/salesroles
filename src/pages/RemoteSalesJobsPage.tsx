@@ -110,6 +110,14 @@ export function RemoteSalesJobsPage() {
 
   const activeFilterCount = seniorityFilters.length + sectorFilters.length
 
+  const validOTEJobs = jobs.filter(j => j.ote && j.ote !== 'Salary Not Disclosed')
+  const avgOTE = validOTEJobs.length > 0
+    ? Math.round(validOTEJobs.reduce((sum, j) => {
+        const ote = typeof j.ote === 'number' ? j.ote : parseInt(String(j.ote || '0').replace(/\D/g, '')) || 0
+        return sum + ote
+      }, 0) / validOTEJobs.length / 1000)
+    : 0
+
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
       <div className="space-y-4">
@@ -117,9 +125,18 @@ export function RemoteSalesJobsPage() {
         <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
           Remote <span className="text-primary">Sales Jobs.</span>
         </h1>
-        <p className="text-muted-foreground text-lg font-medium">
-          {isLoading ? 'Loading...' : `${jobs.length} verified remote sales roles with full compensation transparency.`}
-        </p>
+        {!isLoading && (
+          <div className="flex gap-4 mt-6 justify-center">
+            <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-center">
+              <div className="text-2xl font-bold text-white">{jobs.length}</div>
+              <div className="text-white/50 text-sm">Remote Roles</div>
+            </div>
+            <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-center">
+              <div className="text-2xl font-bold text-emerald-400">{avgOTE > 0 ? `$${avgOTE}k` : '—'}</div>
+              <div className="text-white/50 text-sm">Average OTE</div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Mobile filter toggle */}

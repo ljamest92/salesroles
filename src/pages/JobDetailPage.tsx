@@ -112,7 +112,7 @@ export function JobDetailPage() {
   const handleApplyClick = () => {
     const token = localStorage.getItem('salesroles_token')
     if (!token) {
-      navigate({ to: '/register', search: { redirect: window.location.pathname } as any })
+      navigate({ to: '/register', search: { role: 'candidate', redirect: window.location.pathname } as any })
       return
     }
     setApplyModalOpen(true)

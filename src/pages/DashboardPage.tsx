@@ -83,21 +83,39 @@ export function DashboardPage() {
     } catch {}
   }
 
-  const downloadCSV = () => {
-    const headers = ['Name', 'Email', 'Job Title', 'Cover Note', 'Applied Date']
+  const downloadCandidatesCSV = () => {
+    const headers = ['Name', 'Email', 'Job Title', 'Cover Letter', 'Applied Date']
     const rows = applications.map(a => [
-      a.candidate_name,
-      a.candidate_email,
-      a.job_title,
-      (a.cover_note || '').replace(/,/g, ' '),
-      new Date(a.created_at).toLocaleDateString('en-GB'),
+      a.candidate_name || '',
+      a.candidate_email || '',
+      a.job_title || '',
+      (a.cover_note || '').replace(/,/g, ' ').replace(/\n/g, ' '),
+      new Date(a.created_at).toLocaleDateString('en-GB')
     ])
-    const csv = [headers, ...rows].map(r => r.join(',')).join('\n')
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
     const blob = new Blob([csv], { type: 'text/csv' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
     a.download = `candidates-${new Date().toISOString().split('T')[0]}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const downloadBlindedCSV = () => {
+    const headers = ['Candidate', 'Job Title', 'Cover Letter', 'Applied Date']
+    const rows = applications.map((a, i) => [
+      `Candidate ${i + 1}`,
+      a.job_title || '',
+      (a.cover_note || '').replace(/,/g, ' ').replace(/\n/g, ' '),
+      new Date(a.created_at).toLocaleDateString('en-GB')
+    ])
+    const csv = [headers, ...rows].map(r => r.map(v => `"${v}"`).join(',')).join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `candidates-blinded-${new Date().toISOString().split('T')[0]}.csv`
     a.click()
     URL.revokeObjectURL(url)
   }
@@ -253,12 +271,12 @@ export function DashboardPage() {
                 />
               ) : (
                 <>
-                  <div className="flex justify-end">
-                    <button
-                      onClick={downloadCSV}
-                      className="border border-white/20 text-white/60 hover:text-white hover:border-white/40 px-4 py-2 rounded-lg text-sm transition-colors"
-                    >
-                      Download All as CSV
+                  <div className="flex gap-3 mb-4">
+                    <button onClick={downloadCandidatesCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                      Download CSV
+                    </button>
+                    <button onClick={downloadBlindedCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                      Download Blinded CSV
                     </button>
                   </div>
                   {applications.map((a: any) => (

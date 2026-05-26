@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import { Button, Card, Container, Badge } from '@blinkdotnew/ui'
 import { User, Building2, Mail, Lock, CheckCircle2, ArrowRight, LogIn } from 'lucide-react'
@@ -15,17 +15,34 @@ export function RegistrationPage() {
   const { register, loginWithCredentials } = useAuth()
   const navigate = useNavigate()
 
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const roleParam = params.get('role')
+    if (roleParam === 'candidate') setRole('candidate')
+    if (roleParam === 'company') setRole('company')
+  }, [])
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
     setIsSubmitting(true)
     try {
+      const params = new URLSearchParams(window.location.search)
+      const redirectTo = params.get('redirect')
       if (isLogin) {
         const u = await loginWithCredentials(email, password)
-        navigate({ to: '/dashboard', search: { mode: u.role === 'company' ? 'company' : 'candidate' } as any })
+        if (redirectTo) {
+          navigate({ to: redirectTo as any })
+        } else {
+          navigate({ to: '/dashboard', search: { mode: u.role === 'company' ? 'company' : 'candidate' } as any })
+        }
       } else {
         const u = await register(name, email, password, role || 'candidate')
-        navigate({ to: '/dashboard', search: { mode: u.role === 'company' ? 'company' : 'candidate' } as any })
+        if (redirectTo) {
+          navigate({ to: redirectTo as any })
+        } else {
+          navigate({ to: '/dashboard', search: { mode: u.role === 'company' ? 'company' : 'candidate' } as any })
+        }
       }
     } catch (err: any) {
       setError(err.message || 'Something went wrong. Please try again.')

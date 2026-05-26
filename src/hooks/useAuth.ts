@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 export interface AuthUser {
   id: string
@@ -11,16 +11,20 @@ const STORAGE_KEY = 'salesroles_user'
 const TOKEN_KEY = 'salesroles_token'
 
 export function useAuth() {
-  const [user, setUser] = useState<AuthUser | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
-
-  useEffect(() => {
+  const [user, setUser] = useState<AuthUser | null>(() => {
     try {
+      const token = localStorage.getItem(TOKEN_KEY)
+      if (token) {
+        const payload = JSON.parse(atob(token.split('.')[1]))
+        return payload as AuthUser
+      }
       const stored = localStorage.getItem(STORAGE_KEY)
-      if (stored) setUser(JSON.parse(stored))
-    } catch {}
-    setIsLoading(false)
-  }, [])
+      return stored ? JSON.parse(stored) : null
+    } catch {
+      return null
+    }
+  })
+  const [isLoading] = useState(false)
 
   const login = (_redirectUrl?: string) => {
     window.location.href = '/register'
