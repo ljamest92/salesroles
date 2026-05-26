@@ -85,6 +85,7 @@ try {
   pool.execute(`ALTER TABLE jobs ADD COLUMN external_id VARCHAR(255) DEFAULT NULL`).catch(() => {})
   pool.execute(`ALTER TABLE jobs ADD COLUMN source VARCHAR(50) DEFAULT 'manual'`).catch(() => {})
   pool.execute(`ALTER TABLE jobs ADD COLUMN url VARCHAR(500) DEFAULT NULL`).catch(() => {})
+  pool.execute(`ALTER TABLE jobs ADD COLUMN expires_at TIMESTAMP NULL DEFAULT NULL`).catch(() => {})
   pool.execute(`CREATE UNIQUE INDEX idx_jobs_external_id ON jobs (external_id)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN cv_filename VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN headline VARCHAR(255)`).catch(() => {})
@@ -224,10 +225,10 @@ app.post('/api/webhooks/stripe', async (c) => {
     }
     if (jobId && pool) {
       await pool.execute(
-        "UPDATE jobs SET status = 'pending' WHERE id = ?",
+        "UPDATE jobs SET status = 'pending', expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id = ?",
         [jobId]
       ).catch((err: any) => console.error('Failed to update job status:', err))
-      console.log(`Job ${jobId} moved to pending after payment`)
+      console.log(`Job ${jobId} moved to pending after payment — expires in 30 days`)
     }
   }
   return c.json({ received: true })
@@ -443,7 +444,7 @@ app.get('/api/jobs', async (c) => {
   if (!pool) return c.json({ jobs: [] })
   try {
     const [rows] = await pool.execute(
-      "SELECT * FROM jobs WHERE status = 'live' ORDER BY featured DESC, created_at DESC"
+      "SELECT * FROM jobs WHERE status = 'live' AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY featured DESC, created_at DESC"
     ) as any[]
     const jobs = (rows as any[]).map(row => ({
       ...row,
@@ -728,7 +729,11 @@ app.post('/api/admin/jobs/:id/approve', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   const id = c.req.param('id')
   try {
-    await pool.execute("UPDATE jobs SET status = 'live' WHERE id = ?", [id])
+    // Set expires_at to 30 days from now only if not already set (i.e. payment didn't set it)
+    await pool.execute(
+      "UPDATE jobs SET status = 'live', expires_at = COALESCE(expires_at, DATE_ADD(NOW(), INTERVAL 30 DAY)) WHERE id = ?",
+      [id]
+    )
     return c.json({ ok: true })
   } catch {
     return c.json({ error: 'Approve failed' }, 500)
@@ -1438,6 +1443,70 @@ app.get('/api/test/profile-view-notification', async (c) => {
   }
 })
 
+// --- Test endpoint: seed pro candidate user ---
+app.get('/api/test/seed-pro-user', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const EMAIL = 'testpro@salesroles.co'
+  const PASSWORD = 'TestPro123!'
+  const NAME = 'Alex Rivera (Test Pro)'
+  try {
+    const hash = await bcrypt.hash(PASSWORD, 10)
+    // Upsert user
+    const [existing] = await pool.execute('SELECT id FROM users WHERE email = ?', [EMAIL]) as any[]
+    let userId: number
+    if ((existing as any[]).length > 0) {
+      userId = (existing as any[])[0].id
+      await pool.execute(
+        `UPDATE users SET name=?, password_hash=?, is_pro=1, is_public=1,
+          headline='Senior Account Executive · SaaS Sales',
+          location='London, UK', target_role='VP of Sales', years_experience=7,
+          availability='Open to opportunities', target_salary='£120,000 OTE',
+          bio='Test pro candidate. 7 years closing enterprise SaaS across EMEA.',
+          skills=?
+         WHERE id=?`,
+        [NAME, hash, JSON.stringify(['MEDDIC', 'Salesforce', 'Enterprise Sales', 'SaaS', 'EMEA']), userId]
+      )
+    } else {
+      const slug = `alexrivera-${randomBytes(3).toString('hex')}`
+      const [ins] = await pool.execute(
+        `INSERT INTO users (name,email,password_hash,role,is_pro,is_public,profile_slug,
+          headline,location,target_role,years_experience,availability,target_salary,bio,skills)
+         VALUES (?,?,?,'candidate',1,1,?,?,?,?,?,?,?,?,?)`,
+        [NAME, EMAIL, hash, slug,
+         'Senior Account Executive · SaaS Sales', 'London, UK', 'VP of Sales', 7,
+         'Open to opportunities', '£120,000 OTE',
+         'Test pro candidate. 7 years closing enterprise SaaS across EMEA.',
+         JSON.stringify(['MEDDIC', 'Salesforce', 'Enterprise Sales', 'SaaS', 'EMEA'])]
+      ) as any[]
+      userId = (ins as any).insertId
+    }
+    // Delete old fake views and re-seed 3 fresh ones
+    await pool.execute(
+      "DELETE FROM profile_views WHERE candidate_id = ? AND viewer_id IS NULL AND viewer_name IN ('Salesforce EMEA','HubSpot Talent','Gartner Recruiting')",
+      [userId]
+    )
+    const fakeViewers = [
+      { name: 'Salesforce EMEA',     company: 'Salesforce', daysAgo: 1 },
+      { name: 'HubSpot Talent',      company: 'HubSpot',    daysAgo: 3 },
+      { name: 'Gartner Recruiting',  company: 'Gartner',    daysAgo: 7 },
+    ]
+    for (const v of fakeViewers) {
+      await pool.execute(
+        `INSERT INTO profile_views (candidate_id, viewer_id, viewer_name, viewer_company, action, created_at)
+         VALUES (?, NULL, ?, ?, 'view', DATE_SUB(NOW(), INTERVAL ? DAY))`,
+        [userId, v.name, v.company, v.daysAgo]
+      )
+    }
+    return c.json({
+      ok: true,
+      message: 'Test pro candidate created/updated with 3 fake profile views',
+      credentials: { email: EMAIL, password: PASSWORD, role: 'candidate (Pro)', userId },
+    })
+  } catch (err: any) {
+    return c.json({ error: err.message }, 500)
+  }
+})
+
 // --- Test endpoint: simulate Stripe webhook payment completion ---
 app.post('/api/test/simulate-payment', async (c) => {
   if (process.env.NODE_ENV === 'production' && !process.env.ENABLE_PAYMENT_TEST) {
@@ -1446,10 +1515,10 @@ app.post('/api/test/simulate-payment', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   const { jobId } = await c.req.json()
   await pool.execute(
-    "UPDATE jobs SET status = 'pending' WHERE id = ?",
+    "UPDATE jobs SET status = 'pending', expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id = ?",
     [jobId]
   )
-  return c.json({ ok: true, message: `Job ${jobId} moved to pending` })
+  return c.json({ ok: true, message: `Job ${jobId} moved to pending — expires in 30 days` })
 })
 
 // --- Avatar static serving ---
