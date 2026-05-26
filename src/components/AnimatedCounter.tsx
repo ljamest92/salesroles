@@ -7,7 +7,7 @@ interface Props {
   suffix?: string;
 }
 
-export default function AnimatedCounter({ target, duration = 1500, prefix = '', suffix = '' }: Props) {
+export default function AnimatedCounter({ target, duration = 2500, prefix = '', suffix = '' }: Props) {
   const [count, setCount] = useState(0);
   const [started, setStarted] = useState(false);
   const ref = useRef<HTMLSpanElement>(null);
@@ -19,7 +19,7 @@ export default function AnimatedCounter({ target, duration = 1500, prefix = '', 
           setStarted(true);
         }
       },
-      { threshold: 0.3 }
+      { threshold: 0.5 }
     );
     if (ref.current) observer.observe(ref.current);
     return () => observer.disconnect();
@@ -33,7 +33,7 @@ export default function AnimatedCounter({ target, duration = 1500, prefix = '', 
     const animate = (timestamp: number) => {
       if (!startTime) startTime = timestamp;
       const progress = Math.min((timestamp - startTime) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
+      const eased = 1 - Math.pow(1 - progress, 2);
       setCount(Math.floor(eased * (target - startValue) + startValue));
       if (progress < 1) requestAnimationFrame(animate);
       else setCount(target);

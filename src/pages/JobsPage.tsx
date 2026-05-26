@@ -26,6 +26,8 @@ const SelectTrigger = UISelectTrigger as any
 const SelectContent = UISelectContent as any
 const SelectItem = UISelectItem as any
 
+const JOBS_PER_PAGE = 10
+
 export function JobsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
@@ -38,6 +40,7 @@ export function JobsPage() {
   const [reportingJobId, setReportingJobId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('latest')
   const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     const fetchAllJobs = async () => {
@@ -153,7 +156,21 @@ export function JobsPage() {
     toast.success('Link copied', { description: 'The job URL is now in your clipboard.' })
   }
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, locationQuery, workTypeFilters, seniorityFilters, sectorFilters, sortBy])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
+
   const activeFilterCount = workTypeFilters.length + seniorityFilters.length + sectorFilters.length
+
+  const totalPages = Math.ceil(sortedJobs.length / JOBS_PER_PAGE)
+  const paginatedJobs = sortedJobs.slice(
+    (currentPage - 1) * JOBS_PER_PAGE,
+    currentPage * JOBS_PER_PAGE
+  )
 
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-16 animate-fade-in overflow-x-hidden">
@@ -318,6 +335,12 @@ export function JobsPage() {
             </div>
           </div>
 
+          {!isLoading && sortedJobs.length > 0 && (
+            <p className="text-white/40 text-sm mb-4">
+              Showing {((currentPage - 1) * JOBS_PER_PAGE) + 1}–{Math.min(currentPage * JOBS_PER_PAGE, sortedJobs.length)} of {sortedJobs.length} roles
+            </p>
+          )}
+
           <div className="grid gap-6">
             {isLoading ? (
               Array(6).fill(0).map((_, i) => (
@@ -334,7 +357,7 @@ export function JobsPage() {
                 />
               </motion.div>
             ) : (
-              sortedJobs.map((job, i) => (
+              paginatedJobs.map((job, i) => (
                   <motion.div
                     key={job.id}
                     initial={{ opacity: 0, y: 15 }}
@@ -397,13 +420,44 @@ export function JobsPage() {
             )}
           </div>
 
-          <div className="flex justify-center gap-2 pt-8">
-            <Button variant="outline" disabled>Previous</Button>
-            <Button variant="outline" className="bg-primary text-primary-foreground border-primary">1</Button>
-            <Button variant="outline">2</Button>
-            <Button variant="outline">3</Button>
-            <Button variant="outline">Next</Button>
-          </div>
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8 pb-8">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
+                .map((page, idx, arr) => (
+                  <React.Fragment key={page}>
+                    {idx > 0 && arr[idx - 1] !== page - 1 && (
+                      <span className="text-white/30 px-2">...</span>
+                    )}
+                    <button
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-emerald-500 text-white'
+                          : 'border border-white/20 text-white/60 hover:text-white hover:border-white/40'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </React.Fragment>
+                ))
+              }
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
 

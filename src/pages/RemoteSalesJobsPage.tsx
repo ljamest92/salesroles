@@ -17,6 +17,8 @@ const SelectTrigger = UISelectTrigger as any
 const SelectContent = UISelectContent as any
 const SelectItem = UISelectItem as any
 
+const JOBS_PER_PAGE = 10
+
 export function RemoteSalesJobsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
@@ -25,6 +27,7 @@ export function RemoteSalesJobsPage() {
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('latest')
   const [showFilters, setShowFilters] = useState(false)
+  const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
     const fetchJobs = async () => {
@@ -109,35 +112,59 @@ export function RemoteSalesJobsPage() {
     return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
   })
 
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [searchQuery, seniorityFilters, sectorFilters, sortBy])
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  }, [currentPage])
+
   const activeFilterCount = seniorityFilters.length + sectorFilters.length
 
-  const validOTEJobs = jobs.filter(j => j.ote && j.ote !== 'Salary Not Disclosed')
-  const avgOTE = validOTEJobs.length > 0
-    ? Math.round(validOTEJobs.reduce((sum, j) => {
+  const remoteCount = jobs.filter(j =>
+    (j as any).work_type === 'Remote' || (j as any).work_type === 'remote' || (j as any).remote === true
+  ).length || jobs.length
+
+  const otejobs = jobs.filter(j => j.ote && j.ote !== 'Salary Not Disclosed')
+  const avgOTENum = otejobs.length > 0
+    ? Math.round(otejobs.reduce((sum, j) => {
         const ote = typeof j.ote === 'number' ? j.ote : parseInt(String(j.ote || '0').replace(/\D/g, '')) || 0
         return sum + ote
-      }, 0) / validOTEJobs.length / 1000)
+      }, 0) / otejobs.length / 1000)
     : 0
+
+  const totalPages = Math.ceil(sorted.length / JOBS_PER_PAGE)
+  const paginatedJobs = sorted.slice(
+    (currentPage - 1) * JOBS_PER_PAGE,
+    currentPage * JOBS_PER_PAGE
+  )
 
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
-      <div className="space-y-4">
-        <Badge variant="outline" className="px-4 py-1 text-primary border-primary/20 bg-primary/5 text-[10px] font-black">Remote Only</Badge>
-        <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
-          Remote <span className="text-primary">Sales Jobs.</span>
-        </h1>
-        {!isLoading && (
-          <div className="flex gap-4 mt-6 justify-center">
-            <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-center">
-              <div className="text-2xl font-bold text-white"><AnimatedCounter target={jobs.length} /></div>
-              <div className="text-white/50 text-sm">Remote Roles</div>
+      <div className="flex flex-col md:flex-row justify-between items-start gap-12">
+        <div className="space-y-4">
+          <Badge variant="outline" className="px-4 py-1 text-primary border-primary/20 bg-primary/5 text-[10px] font-black">Remote Only</Badge>
+          <h1 className="text-4xl md:text-7xl font-black tracking-tighter leading-none">
+            Remote <span className="text-primary">Sales Jobs.</span>
+          </h1>
+        </div>
+        <div className="border border-white/10 rounded-2xl p-4 bg-white/5 w-full md:w-auto min-w-[260px] shrink-0">
+          <div className="grid grid-cols-2 divide-x divide-white/10">
+            <div className="pr-4 text-center">
+              <p className="text-white/50 text-xs mb-1">Remote Roles</p>
+              <p className="text-white text-2xl font-bold">
+                <AnimatedCounter target={remoteCount} />
+              </p>
             </div>
-            <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{avgOTE > 0 ? <AnimatedCounter target={avgOTE} prefix="$" suffix="k" /> : '—'}</div>
-              <div className="text-white/50 text-sm">Average OTE</div>
+            <div className="pl-4 text-center">
+              <p className="text-white/50 text-xs mb-1">Average OTE</p>
+              <p className="text-emerald-400 text-2xl font-bold">
+                <AnimatedCounter target={avgOTENum} prefix="$" suffix="k" />
+              </p>
             </div>
           </div>
-        )}
+        </div>
       </div>
 
       {/* Mobile filter toggle */}
@@ -228,6 +255,12 @@ export function RemoteSalesJobsPage() {
             </div>
           </div>
 
+          {!isLoading && sorted.length > 0 && (
+            <p className="text-white/40 text-sm mb-4">
+              Showing {((currentPage - 1) * JOBS_PER_PAGE) + 1}–{Math.min(currentPage * JOBS_PER_PAGE, sorted.length)} of {sorted.length} roles
+            </p>
+          )}
+
           <div className="grid gap-6">
             {isLoading ? (
               Array(6).fill(0).map((_, i) => (
@@ -244,7 +277,7 @@ export function RemoteSalesJobsPage() {
                 />
               </motion.div>
             ) : (
-              sorted.map((job, i) => (
+              paginatedJobs.map((job, i) => (
                 <motion.div
                   key={job.id}
                   initial={{ opacity: 0, y: 15 }}
@@ -289,6 +322,45 @@ export function RemoteSalesJobsPage() {
               ))
             )}
           </div>
+
+          {totalPages > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-8 pb-8">
+              <button
+                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
+              >
+                Previous
+              </button>
+              {Array.from({ length: totalPages }, (_, i) => i + 1)
+                .filter(page => page === 1 || page === totalPages || Math.abs(page - currentPage) <= 2)
+                .map((page, idx, arr) => (
+                  <React.Fragment key={page}>
+                    {idx > 0 && arr[idx - 1] !== page - 1 && (
+                      <span className="text-white/30 px-2">...</span>
+                    )}
+                    <button
+                      onClick={() => setCurrentPage(page)}
+                      className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                        currentPage === page
+                          ? 'bg-emerald-500 text-white'
+                          : 'border border-white/20 text-white/60 hover:text-white hover:border-white/40'
+                      }`}
+                    >
+                      {page}
+                    </button>
+                  </React.Fragment>
+                ))
+              }
+              <button
+                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
+              >
+                Next
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </Container>
