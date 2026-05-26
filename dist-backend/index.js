@@ -139,6 +139,22 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => { });
     pool.execute(`ALTER TABLE applications ADD COLUMN screening_answers TEXT`).catch(() => { });
+    // Add viewer_name and viewer_company columns to profile_views if missing
+    pool.execute(`ALTER TABLE profile_views ADD COLUMN viewer_name VARCHAR(255)`).catch(() => { });
+    pool.execute(`ALTER TABLE profile_views ADD COLUMN viewer_company VARCHAR(255)`).catch(() => { });
+    // Job reports table
+    pool.execute(`
+    CREATE TABLE IF NOT EXISTS job_reports (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      job_id VARCHAR(255) NOT NULL,
+      reporter_id INT,
+      reporter_email VARCHAR(255),
+      reason VARCHAR(255) NOT NULL,
+      details TEXT,
+      status ENUM('pending', 'reviewed', 'dismissed') DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => { });
 }
 catch { }
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'salesroles-dev-secret-change-in-prod');
@@ -968,7 +984,7 @@ app.get('/api/candidates', async (c) => {
         const page = Math.max(1, parseInt(c.req.query('page') || '1'));
         const limit = 12;
         const offset = (page - 1) * limit;
-        let where = `WHERE u.role = 'candidate' AND (u.is_public = 1 OR u.is_public IS NULL) AND (u.availability IS NULL OR u.availability != 'Not looking')`;
+        let where = `WHERE u.role = 'candidate' AND (u.is_public = 1 OR u.is_public IS NULL)`;
         const params = [];
         if (search) {
             where += ` AND (u.name LIKE ? OR u.headline LIKE ? OR u.target_role LIKE ? OR u.skills LIKE ? OR u.bio LIKE ?)`;
@@ -1211,6 +1227,124 @@ app.get('/api/auth/google/callback', async (c) => {
     catch (err) {
         console.error('Google OAuth error:', err);
         return c.redirect(`${siteUrl}/login?error=oauth`);
+    }
+});
+// --- Saved-status check ---
+app.get('/api/jobs/:id/saved-status', async (c) => {
+    if (!pool)
+        return c.json({ saved: false });
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ saved: false });
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const [rows] = await pool.execute('SELECT id FROM saved_jobs WHERE user_id = ? AND job_id = ?', [String(payload.id), c.req.param('id')]);
+        return c.json({ saved: rows.length > 0 });
+    }
+    catch {
+        return c.json({ saved: false });
+    }
+});
+// --- Job report submission ---
+app.post('/api/jobs/:id/report', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const jobId = c.req.param('id');
+    const body = await c.req.json();
+    const auth = c.req.header('Authorization');
+    let reporterId = null;
+    let reporterEmail = body.email || null;
+    if (auth?.startsWith('Bearer ')) {
+        try {
+            const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+            reporterId = String(payload.id);
+            const [uRows] = await pool.execute('SELECT email FROM users WHERE id = ?', [reporterId]);
+            reporterEmail = uRows[0]?.email || reporterEmail;
+        }
+        catch { }
+    }
+    try {
+        await pool.execute('INSERT INTO job_reports (job_id, reporter_id, reporter_email, reason, details) VALUES (?, ?, ?, ?, ?)', [jobId, reporterId, reporterEmail, body.reason || 'Other', body.details || null]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Failed to submit report' }, 500);
+    }
+});
+// --- Admin reports ---
+app.get('/api/admin/reports', async (c) => {
+    if (!pool)
+        return c.json([]);
+    try {
+        const [rows] = await pool.execute(`
+      SELECT
+        jr.id,
+        jr.reason,
+        jr.details,
+        jr.status,
+        jr.reporter_email,
+        jr.created_at,
+        j.title as job_title,
+        j.company_name,
+        j.id as job_id
+      FROM job_reports jr
+      LEFT JOIN jobs j ON jr.job_id = j.id
+      ORDER BY jr.created_at DESC
+    `);
+        return c.json(rows);
+    }
+    catch {
+        return c.json([]);
+    }
+});
+app.patch('/api/admin/reports/:id', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    try {
+        const body = await c.req.json();
+        await pool.execute('UPDATE job_reports SET status = ? WHERE id = ?', [body.status, c.req.param('id')]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Failed to update report' }, 500);
+    }
+});
+// --- Profile view notification test ---
+app.get('/api/test/profile-view-notification', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' });
+    try {
+        const [candidates] = await pool.execute("SELECT id, name, email, is_pro FROM users WHERE role = 'candidate' LIMIT 1");
+        const candidate = candidates[0];
+        if (!candidate)
+            return c.json({ error: 'No candidate found in database' });
+        const [companies] = await pool.execute("SELECT id, name, company_name FROM users WHERE role = 'company' LIMIT 1");
+        const viewer = companies[0];
+        const viewerName = viewer?.company_name || viewer?.name || 'Test Company';
+        await pool.execute('INSERT INTO profile_views (candidate_id, viewer_id, viewer_name, viewer_company, action) VALUES (?, ?, ?, ?, ?)', [candidate.id, viewer?.id || null, viewerName, viewerName, 'view']);
+        const [views] = await pool.execute('SELECT * FROM profile_views WHERE candidate_id = ? ORDER BY created_at DESC LIMIT 1', [candidate.id]);
+        let emailResult = 'skipped - candidate is not pro';
+        if (candidate.is_pro && candidate.email) {
+            try {
+                await sendEmail(candidate.email, 'Test: Your profile was viewed on SalesRoles.co', `<p>Hi ${candidate.name},</p>
+          <p>This is a test notification. <strong>${viewerName}</strong> viewed your profile.</p>
+          <p><a href="https://salesroles.co/dashboard">View your dashboard</a></p>`);
+                emailResult = `email sent to ${candidate.email}`;
+            }
+            catch (err) {
+                emailResult = `email failed: ${err.message}`;
+            }
+        }
+        return c.json({
+            success: true,
+            candidate: { id: candidate.id, name: candidate.name, email: candidate.email, is_pro: candidate.is_pro },
+            viewer: viewerName,
+            view_record: views[0],
+            email: emailResult,
+        });
+    }
+    catch (err) {
+        return c.json({ error: err.message });
     }
 });
 // --- Test endpoint: simulate Stripe webhook payment completion ---

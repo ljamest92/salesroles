@@ -430,18 +430,14 @@ export function DashboardPage() {
                   {profileData?.location && (
                     <p className="text-xs text-muted-foreground flex items-center gap-1 mt-1"><MapPin size={12} /> {profileData.location}</p>
                   )}
-                  {profileData?.availability ? (
+                  {profileData?.availability && (profileData.availability === 'Actively looking' || profileData.availability === 'Open to opportunities') ? (
                     <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-[10px] font-bold mt-2 ${
                       profileData.availability === 'Actively looking'
                         ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
-                        : profileData.availability === 'Open to opportunities'
-                        ? 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
-                        : 'bg-white/5 text-white/30 border-white/10'
+                        : 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20'
                     }`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${
-                        profileData.availability === 'Actively looking' ? 'bg-emerald-400 animate-pulse'
-                        : profileData.availability === 'Open to opportunities' ? 'bg-yellow-400'
-                        : 'bg-white/20'
+                        profileData.availability === 'Actively looking' ? 'bg-emerald-400 animate-pulse' : 'bg-yellow-400'
                       }`} />
                       {profileData.availability}
                     </div>

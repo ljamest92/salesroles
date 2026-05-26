@@ -7,7 +7,7 @@ import { CheckCircle2, Camera } from 'lucide-react'
 const TOKEN_KEY = 'salesroles_token'
 
 const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'Head of Sales', 'CSM', 'Full Cycle AE', 'RevOps', 'Closer']
-const AVAILABILITY_OPTIONS = ['Actively looking', 'Open to opportunities', 'Not looking']
+const AVAILABILITY_OPTIONS = ['Actively looking', 'Open to opportunities']
 const INDUSTRY_OPTIONS = ['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'HR Tech', 'MarTech', 'Cybersecurity', 'Enterprise Software', 'E-commerce', 'Logistics', 'Real Estate Tech', 'InsurTech']
 const DEAL_SIZE_OPTIONS = ['<$10K', '$10K–$50K', '$50K–$100K', '$100K–$500K', '$500K–$1M', '$1M+']
 const METHODOLOGY_OPTIONS = ['MEDDIC', 'SPIN Selling', 'Challenger Sale', 'Solution Selling', 'Command of the Message', 'Sandler', 'Value-Based Selling', 'SPIN', 'Gap Selling']
@@ -25,7 +25,7 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
   )
 }
 
-const inputCls = "w-full bg-secondary/50 border border-white/5 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium"
+const inputCls = "w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all font-medium appearance-none"
 
 function TagSelect({ options, value, onChange }: { options: string[]; value: string[]; onChange: (v: string[]) => void }) {
   const toggle = (o: string) => onChange(value.includes(o) ? value.filter(x => x !== o) : [...value, o])
@@ -305,17 +305,13 @@ export function ProfileEditPage() {
                 {AVAILABILITY_OPTIONS.map(a => <option key={a} value={a}>{a}</option>)}
               </select>
               <div className="mt-2 space-y-1">
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                <p className="text-white/30 text-xs flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block" />
-                  Actively Looking: appear first in search with a green badge
+                  Actively Looking: you appear first in search and get a green Active badge
                 </p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
+                <p className="text-white/30 text-xs flex items-center gap-1.5">
                   <span className="w-1.5 h-1.5 rounded-full bg-yellow-400 inline-block" />
-                  Open to Opportunities: visible in search without the active badge
-                </p>
-                <p className="text-[10px] text-muted-foreground flex items-center gap-1.5">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white/20 inline-block" />
-                  Not Looking: hidden from all company searches
+                  Open to Opportunities: you appear in search as open but not urgently looking
                 </p>
               </div>
             </Field>

@@ -112,12 +112,32 @@ export function AdminPage() {
     } catch {}
   }
 
+  const fetchReports = async () => {
+    try {
+      const r = await fetch('/api/admin/reports')
+      const data = r.ok ? await r.json() : []
+      setReports(Array.isArray(data) ? data : [])
+    } catch {}
+  }
+
+  const updateReportStatus = async (id: number, status: string) => {
+    try {
+      await fetch(`/api/admin/reports/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status })
+      })
+      setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+    } catch {}
+  }
+
   const handleTabChange = (tab: string) => {
     setActiveTab(tab)
     if (tab === 'pending') fetchPendingJobs()
     if (tab === 'users') fetchUsers()
     if (tab === 'subscribers') fetchSubscribers()
     if (tab === 'jobs') fetchLiveJobs()
+    if (tab === 'reports') fetchReports()
   }
 
   const downloadCSV = (type: 'candidates' | 'companies', isBlinded: boolean) => {
@@ -270,7 +290,7 @@ export function AdminPage() {
           { key: 'jobs', label: `All Live Jobs (${stats.listings})` },
           { key: 'users', label: `Users (${users.length})` },
           { key: 'subscribers', label: `Subscribers (${subscribers.length})` },
-          { key: 'reports', label: `Reports (${stats.reports})`, danger: true },
+          { key: 'reports', label: `Reports (${reports.length})`, danger: true },
         ].map(tab => (
           <button
             key={tab.key}
@@ -334,23 +354,74 @@ export function AdminPage() {
       )}
 
       {activeTab === 'reports' && (
-        <div className="space-y-4">
+        <div className="space-y-3">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-white font-semibold text-lg">Reported Listings</h2>
+            <span className="text-xs bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded-full">
+              {reports.filter(r => r.status === 'pending').length} pending
+            </span>
+          </div>
           {reports.length === 0 ? (
             <Card className="p-16 text-center border-dashed border-white/10">
-              <p className="text-muted-foreground font-medium">No open reports.</p>
+              <p className="text-muted-foreground font-medium">No reports yet.</p>
             </Card>
           ) : (
             reports.map((report: any) => (
-              <Card key={report.id} className="p-6 border border-destructive/20 bg-destructive/5 flex justify-between items-center">
-                <div className="flex items-center gap-4">
-                  <ShieldAlert className="text-destructive" />
-                  <div>
-                    <h4 className="font-bold">{report.reason} Reported</h4>
-                    <p className="text-xs text-muted-foreground">Listing ID: {report.jobId} • {report.reporterEmail || 'Anonymous'}</p>
+              <div key={report.id} className="bg-white/5 border border-white/10 rounded-xl p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs px-2 py-0.5 rounded-full border ${
+                        report.status === 'pending'
+                          ? 'bg-red-500/20 text-red-400 border-red-500/30'
+                          : report.status === 'reviewed'
+                          ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                          : 'bg-white/10 text-white/40 border-white/10'
+                      }`}>
+                        {report.status}
+                      </span>
+                      <span className="text-white/30 text-xs">{new Date(report.created_at).toLocaleDateString()}</span>
+                    </div>
+                    <p className="text-white font-medium text-sm">{report.job_title || 'Unknown job'}</p>
+                    <p className="text-white/50 text-xs">{report.company_name}</p>
+                    <p className="text-white/70 text-sm mt-2">
+                      <span className="text-white/40">Reason: </span>{report.reason}
+                    </p>
+                    {report.details && (
+                      <p className="text-white/50 text-xs mt-1">{report.details}</p>
+                    )}
+                    {report.reporter_email && (
+                      <p className="text-white/30 text-xs mt-1">Reported by: {report.reporter_email}</p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 flex-shrink-0">
+                    <a
+                      href={`/jobs/${report.job_id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-xs border border-white/10 text-white/50 hover:text-white px-3 py-1.5 rounded-lg transition-colors text-center"
+                    >
+                      View Job
+                    </a>
+                    {report.status === 'pending' && (
+                      <>
+                        <button
+                          onClick={() => updateReportStatus(report.id, 'reviewed')}
+                          className="text-xs border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          Mark Reviewed
+                        </button>
+                        <button
+                          onClick={() => updateReportStatus(report.id, 'dismissed')}
+                          className="text-xs border border-white/10 text-white/30 hover:text-white/50 px-3 py-1.5 rounded-lg transition-colors"
+                        >
+                          Dismiss
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
-                <Button size="sm" variant="outline" className="text-destructive border-destructive/20 font-bold text-xs">Investigate</Button>
-              </Card>
+              </div>
             ))
           )}
         </div>

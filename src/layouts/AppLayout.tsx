@@ -12,7 +12,7 @@ export function AppLayout() {
 
   return (
     <div className="min-h-screen flex flex-col font-sans selection:bg-primary/30 selection:text-primary-foreground overflow-x-hidden">
-      <header className="glass">
+      <header className="sticky top-0 z-50 backdrop-blur-xl border-b border-white/10" style={{ backgroundColor: 'rgba(10, 15, 30, 0.97)' }}>
         <Navbar className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-20 flex items-center justify-between bg-transparent border-none">
           <NavbarBrand>
             <Link to="/" className="text-2xl font-black tracking-tighter flex items-center gap-0 group">

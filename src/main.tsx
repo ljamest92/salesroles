@@ -12,7 +12,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
       <QueryClientProvider client={queryClient}>
-        <BlinkUIProvider theme="midnight" darkMode="system">
+        <BlinkUIProvider theme="midnight" darkMode="dark">
           <Toaster position="top-right" />
           <div className="flex w-full flex-1 flex-col min-h-0">
             <App />

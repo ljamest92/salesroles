@@ -190,8 +190,8 @@ export function HomePage() {
               Premium Job Board for Sales Professionals
             </Badge>
             <h1 className="text-4xl sm:text-7xl md:text-[100px] font-black tracking-tighter leading-[0.95] max-w-5xl mx-auto">
-              We Only Do <span className="text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Sales.</span><br />
-              With Full <span className="text-primary drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Transparency.</span>
+              We Only Do <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Sales.</span><br />
+              With Full <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Transparency.</span>
             </h1>
             <p className="text-lg md:text-3xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed opacity-80">
               Find global remote and on-site sales roles with mandatory compensation transparency.

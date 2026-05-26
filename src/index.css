@@ -228,3 +228,41 @@ h1, h2, h3, h4, h5, h6 {
   display: flex;
   width: max-content;
 }
+
+/* ── Nuclear emerald override — wins over BlinkUI midnight theme ── */
+:root,
+:root.dark,
+html.dark {
+  --color-accent: #10B981;
+  --primary: 161 84% 39% !important;
+  --primary-foreground: 161 84% 95% !important;
+  --accent: 161 84% 39% !important;
+  --accent-foreground: 161 84% 95% !important;
+  --ring: 161 84% 39% !important;
+}
+
+/* ── Force all native selects dark ── */
+select,
+select:focus,
+select:active {
+  background-color: #0f1629 !important;
+  color: white !important;
+  border-color: rgba(255, 255, 255, 0.1) !important;
+  -webkit-text-fill-color: white;
+}
+
+select option {
+  background-color: #0f1629 !important;
+  color: white !important;
+}
+
+/* ── Backup: .text-primary always emerald ── */
+.text-primary {
+  color: #10B981 !important;
+}
+
+/* ── Backup: button with bg-primary always emerald ── */
+button.bg-primary,
+a.bg-primary {
+  background-color: #10B981 !important;
+}

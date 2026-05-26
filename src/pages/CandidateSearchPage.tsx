@@ -44,8 +44,8 @@ const defaultFilters = {
   sort_by: 'relevance',
 }
 
-const selCls = "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-emerald-500/50 text-white"
-const inpCls = "w-full bg-white/5 border border-white/10 rounded-lg px-3 py-2.5 text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50 text-white"
+const selCls = "w-full bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none"
+const inpCls = "w-full bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
 
 export function CandidateSearchPage() {
   const navigate = useNavigate()
@@ -204,7 +204,7 @@ export function CandidateSearchPage() {
       {/* Header */}
       <div className="space-y-3 mb-8">
         <h1 className="text-4xl md:text-6xl font-black tracking-tighter">
-          Find <span className="text-primary">Sales Talent.</span>
+          Find <span className="text-emerald-400">Sales Talent.</span>
         </h1>
         <p className="text-white/50 text-lg font-medium">Browse verified sales professionals open to new opportunities.</p>
       </div>
@@ -212,7 +212,7 @@ export function CandidateSearchPage() {
       <div className="flex gap-8">
         {/* Filter sidebar — desktop */}
         <aside className="hidden lg:block w-64 shrink-0">
-          <div className="sticky top-8 bg-card/30 border border-white/5 rounded-2xl p-5">
+          <div className="sticky top-8 bg-[#0a0f1e] border border-white/10 rounded-2xl p-5">
             <FilterSidebar />
           </div>
         </aside>
@@ -240,7 +240,7 @@ export function CandidateSearchPage() {
             <select
               value={filters.sort_by}
               onChange={e => updateFilter('sort_by', e.target.value)}
-              className="bg-white/5 border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 shrink-0"
+              className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none shrink-0"
             >
               <option value="relevance">Most Relevant</option>
               <option value="newest">Newest First</option>
