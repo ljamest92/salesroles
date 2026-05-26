@@ -25,7 +25,7 @@ export function CompanyProfilePage() {
   const [companyData, setCompanyData] = useState<any>(null)
   const [badgeCopied, setBadgeCopied] = useState(false)
 
-  // Resolve the correct domain for Clearbit — seed map first, then generic fallback
+  // Resolve the correct domain for Apistemic — seed map first, then generic fallback
   const companyDomain = SEED_COMPANY_DOMAINS[id.toLowerCase()] || `${id}.com`
 
   useEffect(() => {

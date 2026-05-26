@@ -27,7 +27,13 @@ interface Candidate {
 }
 
 const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Senior Account Executive', 'Enterprise Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'BDM']
-const EXPERIENCE_OPTIONS = ['Less than 1', '1-2', '3-5', '5-10', '10+']
+const EXPERIENCE_OPTIONS = [
+  { label: 'Less than 1 year', min: 0, max: 0 },
+  { label: '1–2 years',        min: 1, max: 2 },
+  { label: '3–5 years',        min: 3, max: 5 },
+  { label: '5–10 years',       min: 5, max: 10 },
+  { label: '10+ years',        min: 10, max: 999 },
+]
 const AVAILABILITY_OPTIONS = ['Actively looking', 'Open to opportunities']
 const INDUSTRY_OPTIONS = ['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'HR Tech', 'MarTech', 'Cybersecurity', 'Enterprise Software', 'E-commerce', 'Logistics', 'Real Estate Tech', 'InsurTech']
 const DEAL_SIZE_OPTIONS = ['<$10K', '$10K–$50K', '$50K–$100K', '$100K–$500K', '$500K–$1M', '$1M+']
@@ -78,7 +84,13 @@ export function CandidateSearchPage() {
     const params = new URLSearchParams()
     if (f.search) params.set('search', f.search)
     if (f.target_role) params.set('target_role', f.target_role)
-    if (f.years_experience) params.set('years_experience', f.years_experience)
+    if (f.years_experience) {
+      const range = EXPERIENCE_OPTIONS.find(o => o.label === f.years_experience)
+      if (range) {
+        params.set('exp_min', String(range.min))
+        params.set('exp_max', String(range.max))
+      }
+    }
     if (f.availability) params.set('availability', f.availability)
     if (f.industry) params.set('industry', f.industry)
     if (f.deal_size) params.set('deal_size', f.deal_size)
@@ -168,7 +180,7 @@ export function CandidateSearchPage() {
         <label className="text-[10px] font-black tracking-widest text-white/40">EXPERIENCE</label>
         <select value={filters.years_experience} onChange={e => updateFilter('years_experience', e.target.value)} className={selCls}>
           <option value="">Any</option>
-          {EXPERIENCE_OPTIONS.map(o => <option key={o} value={o}>{o.replace('-', '–')} years</option>)}
+          {EXPERIENCE_OPTIONS.map(o => <option key={o.label} value={o.label}>{o.label}</option>)}
         </select>
       </div>
 

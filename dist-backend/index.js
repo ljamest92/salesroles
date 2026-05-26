@@ -1114,7 +1114,8 @@ app.get('/api/candidates', async (c) => {
     try {
         const search = c.req.query('search') || '';
         const targetRole = c.req.query('target_role') || '';
-        const yearsExp = c.req.query('years_experience') || '';
+        const expMin = c.req.query('exp_min') || '';
+        const expMax = c.req.query('exp_max') || '';
         const availability = c.req.query('availability') || '';
         const industry = c.req.query('industry') || '';
         const dealSize = c.req.query('deal_size') || '';
@@ -1135,22 +1136,17 @@ app.get('/api/candidates', async (c) => {
             where += ` AND u.target_role = ?`;
             params.push(targetRole);
         }
-        if (yearsExp) {
-            if (yearsExp === 'Less than 1') {
-                where += ` AND u.years_experience < 1`;
-            }
-            else if (yearsExp === '10+') {
-                where += ` AND u.years_experience >= 10`;
-            }
-            else {
-                const parts = yearsExp.split('-');
-                if (parts.length === 2) {
-                    const minExp = parseInt(parts[0], 10);
-                    const maxExp = parseInt(parts[1], 10);
-                    if (!isNaN(minExp) && !isNaN(maxExp)) {
-                        where += ` AND u.years_experience >= ? AND u.years_experience <= ?`;
-                        params.push(minExp, maxExp);
-                    }
+        if (expMin !== '') {
+            const min = parseInt(expMin, 10);
+            const max = expMax !== '' ? parseInt(expMax, 10) : null;
+            if (!isNaN(min)) {
+                if (max !== null && !isNaN(max) && max < 999) {
+                    where += ` AND u.years_experience >= ? AND u.years_experience <= ?`;
+                    params.push(min, max);
+                }
+                else {
+                    where += ` AND u.years_experience >= ?`;
+                    params.push(min);
                 }
             }
         }
@@ -1174,14 +1170,20 @@ app.get('/api/candidates', async (c) => {
             where += ` AND u.location LIKE ?`;
             params.push(`%${location}%`);
         }
-        const baseOrder = `u.is_pro DESC, CASE WHEN u.availability = 'Actively looking' THEN 1 WHEN u.availability = 'Open to opportunities' THEN 2 ELSE 3 END ASC`;
-        let orderBy = `ORDER BY ${baseOrder}, u.created_at DESC`;
-        if (sortBy === 'experience_high')
-            orderBy = `ORDER BY u.is_pro DESC, CAST(COALESCE(u.years_experience,'0') AS UNSIGNED) DESC`;
-        if (sortBy === 'experience_low')
-            orderBy = `ORDER BY u.is_pro DESC, CAST(COALESCE(u.years_experience,'0') AS UNSIGNED) ASC`;
-        if (sortBy === 'newest')
-            orderBy = `ORDER BY u.created_at DESC`;
+        let orderBy;
+        switch (sortBy) {
+            case 'newest':
+                orderBy = `ORDER BY u.created_at DESC`;
+                break;
+            case 'experience_high':
+                orderBy = `ORDER BY COALESCE(u.years_experience, 0) DESC, u.is_pro DESC, u.created_at DESC`;
+                break;
+            case 'experience_low':
+                orderBy = `ORDER BY COALESCE(u.years_experience, 0) ASC, u.is_pro DESC, u.created_at DESC`;
+                break;
+            default:
+                orderBy = `ORDER BY u.is_pro DESC, CASE WHEN u.availability = 'Actively looking' THEN 1 WHEN u.availability = 'Open to opportunities' THEN 2 ELSE 3 END ASC, u.created_at DESC`;
+        }
         const countSql = `SELECT COUNT(*) as total FROM users u ${where}`;
         const [countRows] = await pool.execute(countSql, params);
         const total = countRows[0]?.total || 0;

@@ -7,5 +7,5 @@ export function cn(...inputs: ClassValue[]) {
 
 export function getCompanyLogoUrl(domain: string | undefined | null): string | null {
   if (!domain) return null;
-  return `https://logos-api.apistemic.com/domain:${domain}`;
+  return `https://logos.apistemic.com/${domain}`;
 }
