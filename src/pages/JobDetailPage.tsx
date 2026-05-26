@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { Link, useParams, useNavigate } from '@tanstack/react-router'
 import { Container, Card, Badge, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Briefcase, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight, Bookmark, BookmarkCheck, BookmarkX, XCircle, Loader2 } from 'lucide-react'
@@ -78,6 +78,15 @@ export function JobDetailPage() {
       }
     }
     loadJob()
+  }, [slug])
+
+  // Record view once — ref guard prevents React StrictMode double-fire
+  const viewRecorded = useRef(false)
+  useEffect(() => {
+    if (!slug) return
+    if (viewRecorded.current) return
+    viewRecorded.current = true
+    fetch(`/api/jobs/${slug}/view`, { method: 'POST' }).catch(() => {})
   }, [slug])
 
   // Check saved status on load

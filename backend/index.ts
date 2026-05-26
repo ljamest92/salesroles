@@ -579,12 +579,19 @@ app.get('/api/jobs/:id', async (c) => {
     const [rows] = await pool.execute('SELECT * FROM jobs WHERE id = ?', [id]) as any[]
     const row = (rows as any[])[0]
     if (!row) return c.json({ error: 'Job not found' }, 404)
-    // Increment view counter (fire-and-forget)
-    pool.execute('UPDATE jobs SET views = COALESCE(views, 0) + 1 WHERE id = ?', [id]).catch(() => {})
     return c.json({ job: { ...row, company: row.company_name, domain: extractDomainFromUrl(row.company_website || ''), job_type: row.work_type, featured: !!row.featured } })
   } catch {
     return c.json({ error: 'Failed to fetch job' }, 500)
   }
+})
+
+// Dedicated view-increment endpoint — called once by the frontend with a ref guard
+app.post('/api/jobs/:id/view', async (c) => {
+  const id = c.req.param('id')
+  if (pool && id) {
+    pool.execute('UPDATE jobs SET views = COALESCE(views, 0) + 1 WHERE id = ?', [id]).catch(() => {})
+  }
+  return c.json({ ok: true })
 })
 
 // --- Admin Stats ---
