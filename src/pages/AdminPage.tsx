@@ -30,6 +30,8 @@ export function AdminPage() {
   const [activeTab, setActiveTab] = useState('pending')
   const [userSubTab, setUserSubTab] = useState<'candidates' | 'companies'>('candidates')
   const [blinded, setBlinded] = useState(false)
+  const [deleteJobDialog, setDeleteJobDialog] = useState<{ open: boolean; jobId: string | null; password: string; loading: boolean; error: string }>({ open: false, jobId: null, password: '', loading: false, error: '' })
+  const [deleteUserDialog, setDeleteUserDialog] = useState<{ open: boolean; userId: string | null; userName: string; password: string; loading: boolean; error: string }>({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })
 
   const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('admin_auth') === 'true'
 
@@ -205,24 +207,52 @@ export function AdminPage() {
     } catch {}
   }
 
-  const handleRemoveJob = async (id: string) => {
-    if (!confirm('Remove this listing?')) return
-    const adminPassword = prompt('Admin password:')
-    if (!adminPassword) return
+  const handleRemoveJob = (id: string) => {
+    setDeleteJobDialog({ open: true, jobId: id, password: '', loading: false, error: '' })
+  }
+
+  const confirmDeleteJob = async () => {
+    if (!deleteJobDialog.jobId) return
+    setDeleteJobDialog(prev => ({ ...prev, loading: true, error: '' }))
     try {
-      const res = await fetch(`/api/admin/jobs/${id}`, {
+      const res = await fetch(`/api/admin/jobs/${deleteJobDialog.jobId}`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: adminPassword }),
+        body: JSON.stringify({ password: deleteJobDialog.password }),
       })
       if (res.ok) {
-        setLiveJobs(prev => prev.filter(j => j.id !== id))
+        setLiveJobs(prev => prev.filter(j => j.id !== deleteJobDialog.jobId))
         setStats(prev => ({ ...prev, listings: prev.listings - 1 }))
+        setDeleteJobDialog({ open: false, jobId: null, password: '', loading: false, error: '' })
       } else {
-        alert('Failed to remove listing.')
+        setDeleteJobDialog(prev => ({ ...prev, loading: false, error: 'Incorrect password. Please try again.' }))
       }
     } catch {
-      alert('Failed to remove listing.')
+      setDeleteJobDialog(prev => ({ ...prev, loading: false, error: 'Failed to delete listing.' }))
+    }
+  }
+
+  const handleDeleteUser = (id: string, name: string) => {
+    setDeleteUserDialog({ open: true, userId: id, userName: name, password: '', loading: false, error: '' })
+  }
+
+  const confirmDeleteUser = async () => {
+    if (!deleteUserDialog.userId) return
+    setDeleteUserDialog(prev => ({ ...prev, loading: true, error: '' }))
+    try {
+      const res = await fetch(`/api/admin/users/${deleteUserDialog.userId}`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: deleteUserDialog.password }),
+      })
+      if (res.ok) {
+        setUsers(prev => prev.filter(u => u.id !== deleteUserDialog.userId))
+        setDeleteUserDialog({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })
+      } else {
+        setDeleteUserDialog(prev => ({ ...prev, loading: false, error: 'Incorrect password. Please try again.' }))
+      }
+    } catch {
+      setDeleteUserDialog(prev => ({ ...prev, loading: false, error: 'Failed to delete user.' }))
     }
   }
 
@@ -523,6 +553,7 @@ export function AdminPage() {
                       <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Email</th>
                       {userSubTab === 'companies' && <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Company</th>}
                       <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Joined</th>
+                      <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest"></th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/5">
@@ -532,6 +563,16 @@ export function AdminPage() {
                         <td className="py-4 text-muted-foreground">{blinded ? (userSubTab === 'candidates' ? `candidate${i + 1}@hidden.com` : `company${i + 1}@hidden.com`) : u.email}</td>
                         {userSubTab === 'companies' && <td className="py-4 text-muted-foreground">{blinded ? 'Hidden' : (u.company_name || '—')}</td>}
                         <td className="py-4 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('en-GB')}</td>
+                        <td className="py-4">
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-destructive font-bold gap-1.5 hover:bg-destructive/10 text-[10px] h-8 px-3"
+                            onClick={() => handleDeleteUser(u.id, u.name)}
+                          >
+                            <Trash2 size={12} /> Delete
+                          </Button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -576,6 +617,97 @@ export function AdminPage() {
               </table>
             </Card>
           )}
+        </div>
+      )}
+      {/* Delete Job Confirmation Dialog */}
+      {deleteJobDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteJobDialog(prev => ({ ...prev, open: false }))} />
+          <div className="relative bg-card border border-white/10 rounded-[24px] p-8 w-full max-w-md space-y-6 shadow-2xl">
+            <div className="space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center mb-4">
+                <Trash2 size={24} className="text-destructive" />
+              </div>
+              <h2 className="text-xl font-black tracking-tight">Delete Listing</h2>
+              <p className="text-muted-foreground text-sm font-medium">Are you sure you want to permanently delete this job listing? This cannot be undone.</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-muted-foreground tracking-widest">ADMIN PASSWORD</label>
+              <input
+                type="password"
+                value={deleteJobDialog.password}
+                onChange={e => setDeleteJobDialog(prev => ({ ...prev, password: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && confirmDeleteJob()}
+                placeholder="Enter admin password"
+                className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-destructive/50 transition-colors"
+                autoFocus
+              />
+              {deleteJobDialog.error && <p className="text-destructive text-xs font-bold">{deleteJobDialog.error}</p>}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="ghost"
+                className="flex-1 border border-white/10"
+                onClick={() => setDeleteJobDialog({ open: false, jobId: null, password: '', loading: false, error: '' })}
+                disabled={deleteJobDialog.loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-destructive text-white hover:bg-destructive/80 font-bold"
+                onClick={confirmDeleteJob}
+                disabled={deleteJobDialog.loading || !deleteJobDialog.password}
+              >
+                {deleteJobDialog.loading ? 'Deleting...' : 'Delete Listing'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete User Confirmation Dialog */}
+      {deleteUserDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteUserDialog(prev => ({ ...prev, open: false }))} />
+          <div className="relative bg-card border border-white/10 rounded-[24px] p-8 w-full max-w-md space-y-6 shadow-2xl">
+            <div className="space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-destructive/10 border border-destructive/20 flex items-center justify-center mb-4">
+                <Trash2 size={24} className="text-destructive" />
+              </div>
+              <h2 className="text-xl font-black tracking-tight">Delete User</h2>
+              <p className="text-muted-foreground text-sm font-medium">Are you sure you want to delete <span className="text-foreground font-bold">{deleteUserDialog.userName}</span> and all their data? This cannot be undone.</p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-muted-foreground tracking-widest">ADMIN PASSWORD</label>
+              <input
+                type="password"
+                value={deleteUserDialog.password}
+                onChange={e => setDeleteUserDialog(prev => ({ ...prev, password: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && confirmDeleteUser()}
+                placeholder="Enter admin password"
+                className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-destructive/50 transition-colors"
+                autoFocus
+              />
+              {deleteUserDialog.error && <p className="text-destructive text-xs font-bold">{deleteUserDialog.error}</p>}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="ghost"
+                className="flex-1 border border-white/10"
+                onClick={() => setDeleteUserDialog({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })}
+                disabled={deleteUserDialog.loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-destructive text-white hover:bg-destructive/80 font-bold"
+                onClick={confirmDeleteUser}
+                disabled={deleteUserDialog.loading || !deleteUserDialog.password}
+              >
+                {deleteUserDialog.loading ? 'Deleting...' : 'Delete User'}
+              </Button>
+            </div>
+          </div>
         </div>
       )}
     </Container>

@@ -761,6 +761,39 @@ app.get('/api/admin/subscribers', async (c) => {
         return c.json([]);
     }
 });
+app.get('/api/admin/users', async (c) => {
+    if (!pool)
+        return c.json([]);
+    try {
+        const [users] = await pool.execute(`SELECT u.id, u.name, u.email, u.role, u.created_at,
+        (SELECT company_name FROM jobs WHERE company_id = u.id LIMIT 1) as company_name
+       FROM users u
+       ORDER BY u.created_at DESC`);
+        return c.json(users);
+    }
+    catch {
+        return c.json([]);
+    }
+});
+app.delete('/api/admin/users/:id', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    try {
+        const { password } = await c.req.json();
+        if (password !== (process.env.ADMIN_PASSWORD || 'admin123')) {
+            return c.json({ error: 'Unauthorized' }, 401);
+        }
+        const id = c.req.param('id');
+        await pool.execute('DELETE FROM saved_jobs WHERE user_id = ?', [id]);
+        await pool.execute('DELETE FROM applications WHERE candidate_id = ?', [id]);
+        await pool.execute('DELETE FROM jobs WHERE company_id = ?', [id]);
+        await pool.execute('DELETE FROM users WHERE id = ?', [id]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Delete failed' }, 500);
+    }
+});
 // --- Company dashboard ---
 app.get('/api/company/pending-jobs', async (c) => {
     if (!pool)

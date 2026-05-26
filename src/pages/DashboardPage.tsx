@@ -329,7 +329,7 @@ export function DashboardPage() {
   }
 
   return (
-    <Container className="pt-20 pb-12 md:py-24 space-y-12 animate-fade-in">
+    <Container className="pt-20 pb-16 md:py-32 md:px-8 space-y-16 animate-fade-in">
       {/* Redirect toast */}
       {redirectToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-xl backdrop-blur-sm">
@@ -358,8 +358,8 @@ export function DashboardPage() {
       <Separator className="bg-border" />
 
       {role === 'company' ? (
-        <div className="space-y-12">
-          <StatGroup className="grid grid-cols-2 md:grid-cols-4 gap-6">
+        <div className="space-y-16">
+          <StatGroup className="grid grid-cols-2 md:grid-cols-4 gap-8">
             <Stat label="Live Jobs" value={String(stats.liveJobs)} icon={<Briefcase size={20} className="text-primary" />} />
             <Stat label="Total Views" value={String(stats.totalViews)} icon={<Eye size={20} className="text-primary" />} />
             <Stat label="Apply Clicks" value={String(stats.applyClicks)} icon={<MousePointer2 size={20} className="text-primary" />} />
@@ -374,17 +374,17 @@ export function DashboardPage() {
           )}
 
           <Tabs defaultValue="jobs">
-            <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex flex-wrap gap-0">
-              <TabsTrigger value="jobs" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
-              <TabsTrigger value="pending" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
-              <TabsTrigger value="candidates" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
-              <TabsTrigger value="expired" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
-              <TabsTrigger value="billing" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
-              <TabsTrigger value="settings" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>
+            <TabsList className="bg-card border border-border p-2 rounded-xl inline-flex flex-wrap gap-1">
+              <TabsTrigger value="jobs" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
+              <TabsTrigger value="pending" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
+              <TabsTrigger value="candidates" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
+              <TabsTrigger value="expired" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
+              <TabsTrigger value="billing" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
+              <TabsTrigger value="settings" className="px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>
             </TabsList>
 
             {/* Active Listings */}
-            <TabsContent value="jobs" className="mt-8 space-y-4">
+            <TabsContent value="jobs" className="mt-10 space-y-4">
               {liveJobs.length === 0 ? (
                 <div className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px] flex flex-col items-center text-center gap-6">
                   <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
@@ -425,7 +425,7 @@ export function DashboardPage() {
             </TabsContent>
 
             {/* Pending */}
-            <TabsContent value="pending" className="mt-8 space-y-4">
+            <TabsContent value="pending" className="mt-10 space-y-4">
               {pendingJobs.length === 0 ? (
                 <div className="p-16 text-center">
                   <p className="text-white/40 font-medium">No listings pending review.</p>
@@ -451,7 +451,7 @@ export function DashboardPage() {
             </TabsContent>
 
             {/* Candidates */}
-            <TabsContent value="candidates" className="mt-8 space-y-4">
+            <TabsContent value="candidates" className="mt-10 space-y-4">
               {applications.length === 0 ? (
                 <EmptyState
                   icon={<Users size={40} />}
@@ -510,7 +510,7 @@ export function DashboardPage() {
             </TabsContent>
 
             {/* Expired */}
-            <TabsContent value="expired" className="mt-8">
+            <TabsContent value="expired" className="mt-10">
               <EmptyState
                 icon={<Building2 size={40} />}
                 title="No Expired Listings"
@@ -520,7 +520,7 @@ export function DashboardPage() {
             </TabsContent>
 
             {/* Billing */}
-            <TabsContent value="billing" className="mt-8">
+            <TabsContent value="billing" className="mt-10">
               <EmptyState
                 icon={<CheckCircle2 size={40} />}
                 title="No Invoices Yet"
@@ -530,7 +530,7 @@ export function DashboardPage() {
             </TabsContent>
 
             {/* Company Profile */}
-            <TabsContent value="settings" className="mt-8">
+            <TabsContent value="settings" className="mt-10">
               <Card className="border border-white/5 bg-card/30 rounded-2xl p-8 max-w-2xl space-y-8">
                 <div>
                   <h3 className="text-xl font-black tracking-tighter">Company Profile</h3>
