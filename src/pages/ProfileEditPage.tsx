@@ -154,13 +154,15 @@ export function ProfileEditPage() {
     const token = localStorage.getItem(TOKEN_KEY)
     const fd = new FormData()
     fd.append('avatar', file)
-    const res = await fetch('/api/candidate/upload-avatar', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-      body: fd,
-    })
-    const data = await res.json()
-    if (data.ok) setAvatarUrl(data.avatar_url)
+    try {
+      const res = await fetch('/api/candidate/upload-avatar', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
+      const data = await res.json()
+      if (data.ok && data.avatar_url) setAvatarUrl(data.avatar_url)
+    } catch {}
   }
 
   const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -63,11 +63,11 @@ export function FAQPage() {
 
       <Container className="max-w-4xl mx-auto">
         <Tabs defaultValue="candidates">
-          <div className="overflow-x-auto mb-12">
-            <TabsList className="bg-card border border-border p-1 rounded-xl flex-nowrap inline-flex min-w-full sm:w-full justify-center">
-              <TabsTrigger value="candidates" className="px-6 sm:px-8 font-bold tracking-tight whitespace-nowrap">For Candidates</TabsTrigger>
-              <TabsTrigger value="companies" className="px-6 sm:px-8 font-bold tracking-tight whitespace-nowrap">For Companies</TabsTrigger>
-              <TabsTrigger value="about" className="px-6 sm:px-8 font-bold tracking-tight whitespace-nowrap">About Us</TabsTrigger>
+          <div className="mb-12">
+            <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full">
+              <TabsTrigger value="candidates" className="w-full sm:w-auto px-6 sm:px-8 font-bold tracking-tight">For Candidates</TabsTrigger>
+              <TabsTrigger value="companies" className="w-full sm:w-auto px-6 sm:px-8 font-bold tracking-tight">For Companies</TabsTrigger>
+              <TabsTrigger value="about" className="w-full sm:w-auto px-6 sm:px-8 font-bold tracking-tight">About Us</TabsTrigger>
             </TabsList>
           </div>
 

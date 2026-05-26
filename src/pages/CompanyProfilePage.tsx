@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, StatGroup, Stat, toast, Skeleton } from '@blinkdotnew/ui'
-import { MapPin, Globe, Briefcase, Users, Building2, ExternalLink, Check, Copy } from 'lucide-react'
+import { MapPin, Globe, Briefcase, Users, Building2, ExternalLink, Check } from 'lucide-react'
 import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
@@ -23,7 +23,6 @@ export function CompanyProfilePage() {
   const [isLoading, setIsLoading] = useState(true)
   const [isFollowed, setIsFollowed] = useState(false)
   const [companyData, setCompanyData] = useState<any>(null)
-  const [badgeCopied, setBadgeCopied] = useState(false)
 
   // Resolve the correct domain for Apistemic — seed map first, then generic fallback
   const companyDomain = SEED_COMPANY_DOMAINS[id.toLowerCase()] || `${id}.com`
@@ -97,25 +96,6 @@ export function CompanyProfilePage() {
 
   const getWebsiteUrl = (url: string) =>
     url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`
-
-  const copyBadge = async () => {
-    const code = `<script src="https://salesroles.co/badge.js?company=${id}"></script>`
-    try {
-      await navigator.clipboard.writeText(code)
-    } catch {
-      const ta = document.createElement('textarea')
-      ta.value = code
-      ta.style.position = 'fixed'
-      ta.style.opacity = '0'
-      document.body.appendChild(ta)
-      ta.select()
-      document.execCommand('copy')
-      document.body.removeChild(ta)
-    }
-    setBadgeCopied(true)
-    setTimeout(() => setBadgeCopied(false), 2000)
-    toast.success('Badge code copied', { description: 'Paste this into your website to show you are hiring.' })
-  }
 
   const handleFollow = () => {
     if (!user) {
@@ -252,17 +232,6 @@ export function CompanyProfilePage() {
                 </div>
               </>
             )}
-            <div className="h-px bg-white/5" />
-            <div className="space-y-6">
-              <p className="text-[10px] font-black text-muted-foreground underline underline-offset-8 decoration-primary/30">We're Hiring</p>
-              <div className="p-8 bg-primary/10 rounded-3xl border border-primary/20 text-center space-y-4 group/badge">
-                <p className="text-xs font-black text-primary">Employer Badge</p>
-                <p className="text-[11px] text-muted-foreground font-medium leading-relaxed">Display our premium "We are hiring" badge on your careers page.</p>
-                <Button onClick={copyBadge} variant="outline" size="sm" className="w-full bg-card border-white/5 font-black text-[9px] h-10 gap-2 group-hover/badge:border-primary/50 transition-all">
-                  <Copy size={14} /> {badgeCopied ? 'Copied!' : 'Copy Embed Code'}
-                </Button>
-              </div>
-            </div>
           </Card>
         </div>
       </Container>

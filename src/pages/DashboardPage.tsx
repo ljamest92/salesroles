@@ -244,9 +244,17 @@ export function DashboardPage() {
         body: formData,
       })
       const data = await res.json()
-      if (data.ok && data.avatar_url) setAvatarUrl(data.avatar_url)
+      if (data.ok && data.avatar_url) {
+        setAvatarError(false)
+        setAvatarUrl(data.avatar_url)
+      }
     } catch {}
   }
+
+  // Reset avatar error state whenever a new URL is received so the image always retries
+  useEffect(() => {
+    if (avatarUrl) setAvatarError(false)
+  }, [avatarUrl])
 
   const saveCompanyProfile = async () => {
     const token = localStorage.getItem('salesroles_token')
@@ -441,14 +449,14 @@ export function DashboardPage() {
   }
 
   return (
-    <Container className="px-4 pt-20 pb-16 md:py-32 md:px-8 space-y-16 animate-fade-in w-full mx-auto">
+    <Container className="px-4 pt-20 pb-16 md:py-32 md:px-8 space-y-8 md:space-y-16 animate-fade-in w-full mx-auto overflow-x-hidden">
       {/* Redirect toast */}
       {redirectToast && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 bg-amber-500/90 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-xl backdrop-blur-sm">
           {redirectToast}
         </div>
       )}
-      <div className="flex flex-col md:flex-row justify-between items-end gap-6">
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Dashboard</h1>
           <p className="text-muted-foreground font-medium text-lg">Welcome back, {profileName || user?.displayName || 'there'}.</p>
@@ -471,7 +479,7 @@ export function DashboardPage() {
 
       {role === 'company' ? (
         <div className="space-y-16">
-          <StatGroup className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-6">
+          <StatGroup className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mb-4 md:mb-6">
             <Stat label="Live Jobs" value={String(stats.liveJobs)} icon={<Briefcase size={20} className="text-primary" />} />
             <Stat label="Total Views" value={String(stats.totalViews)} icon={<Eye size={20} className="text-primary" />} />
             <Stat label="Apply Clicks" value={String(stats.applyClicks)} icon={<MousePointer2 size={20} className="text-primary" />} />
@@ -486,7 +494,7 @@ export function DashboardPage() {
           )}
 
           <Tabs defaultValue="jobs">
-            <div className="overflow-x-auto -mx-1 px-1 pb-1">
+            <div className="overflow-x-auto pb-1 max-w-full">
               <TabsList className="bg-card border border-border p-2 rounded-xl flex flex-nowrap gap-1 w-max min-w-full">
                 <TabsTrigger value="jobs" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
                 <TabsTrigger value="pending" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
@@ -981,7 +989,7 @@ export function DashboardPage() {
 
             <div className="col-span-1 md:col-span-2 space-y-8 w-full min-w-0">
               <Tabs defaultValue="saved">
-                <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex flex-wrap gap-0.5">
+                <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-wrap gap-0.5 w-full">
                   <TabsTrigger value="saved" className="px-4 sm:px-6 font-bold tracking-tight whitespace-nowrap text-sm">Saved Jobs</TabsTrigger>
                   <TabsTrigger value="applied" className="px-4 sm:px-6 font-bold tracking-tight whitespace-nowrap text-sm">Applied {appliedJobs.length > 0 && `(${appliedJobs.length})`}</TabsTrigger>
                   <TabsTrigger value="pro" className="px-4 sm:px-6 font-bold tracking-tight whitespace-nowrap text-sm flex items-center gap-1.5">
