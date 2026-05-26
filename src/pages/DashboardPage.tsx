@@ -66,6 +66,7 @@ export function DashboardPage() {
   })
   const [cpSaving, setCpSaving] = useState(false)
   const [cpToast, setCpToast] = useState<string | null>(null)
+  const [cpLogoUploading, setCpLogoUploading] = useState(false)
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -217,6 +218,34 @@ export function DashboardPage() {
       setTimeout(() => setCpToast(null), 3000)
     } finally {
       setCpSaving(false)
+    }
+  }
+
+  const handleLogoUpload = async (file: File) => {
+    const token = localStorage.getItem('salesroles_token')
+    setCpLogoUploading(true)
+    const formData = new FormData()
+    formData.append('logo', file)
+    try {
+      const res = await fetch('/api/company/upload-logo', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.ok && data.logo_url) {
+        setCompanyProfile(p => ({ ...p, company_logo_url: data.logo_url }))
+        setCpToast('Logo uploaded!')
+        setTimeout(() => setCpToast(null), 3000)
+      } else {
+        setCpToast(data.error || 'Upload failed')
+        setTimeout(() => setCpToast(null), 3000)
+      }
+    } catch {
+      setCpToast('Upload failed — please try again.')
+      setTimeout(() => setCpToast(null), 3000)
+    } finally {
+      setCpLogoUploading(false)
     }
   }
 
@@ -374,13 +403,13 @@ export function DashboardPage() {
           )}
 
           <Tabs defaultValue="jobs">
-            <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex flex-wrap gap-0">
-              <TabsTrigger value="jobs" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
-              <TabsTrigger value="pending" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
-              <TabsTrigger value="candidates" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
-              <TabsTrigger value="expired" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
-              <TabsTrigger value="billing" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
-              <TabsTrigger value="settings" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>
+            <TabsList className="bg-card border border-border p-1 rounded-xl flex w-full">
+              <TabsTrigger value="jobs" className="flex-1 py-2 font-bold tracking-tight text-sm text-center">Active Listings</TabsTrigger>
+              <TabsTrigger value="pending" className="flex-1 py-2 font-bold tracking-tight text-sm text-center">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
+              <TabsTrigger value="candidates" className="flex-1 py-2 font-bold tracking-tight text-sm text-center" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
+              <TabsTrigger value="expired" className="flex-1 py-2 font-bold tracking-tight text-sm text-center">Expired</TabsTrigger>
+              <TabsTrigger value="billing" className="flex-1 py-2 font-bold tracking-tight text-sm text-center">Billing</TabsTrigger>
+              <TabsTrigger value="settings" className="flex-1 py-2 font-bold tracking-tight text-sm text-center">Company Profile</TabsTrigger>
             </TabsList>
 
             {/* Active Listings */}
@@ -562,14 +591,40 @@ export function DashboardPage() {
                     />
                   </div>
 
-                  {/* Logo URL */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">LOGO URL</label>
+                  {/* Logo Upload */}
+                  <div className="space-y-2.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">COMPANY LOGO</label>
+                    {/* Preview */}
+                    {companyProfile.company_logo_url && (
+                      <div className="w-16 h-16 rounded-xl bg-[#0f1629] border border-white/10 overflow-hidden flex items-center justify-center p-1.5">
+                        <img
+                          src={companyProfile.company_logo_url}
+                          alt="Logo preview"
+                          className="w-full h-full object-contain"
+                          onError={e => (e.currentTarget.style.display = 'none')}
+                        />
+                      </div>
+                    )}
+                    {/* Upload button */}
+                    <label className="cursor-pointer flex items-center justify-center gap-2 w-full bg-[#0f1629] border border-white/10 hover:border-emerald-500/50 rounded-xl px-4 py-3 text-sm text-white/50 hover:text-white/80 transition-all">
+                      <input
+                        type="file"
+                        accept=".jpg,.jpeg,.png,.webp"
+                        className="hidden"
+                        onChange={e => { const f = e.target.files?.[0]; if (f) handleLogoUpload(f) }}
+                      />
+                      {cpLogoUploading ? (
+                        <><span className="w-4 h-4 rounded-full border-2 border-emerald-500 border-t-transparent animate-spin" /> Uploading...</>
+                      ) : (
+                        <><Camera size={14} /> Upload Logo (JPG / PNG)</>
+                      )}
+                    </label>
+                    {/* Fallback URL input */}
                     <input
                       type="url"
                       value={companyProfile.company_logo_url}
                       onChange={e => setCompanyProfile(p => ({ ...p, company_logo_url: e.target.value }))}
-                      placeholder="https://yourcompany.com/logo.png"
+                      placeholder="…or paste a logo URL"
                       className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
                     />
                   </div>

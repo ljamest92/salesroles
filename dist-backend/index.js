@@ -861,6 +861,37 @@ app.put('/api/company/profile', async (c) => {
         return c.json({ error: 'Update failed' }, 500);
     }
 });
+app.post('/api/company/upload-logo', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company')
+            return c.json({ error: 'Company account required' }, 403);
+        const formData = await c.req.formData();
+        const file = formData.get('logo');
+        if (!file)
+            return c.json({ error: 'No file' }, 400);
+        const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || 'jpg' : 'jpg';
+        if (!['jpg', 'jpeg', 'png', 'webp'].includes(ext))
+            return c.json({ error: 'Only JPG and PNG files are accepted' }, 400);
+        const filename = `logo-${payload.id}-${Date.now()}.${ext}`;
+        const logosDir = path.join(__dirname, '..', 'uploads', 'logos');
+        await fsPromises.mkdir(logosDir, { recursive: true });
+        const arrayBuffer = await file.arrayBuffer();
+        await fsPromises.writeFile(path.join(logosDir, filename), Buffer.from(arrayBuffer));
+        const logoUrl = `/uploads/logos/${filename}`;
+        await pool.execute('UPDATE users SET company_logo_url = ? WHERE id = ?', [logoUrl, String(payload.id)]);
+        return c.json({ ok: true, logo_url: logoUrl });
+    }
+    catch (err) {
+        console.error('Logo upload error:', err);
+        return c.json({ error: 'Upload failed' }, 500);
+    }
+});
 app.get('/api/company/live-jobs', async (c) => {
     if (!pool)
         return c.json([]);
@@ -1105,8 +1136,23 @@ app.get('/api/candidates', async (c) => {
             params.push(targetRole);
         }
         if (yearsExp) {
-            where += ` AND u.years_experience = ?`;
-            params.push(yearsExp);
+            if (yearsExp === 'Less than 1') {
+                where += ` AND u.years_experience < 1`;
+            }
+            else if (yearsExp === '10+') {
+                where += ` AND u.years_experience >= 10`;
+            }
+            else {
+                const parts = yearsExp.split('-');
+                if (parts.length === 2) {
+                    const minExp = parseInt(parts[0], 10);
+                    const maxExp = parseInt(parts[1], 10);
+                    if (!isNaN(minExp) && !isNaN(maxExp)) {
+                        where += ` AND u.years_experience >= ? AND u.years_experience <= ?`;
+                        params.push(minExp, maxExp);
+                    }
+                }
+            }
         }
         if (availability) {
             where += ` AND u.availability = ?`;
@@ -1555,6 +1601,19 @@ app.get('/uploads/avatars/:filename', (c) => {
         return c.notFound();
     const ext = extname(filename).toLowerCase();
     const mime = ext === '.png' ? 'image/png' : ext === '.gif' ? 'image/gif' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+    const stream = createReadStream(filePath);
+    return new Response(stream, { headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000' } });
+});
+// --- Logo static serving ---
+app.get('/uploads/logos/:filename', (c) => {
+    const filename = c.req.param('filename');
+    if (filename.includes('..') || filename.includes('/'))
+        return c.notFound();
+    const filePath = path.join(__dirname, '..', 'uploads', 'logos', filename);
+    if (!existsSync(filePath))
+        return c.notFound();
+    const ext = extname(filename).toLowerCase();
+    const mime = ext === '.png' ? 'image/png' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
     const stream = createReadStream(filePath);
     return new Response(stream, { headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000' } });
 });
