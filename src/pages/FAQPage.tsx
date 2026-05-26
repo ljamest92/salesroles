@@ -68,6 +68,7 @@ export function FAQPage() {
               {Object.keys(faqs).map((tab) => (
                 <button
                   key={tab}
+                  type="button"
                   onClick={() => setActiveTab(tab)}
                   {...(tab === 'companies' ? { style: { border: 'none', outline: 'none', boxShadow: 'none', background: 'transparent', WebkitAppearance: 'none', appearance: 'none' } } : {})}
                   className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors${tab === 'companies' ? ' border-0 outline-none shadow-none ring-0 bg-transparent' : ''} ${
