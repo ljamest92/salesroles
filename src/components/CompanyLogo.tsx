@@ -5,17 +5,19 @@
  * Every job card, job page, Companies to Watch section, company profile page,
  * and any other logo-rendering surface must import and use this component.
  *
- * The `domain` prop is smart — it auto-detects which of three cases applies:
+ * Logo API: https://logos-api.apistemic.com/domain:{domain}
+ * e.g.      https://logos-api.apistemic.com/domain:stripe.com
  *
- *   1. Direct URL  → starts with "/uploads/" or "http"
- *                    Rendered as-is. Used when a company has uploaded a logo file.
+ * Do NOT change the API URL format without confirming with the API provider first.
  *
- *   2. Domain      → contains "." but no leading slash or protocol
- *                    e.g. "salesforce.com" → https://logos-api.apistemic.com/domain:salesforce.com
+ * The `domain` prop accepts any of:
+ *   - "salesforce.com"            → https://logos-api.apistemic.com/domain:salesforce.com
+ *   - "https://salesforce.com"    → stripped to salesforce.com, then same as above
+ *   - "/uploads/logos/file.png"   → no network request, shows initial-letter avatar
+ *   - null / undefined / ""       → initial-letter avatar
  *
- *   3. Fallback    → null / undefined / empty / failed image load
- *                    Dark navy background (#0f1629) with the first letter of
- *                    the company name in emerald green (#10B981).
+ * If cleanDomain() returns null, the avatar is shown immediately with no network request.
+ * If the image fails to load, onError falls back to the avatar.
  *
  * Sizing is controlled by the parent wrapper — the component fills 100% of
  * its container (w-full h-full). Example:
@@ -23,55 +25,38 @@
  *   <div className="w-12 h-12 rounded-xl overflow-hidden">
  *     <CompanyLogo domain="salesforce.com" name="Salesforce" />
  *   </div>
- *
- * To update the logo API, change LOGO_BASE below. Nothing else in the app
- * needs to be touched.
  */
 import React, { useState } from 'react'
 
-const LOGO_BASE = 'https://logos-api.apistemic.com'
+const LOGO_API = 'https://logos-api.apistemic.com'
 
 interface CompanyLogoProps {
-  /**
-   * Accepts three formats (auto-detected):
-   *   "/uploads/logos/file.png" or "https://…"  → used as direct image src
-   *   "salesforce.com"                           → logos-api.apistemic.com/domain:salesforce.com
-   *   null / undefined                           → initial-letter fallback
-   */
   domain?: string | null
-  /** Used for the alt attribute and the initial-letter fallback character. */
   name: string
-  /** Extra Tailwind classes applied to the <img> only (e.g. "grayscale"). */
   imgClassName?: string
 }
 
 /**
- * Resolve whatever value `domain` holds into a concrete image src URL,
- * or null if nothing usable was supplied.
+ * Strips a domain value to a bare hostname (e.g. "stripe.com").
+ * Returns null for uploaded file paths, blank values, or anything
+ * that doesn't look like a real domain — so no network request is made.
  */
-function resolveLogoSrc(domain?: string | null): string | null {
-  if (!domain) return null
-  const d = domain.trim()
-  if (!d) return null
-
-  // Case 1: direct URL — uploaded file path or full external URL
-  if (d.startsWith('/uploads/') || d.startsWith('http://') || d.startsWith('https://')) {
-    return d
-  }
-
-  // Case 2: bare domain — pass to Apistemic
-  if (d.includes('.')) {
-    return `${LOGO_BASE}/domain:${d}`
-  }
-
-  // Unrecognised format — fall through to initial-letter fallback
-  return null
+function cleanDomain(value?: string | null): string | null {
+  if (!value) return null
+  if (value.startsWith('/uploads/')) return null
+  const stripped = value
+    .replace(/^https?:\/\//, '')
+    .replace(/\/.*$/, '')
+    .trim()
+  if (!stripped || !stripped.includes('.')) return null
+  return stripped
 }
 
 export function CompanyLogo({ domain, name, imgClassName = '' }: CompanyLogoProps) {
   const [failed, setFailed] = useState(false)
 
-  const src = resolveLogoSrc(domain)
+  const clean = cleanDomain(domain)
+  const src = clean ? `${LOGO_API}/domain:${clean}` : null
 
   if (!src || failed) {
     return (
