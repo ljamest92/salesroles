@@ -111,6 +111,10 @@ try {
     pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN profile_slug VARCHAR(100)`).catch(() => { });
     pool.execute(`ALTER TABLE users ADD COLUMN company_name VARCHAR(255)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN company_size VARCHAR(50)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN company_industry VARCHAR(100)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN company_website VARCHAR(500)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN company_logo_url VARCHAR(500)`).catch(() => { });
     pool.execute(`ALTER TABLE users MODIFY COLUMN is_public TINYINT DEFAULT 1`).catch(() => { });
     // Backfill slugs for existing users who have none
     pool.execute(`
@@ -287,7 +291,8 @@ app.get('/api/auth/me', async (c) => {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, cv_filename, avatar_url, is_pro, is_public,
               phone, linkedin_url, target_role, years_experience, skills, target_salary,
-              availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug
+              availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug,
+              company_name, company_website, company_logo_url, company_size, company_industry, bio
        FROM users WHERE id = ?`, [String(payload.id)]);
         const user = rows[0];
         if (!user)
@@ -334,7 +339,13 @@ app.get('/api/auth/me', async (c) => {
             sales_methodology: safeParse(user.sales_methodology),
             current_ote: user.current_ote || null,
             profile_slug: user.profile_slug || null,
-            company_name,
+            // Company profile fields (only populated for role=company)
+            company_name: company_name || user.company_name || null,
+            company_website: user.company_website || null,
+            company_logo_url: user.company_logo_url || null,
+            company_size: user.company_size || null,
+            company_industry: user.company_industry || null,
+            bio: user.bio || null,
         });
     }
     catch {
@@ -554,8 +565,17 @@ app.get('/api/dashboard/stats', async (c) => {
     if (!auth?.startsWith('Bearer '))
         return c.json({ error: 'Unauthorized' }, 401);
     try {
-        await jwtVerify(auth.slice(7), JWT_SECRET);
-        return c.json({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 });
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const [[liveRow], [applyRow]] = await Promise.all([
+            pool.execute("SELECT COUNT(*) as count FROM jobs WHERE company_id = ? AND status = 'live' AND (expires_at IS NULL OR expires_at > NOW())", [userId]),
+            pool.execute(`SELECT COUNT(*) as count FROM applications a
+         JOIN jobs j ON a.job_id = j.id
+         WHERE j.company_id = ?`, [userId]),
+        ]);
+        const liveJobs = liveRow[0]?.count || 0;
+        const applyClicks = applyRow[0]?.count || 0;
+        return c.json({ liveJobs, totalViews: 0, applyClicks, avgCtr: 0 });
     }
     catch {
         return c.json({ error: 'Unauthorized' }, 401);
@@ -784,6 +804,77 @@ app.post('/api/applications', async (c) => {
     }
     catch (err) {
         return c.json({ error: err.message || 'Failed to submit application' }, 500);
+    }
+});
+app.get('/api/company/profile', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const [rows] = await pool.execute(`SELECT name, email, company_name, company_website, company_logo_url,
+              company_size, company_industry, location, bio
+       FROM users WHERE id = ? AND role = 'company'`, [String(payload.id)]);
+        const row = rows[0];
+        if (!row)
+            return c.json({ error: 'Not found' }, 404);
+        return c.json(row);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+app.put('/api/company/profile', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company')
+            return c.json({ error: 'Company account required' }, 403);
+        const data = await c.req.json();
+        await pool.execute(`UPDATE users SET
+        company_name = ?,
+        company_website = ?,
+        company_logo_url = ?,
+        company_size = ?,
+        company_industry = ?,
+        location = ?,
+        bio = ?
+       WHERE id = ?`, [
+            data.company_name || null,
+            data.company_website || null,
+            data.company_logo_url || null,
+            data.company_size || null,
+            data.company_industry || null,
+            data.location || null,
+            data.bio || null,
+            String(payload.id),
+        ]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Update failed' }, 500);
+    }
+});
+app.get('/api/company/live-jobs', async (c) => {
+    if (!pool)
+        return c.json([]);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const [jobs] = await pool.execute("SELECT * FROM jobs WHERE status = 'live' AND company_id = ? AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC", [userId]);
+        return c.json(jobs);
+    }
+    catch {
+        return c.json([]);
     }
 });
 app.get('/api/company/applications', async (c) => {

@@ -58,6 +58,14 @@ export function DashboardPage() {
   const [avatarUrl, setAvatarUrl] = useState('')
   const [profileData, setProfileData] = useState<any>(null)
   const [redirectToast, setRedirectToast] = useState<string | null>(null)
+  // Company-specific state
+  const [liveJobs, setLiveJobs] = useState<any[]>([])
+  const [companyProfile, setCompanyProfile] = useState({
+    company_name: '', company_website: '', company_logo_url: '',
+    company_size: '', company_industry: '', location: '', bio: '',
+  })
+  const [cpSaving, setCpSaving] = useState(false)
+  const [cpToast, setCpToast] = useState<string | null>(null)
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -78,6 +86,26 @@ export function DashboardPage() {
     fetch('/api/company/pending-jobs', { headers: { Authorization: `Bearer ${token}` } })
       .then(r => r.json())
       .then(data => setPendingJobs(Array.isArray(data) ? data : []))
+      .catch(() => {})
+    fetch('/api/company/live-jobs', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => setLiveJobs(Array.isArray(data) ? data : []))
+      .catch(() => {})
+    fetch('/api/company/profile', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (data && !data.error) {
+          setCompanyProfile({
+            company_name: data.company_name || '',
+            company_website: data.company_website || '',
+            company_logo_url: data.company_logo_url || '',
+            company_size: data.company_size || '',
+            company_industry: data.company_industry || '',
+            location: data.location || '',
+            bio: data.bio || '',
+          })
+        }
+      })
       .catch(() => {})
   }, [user, role])
 
@@ -165,6 +193,31 @@ export function DashboardPage() {
       const data = await res.json()
       if (data.ok && data.avatar_url) setAvatarUrl(data.avatar_url)
     } catch {}
+  }
+
+  const saveCompanyProfile = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    setCpSaving(true)
+    try {
+      const res = await fetch('/api/company/profile', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify(companyProfile),
+      })
+      const data = await res.json()
+      if (data.ok) {
+        setCpToast('Company profile saved!')
+        setTimeout(() => setCpToast(null), 3000)
+      } else {
+        setCpToast('Save failed — please try again.')
+        setTimeout(() => setCpToast(null), 3000)
+      }
+    } catch {
+      setCpToast('Save failed — please try again.')
+      setTimeout(() => setCpToast(null), 3000)
+    } finally {
+      setCpSaving(false)
+    }
   }
 
   // Load candidate profile data (cv, pro status)
@@ -313,24 +366,65 @@ export function DashboardPage() {
             <Stat label="Avg. CTR" value={`${stats.avgCtr}%`} icon={<CheckCircle2 size={20} className="text-primary" />} />
           </StatGroup>
 
+          {/* Company profile save toast */}
+          {cpToast && (
+            <div className="fixed bottom-6 right-6 z-50 bg-emerald-600/90 text-white text-sm font-bold px-5 py-3 rounded-xl shadow-xl backdrop-blur-sm">
+              {cpToast}
+            </div>
+          )}
+
           <Tabs defaultValue="jobs">
-            <TabsList className="bg-card border border-border p-1 rounded-xl overflow-x-auto flex-nowrap inline-flex">
-              <TabsTrigger value="jobs" className="px-8 font-bold tracking-tight whitespace-nowrap">Active Listings</TabsTrigger>
-              <TabsTrigger value="pending" className="px-8 font-bold tracking-tight whitespace-nowrap">Pending Approval {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
-              <TabsTrigger value="candidates" className="px-8 font-bold tracking-tight whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
-              <TabsTrigger value="expired" className="px-8 font-bold tracking-tight whitespace-nowrap">Expired / Drafts</TabsTrigger>
-              <TabsTrigger value="billing" className="px-8 font-bold tracking-tight whitespace-nowrap">Billing & Invoices</TabsTrigger>
+            <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex flex-wrap gap-0">
+              <TabsTrigger value="jobs" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
+              <TabsTrigger value="pending" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
+              <TabsTrigger value="candidates" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
+              <TabsTrigger value="expired" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
+              <TabsTrigger value="billing" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
+              <TabsTrigger value="settings" className="px-4 py-2 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>
             </TabsList>
 
+            {/* Active Listings */}
             <TabsContent value="jobs" className="mt-8 space-y-4">
-              <EmptyState
-                icon={<Briefcase size={40} />}
-                title="No Active Listings"
-                description="You haven't posted any job listings yet. Start hiring the top 1% of sales talent today."
-                action={{ label: "Post Your First Job", onClick: () => { window.location.href = '/post-job' } }}
-                className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
-              />
+              {liveJobs.length === 0 ? (
+                <div className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px] flex flex-col items-center text-center gap-6">
+                  <div className="w-16 h-16 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center">
+                    <Briefcase size={28} className="text-emerald-400" />
+                  </div>
+                  <div className="space-y-2">
+                    <h3 className="text-2xl font-black tracking-tighter">You haven't posted any jobs yet</h3>
+                    <p className="text-muted-foreground font-medium max-w-sm">Post your first listing to start reaching the top 1% of sales talent — with full compensation transparency.</p>
+                  </div>
+                  <Link to="/post-job">
+                    <button className="bg-emerald-500 hover:bg-emerald-400 text-white font-black text-xs tracking-widest px-8 py-3.5 rounded-xl transition-colors">
+                      Post Your First Job →
+                    </button>
+                  </Link>
+                </div>
+              ) : (
+                liveJobs.map((job: any) => (
+                  <Card key={job.id} className="p-6 border border-white/5 bg-card/30 rounded-2xl">
+                    <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                      <div className="space-y-1">
+                        <h4 className="font-bold">{job.title}</h4>
+                        <p className="text-sm text-muted-foreground">{job.company_name} · {job.location}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Posted {new Date(job.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                          {job.expires_at && ` · Expires ${new Date(job.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Live</span>
+                        <Link to={`/jobs/${job.id}`}>
+                          <button className="text-xs border border-white/10 text-white/50 hover:text-white px-3 py-1.5 rounded-lg transition-colors">View →</button>
+                        </Link>
+                      </div>
+                    </div>
+                  </Card>
+                ))
+              )}
             </TabsContent>
+
+            {/* Pending */}
             <TabsContent value="pending" className="mt-8 space-y-4">
               {pendingJobs.length === 0 ? (
                 <div className="p-16 text-center">
@@ -356,6 +450,7 @@ export function DashboardPage() {
               )}
             </TabsContent>
 
+            {/* Candidates */}
             <TabsContent value="candidates" className="mt-8 space-y-4">
               {applications.length === 0 ? (
                 <EmptyState
@@ -414,6 +509,7 @@ export function DashboardPage() {
               )}
             </TabsContent>
 
+            {/* Expired */}
             <TabsContent value="expired" className="mt-8">
               <EmptyState
                 icon={<Building2 size={40} />}
@@ -422,6 +518,8 @@ export function DashboardPage() {
                 className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
               />
             </TabsContent>
+
+            {/* Billing */}
             <TabsContent value="billing" className="mt-8">
               <EmptyState
                 icon={<CheckCircle2 size={40} />}
@@ -429,6 +527,116 @@ export function DashboardPage() {
                 description="Your billing history will appear here after your first job listing purchase."
                 className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
               />
+            </TabsContent>
+
+            {/* Company Profile */}
+            <TabsContent value="settings" className="mt-8">
+              <Card className="border border-white/5 bg-card/30 rounded-2xl p-8 max-w-2xl space-y-8">
+                <div>
+                  <h3 className="text-xl font-black tracking-tighter">Company Profile</h3>
+                  <p className="text-sm text-muted-foreground mt-1">This information appears on your job listings and company profile page.</p>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+                  {/* Company Name */}
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">COMPANY NAME</label>
+                    <input
+                      type="text"
+                      value={companyProfile.company_name}
+                      onChange={e => setCompanyProfile(p => ({ ...p, company_name: e.target.value }))}
+                      placeholder="Acme Corp"
+                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+                    />
+                  </div>
+
+                  {/* Website */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">WEBSITE URL</label>
+                    <input
+                      type="url"
+                      value={companyProfile.company_website}
+                      onChange={e => setCompanyProfile(p => ({ ...p, company_website: e.target.value }))}
+                      placeholder="https://yourcompany.com"
+                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+                    />
+                  </div>
+
+                  {/* Logo URL */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">LOGO URL</label>
+                    <input
+                      type="url"
+                      value={companyProfile.company_logo_url}
+                      onChange={e => setCompanyProfile(p => ({ ...p, company_logo_url: e.target.value }))}
+                      placeholder="https://yourcompany.com/logo.png"
+                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+                    />
+                  </div>
+
+                  {/* Company Size */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">COMPANY SIZE</label>
+                    <select
+                      value={companyProfile.company_size}
+                      onChange={e => setCompanyProfile(p => ({ ...p, company_size: e.target.value }))}
+                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none"
+                    >
+                      <option value="">Select size...</option>
+                      {['1–10', '11–50', '51–200', '201–1,000', '1,000–5,000', '5,000+'].map(s => (
+                        <option key={s} value={s}>{s} employees</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Industry */}
+                  <div className="space-y-1.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">INDUSTRY</label>
+                    <select
+                      value={companyProfile.company_industry}
+                      onChange={e => setCompanyProfile(p => ({ ...p, company_industry: e.target.value }))}
+                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none"
+                    >
+                      <option value="">Select industry...</option>
+                      {['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'HR Tech', 'MarTech', 'Cybersecurity', 'Enterprise Software', 'E-commerce', 'Logistics', 'Real Estate Tech', 'InsurTech', 'Consulting', 'Media', 'Other'].map(i => (
+                        <option key={i} value={i}>{i}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Location */}
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">HEADQUARTERS LOCATION</label>
+                    <input
+                      type="text"
+                      value={companyProfile.location}
+                      onChange={e => setCompanyProfile(p => ({ ...p, location: e.target.value }))}
+                      placeholder="London, UK"
+                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+                    />
+                  </div>
+
+                  {/* Description */}
+                  <div className="sm:col-span-2 space-y-1.5">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">SHORT DESCRIPTION</label>
+                    <textarea
+                      value={companyProfile.bio}
+                      onChange={e => setCompanyProfile(p => ({ ...p, bio: e.target.value }))}
+                      placeholder="A brief description of your company, mission, and culture..."
+                      rows={4}
+                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all resize-none"
+                    />
+                  </div>
+                </div>
+
+                <button
+                  onClick={saveCompanyProfile}
+                  disabled={cpSaving}
+                  className="bg-emerald-500 hover:bg-emerald-400 disabled:opacity-50 text-white font-black text-xs tracking-widest px-8 py-3.5 rounded-xl transition-colors"
+                >
+                  {cpSaving ? 'Saving...' : 'Save Changes'}
+                </button>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
