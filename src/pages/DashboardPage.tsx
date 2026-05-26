@@ -76,6 +76,7 @@ export function DashboardPage() {
   const [appliedJobs, setAppliedJobs] = useState<any[]>([])
   const [appliedLoading, setAppliedLoading] = useState(false)
   const [candidateSort, setCandidateSort] = useState('newest')
+  const [candidateStatusFilter, setCandidateStatusFilter] = useState('All')
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -598,18 +599,32 @@ export function DashboardPage() {
                         Download Blinded CSV
                       </button>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <label className="text-[10px] font-black tracking-widest text-white/40">SORT</label>
-                      <select
-                        value={candidateSort}
-                        onChange={e => setCandidateSort(e.target.value)}
-                        className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
-                      >
-                        <option value="newest">Apply date (newest)</option>
-                        <option value="oldest">Apply date (oldest)</option>
-                        <option value="name_az">Name A–Z</option>
-                        <option value="name_za">Name Z–A</option>
-                      </select>
+                    <div className="flex flex-wrap items-center gap-3">
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] font-black tracking-widest text-white/40">FILTER</label>
+                        <select
+                          value={candidateStatusFilter}
+                          onChange={e => setCandidateStatusFilter(e.target.value)}
+                          className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
+                        >
+                          {['All', 'New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <label className="text-[10px] font-black tracking-widest text-white/40">SORT</label>
+                        <select
+                          value={candidateSort}
+                          onChange={e => setCandidateSort(e.target.value)}
+                          className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                        >
+                          <option value="newest">Apply date (newest)</option>
+                          <option value="oldest">Apply date (oldest)</option>
+                          <option value="name_az">Name A–Z</option>
+                          <option value="name_za">Name Z–A</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                   {(() => {
@@ -622,7 +637,13 @@ export function DashboardPage() {
                       'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
                       'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
                     }
-                    const sorted = [...applications].sort((a: any, b: any) => {
+                    const visible = candidateStatusFilter === 'All'
+                      ? [...applications]
+                      : applications.filter((a: any) => {
+                          const s = a.status === 'new' ? 'New' : (a.status || 'New')
+                          return s === candidateStatusFilter
+                        })
+                    const sorted = visible.sort((a: any, b: any) => {
                       if (candidateSort === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
                       if (candidateSort === 'name_az') return (a.candidate_name || '').localeCompare(b.candidate_name || '')
                       if (candidateSort === 'name_za') return (b.candidate_name || '').localeCompare(a.candidate_name || '')

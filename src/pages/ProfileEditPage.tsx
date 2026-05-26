@@ -208,6 +208,7 @@ export function ProfileEditPage() {
           years_in_sales: yearsInSales ? parseInt(yearsInSales) : null,
           total_revenue: totalRevenue,
           current_roles: [], looking_for: [], work_history: [],
+          ...(avatarUrl ? { avatar_url: avatarUrl } : {}),
         }),
       })
       const data = await res.json()

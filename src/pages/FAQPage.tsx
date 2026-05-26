@@ -64,10 +64,10 @@ export function FAQPage() {
       <Container className="max-w-4xl mx-auto">
         <Tabs defaultValue="candidates">
           <div className="mb-12">
-            <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full">
-              <TabsTrigger value="candidates" className="w-full sm:w-auto px-6 sm:px-8 font-bold tracking-tight">For Candidates</TabsTrigger>
-              <TabsTrigger value="companies" className="w-full sm:w-auto px-6 sm:px-8 font-bold tracking-tight">For Companies</TabsTrigger>
-              <TabsTrigger value="about" className="w-full sm:w-auto px-6 sm:px-8 font-bold tracking-tight">About Us</TabsTrigger>
+            <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full gap-0.5">
+              <TabsTrigger value="candidates" className="w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg border-0 outline-none ring-0 focus:outline-none focus-visible:ring-0">For Candidates</TabsTrigger>
+              <TabsTrigger value="companies" className="w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg border-0 outline-none ring-0 focus:outline-none focus-visible:ring-0">For Companies</TabsTrigger>
+              <TabsTrigger value="about" className="w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg border-0 outline-none ring-0 focus:outline-none focus-visible:ring-0">About Us</TabsTrigger>
             </TabsList>
           </div>
 

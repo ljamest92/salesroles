@@ -325,14 +325,43 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
       if (!response.ok) throw new Error('API down')
       const result = await response.json()
 
-      const salesKeywords = ['sales', 'account executive', 'business development', 'sdr', 'account manager', 'revenue', 'representative', 'customer success', 'bdr']
+      const salesKeywords = [
+        'sales', 'account executive', 'ae', 'sdr', 'bdr',
+        'business development', 'account manager', 'sales manager',
+        'sales director', 'vp sales', 'vp of sales', 'revenue',
+        'partnerships', 'sales development', 'inside sales',
+        'field sales', 'enterprise sales', 'representative', 'customer success',
+      ]
+      const allowedLocations = [
+        'united kingdom', 'uk', 'england', 'scotland', 'wales',
+        'united states', 'usa', 'u.s.', 'australia', 'canada',
+        'remote', 'worldwide', 'global', 'anywhere',
+      ]
 
       apiJobs = result.data
-        .filter((job: any) =>
-          salesKeywords.some(keyword => job.title.toLowerCase().includes(keyword))
-        )
+        .filter((job: any) => {
+          // Location: pass if remote flag is set, or location matches allowed list
+          if (job.remote) return true
+          const loc = (job.location || '').toLowerCase()
+          return allowedLocations.some(l => loc.includes(l))
+        })
+        .filter((job: any) => {
+          // Title must match a sales keyword
+          const title = (job.title || '').toLowerCase()
+          return salesKeywords.some(kw => title.includes(kw))
+        })
+        .filter((job: any) => {
+          // Salary required — at least one non-zero value
+          return (job.salary_from && job.salary_from > 0) || (job.salary_to && job.salary_to > 0)
+        })
         .map((job: any) => {
           const domain = extractDomain(job.company_name)
+          const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
+          const salaryStr = job.salary_from && job.salary_to
+            ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
+            : job.salary_from
+              ? `${curr}${Math.round(job.salary_from / 1000)}k+`
+              : null
           return {
             id: job.slug,
             title: toTitleCase(job.title),
@@ -343,10 +372,10 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
             sector: 'Sales',
             seniority: 'Mid-Level',
             description: job.description,
-            base_salary: job.salary || 'Salary Not Disclosed',
-            ote: job.ote || 'Salary Not Disclosed',
+            base_salary: salaryStr || 'Salary Not Disclosed',
+            ote: salaryStr || 'Salary Not Disclosed',
             commission_structure: 'Uncapped commission with accelerators.',
-            currency: 'USD',
+            currency: job.salary_currency || 'USD',
             application_url: job.url,
             contact_email: 'apply@partner.com',
             status: 'live',

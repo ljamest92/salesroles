@@ -507,34 +507,59 @@ app.get('/api/jobs', async (c) => {
   }
 })
 
+const ARBEITNOW_SALES_KEYWORDS = [
+  'sales', 'account executive', 'ae', 'sdr', 'bdr',
+  'business development', 'account manager', 'sales manager',
+  'sales director', 'vp sales', 'vp of sales', 'revenue',
+  'partnerships', 'sales development', 'inside sales',
+  'field sales', 'enterprise sales', 'representative', 'customer success',
+]
+const ARBEITNOW_ALLOWED_LOCATIONS = [
+  'united kingdom', 'uk', 'england', 'scotland', 'wales',
+  'united states', 'usa', 'u.s.', 'australia', 'canada',
+  'remote', 'worldwide', 'global', 'anywhere',
+]
+
 app.get('/api/jobs/external', async (c) => {
   try {
     const res = await fetch('https://arbeitnow.com/api/job-board-api')
     const data = await res.json()
-    const salesJobs = data.data.filter((job: any) =>
-      SALES_KEYWORDS.some(kw =>
+    const salesJobs = data.data.filter((job: any) => {
+      // Location filter
+      if (!job.remote) {
+        const loc = (job.location || '').toLowerCase()
+        if (!ARBEITNOW_ALLOWED_LOCATIONS.some(l => loc.includes(l))) return false
+      }
+      // Sales title/tag filter
+      if (!ARBEITNOW_SALES_KEYWORDS.some(kw =>
         job.title.toLowerCase().includes(kw) ||
         job.tags?.some((t: string) => t.toLowerCase().includes(kw))
-      )
-    )
+      )) return false
+      // Salary required
+      return (job.salary_from && job.salary_from > 0) || (job.salary_to && job.salary_to > 0)
+    })
     const mapped = salesJobs.map((job: any) => {
       const cleanName = (job.company_name || '').replace(LANG_SUFFIX, '').trim()
+      const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
+      const salaryStr = job.salary_from && job.salary_to
+        ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
+        : job.salary_from ? `${curr}${Math.round(job.salary_from / 1000)}k+` : null
       return {
         id: `arbeitnow-${job.slug}`,
         title: job.title,
         company_name: cleanName,
-        company_website: '', // Arbeitnow job URLs are arbeitnow.com links — not the company's site
+        company_website: '',
         location: job.location || 'Remote',
         work_type: job.remote ? 'Remote' : 'On-site',
         sector: 'Sales',
         seniority: 'Mid-Level',
         description: job.description,
-        base_salary: null,
-        ote: null,
+        base_salary: salaryStr,
+        ote: salaryStr,
         apply_url: job.url,
         via_partner: true,
         created_at: job.created_at,
-        domain: '', // Never use arbeitnow.com as the company logo domain
+        domain: '',
       }
     })
     return c.json(mapped)
@@ -1322,13 +1347,14 @@ app.put('/api/candidate/profile', async (c) => {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
     const userId = String(payload.id)
     const data = await c.req.json()
+    const providedAvatar = typeof data.avatar_url === 'string' && data.avatar_url.length > 0 ? data.avatar_url : null
     await pool.execute(
       `UPDATE users SET
         headline=?, location=?, years_in_sales=?, total_revenue=?, companies_closed=?,
         current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
         phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
         target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
-        sales_methodology=?, current_ote=?
+        sales_methodology=?, current_ote=?${providedAvatar ? ', avatar_url=?' : ''}
        WHERE id=?`,
       [
         data.headline || null,
@@ -1353,6 +1379,7 @@ app.put('/api/candidate/profile', async (c) => {
         JSON.stringify(data.deal_sizes || []),
         JSON.stringify(data.sales_methodology || []),
         data.current_ote || null,
+        ...(providedAvatar ? [providedAvatar] : []),
         userId,
       ]
     )
@@ -1984,11 +2011,15 @@ async function syncArbeitnowJobs() {
     const json = await res.json() as any
     const jobs: any[] = Array.isArray(json.data) ? json.data : []
 
-    // Filter for sales-relevant roles
-    const salesKeywords = ['sales', 'account executive', 'account manager', 'bdr', 'sdr', 'business development', 'revenue', 'commercial', 'account director', 'partnership']
+    // Filter: sales keywords + UK/US/AU/CA/Remote only + salary required
     const filtered = jobs.filter(j => {
+      if (!j.remote) {
+        const loc = (j.location || '').toLowerCase()
+        if (!ARBEITNOW_ALLOWED_LOCATIONS.some(l => loc.includes(l))) return false
+      }
       const text = `${j.title} ${j.tags?.join(' ') || ''}`.toLowerCase()
-      return salesKeywords.some(kw => text.includes(kw))
+      if (!ARBEITNOW_SALES_KEYWORDS.some(kw => text.includes(kw))) return false
+      return (j.salary_from && j.salary_from > 0) || (j.salary_to && j.salary_to > 0)
     })
 
     let inserted = 0
@@ -2008,12 +2039,16 @@ async function syncArbeitnowJobs() {
       const description = job.description || ''
       const url = job.url || `https://www.arbeitnow.com/jobs/${job.slug}`
       const workType = job.remote ? 'Remote' : 'On-site'
+      const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
+      const salaryStr = job.salary_from && job.salary_to
+        ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
+        : job.salary_from ? `${curr}${Math.round(job.salary_from / 1000)}k+` : null
 
       try {
         await pool.execute(
-          `INSERT INTO jobs (id, title, company_name, location, work_type, description, status, source, external_id, url, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, 'live', 'arbeitnow', ?, ?, NOW())`,
-          [id, title, companyName, location, workType, description, externalId, url]
+          `INSERT INTO jobs (id, title, company_name, location, work_type, description, status, source, external_id, url, base_salary, ote, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'live', 'arbeitnow', ?, ?, ?, ?, NOW())`,
+          [id, title, companyName, location, workType, description, externalId, url, salaryStr, salaryStr]
         )
         inserted++
       } catch {
