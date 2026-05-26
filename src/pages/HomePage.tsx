@@ -6,6 +6,7 @@ import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
 import { getDomain } from '../utils/getDomain'
+import AnimatedCounter from '../components/AnimatedCounter'
 
 const marqueeCompanies = [
   { name: 'Salesforce', domain: 'salesforce.com' },
@@ -44,7 +45,7 @@ const testimonials = [
 export function HomePage() {
   const [partnerJobs, setPartnerJobs] = useState<Job[]>([])
   const [topCompanies, setTopCompanies] = useState<{name: string, count: number, domain: string | null}[]>([])
-  const [stats, setStats] = useState({ liveRoles: 0, companies: 0, avgOte: '$0' })
+  const [stats, setStats] = useState({ liveRoles: 0, companies: 0, avgOteNum: 0 })
   const [subscribeEmail, setSubscribeEmail] = useState('')
   const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
@@ -95,14 +96,12 @@ export function HomePage() {
           }
           return sum
         }, 0)
-        const avgOteVal = allJobs.length > 0 ? `$${Math.round(totalOte / allJobs.length)}k` : '$0'
-
         console.log(`[HomePage] Live roles fetched: ${allJobs.length}`)
 
         setStats({
           liveRoles: allJobs.length,
           companies: statsCompanyMap.size,
-          avgOte: avgOteVal
+          avgOteNum: allJobs.length > 0 ? Math.round(totalOte / allJobs.length) : 0
         })
 
         let companiesSet = false
@@ -239,17 +238,17 @@ export function HomePage() {
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-card/50 border border-border text-center">
               <Briefcase className="text-primary mb-3" size={28} />
-              <p className="text-4xl font-black tracking-tighter">{stats.liveRoles.toLocaleString()}</p>
+              <p className="text-4xl font-black tracking-tighter"><AnimatedCounter target={stats.liveRoles} /></p>
               <p className="text-sm text-muted-foreground font-bold mt-1">Live Roles</p>
             </div>
             <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-card/50 border border-border text-center">
               <TrendingUp className="text-primary mb-3" size={28} />
-              <p className="text-4xl font-black tracking-tighter">{stats.companies.toLocaleString()}</p>
+              <p className="text-4xl font-black tracking-tighter"><AnimatedCounter target={stats.companies} /></p>
               <p className="text-sm text-muted-foreground font-bold mt-1">Companies Hiring</p>
             </div>
             <div className="flex flex-col items-center justify-center p-6 rounded-2xl bg-card/50 border border-border text-center">
               <DollarSign className="text-primary mb-3" size={28} />
-              <p className="text-4xl font-black tracking-tighter">{stats.avgOte}</p>
+              <p className="text-4xl font-black tracking-tighter"><AnimatedCounter target={stats.avgOteNum} prefix="$" suffix="k" /></p>
               <p className="text-sm text-muted-foreground font-bold mt-1">Average OTE</p>
             </div>
           </div>

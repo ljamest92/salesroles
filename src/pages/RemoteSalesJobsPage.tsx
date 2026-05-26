@@ -11,6 +11,7 @@ import { type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { getDomain } from '../utils/getDomain'
 import { motion } from 'framer-motion'
+import AnimatedCounter from '../components/AnimatedCounter'
 
 const SelectTrigger = UISelectTrigger as any
 const SelectContent = UISelectContent as any
@@ -128,11 +129,11 @@ export function RemoteSalesJobsPage() {
         {!isLoading && (
           <div className="flex gap-4 mt-6 justify-center">
             <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-center">
-              <div className="text-2xl font-bold text-white">{jobs.length}</div>
+              <div className="text-2xl font-bold text-white"><AnimatedCounter target={jobs.length} /></div>
               <div className="text-white/50 text-sm">Remote Roles</div>
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl px-6 py-4 text-center">
-              <div className="text-2xl font-bold text-emerald-400">{avgOTE > 0 ? `$${avgOTE}k` : '—'}</div>
+              <div className="text-2xl font-bold text-emerald-400">{avgOTE > 0 ? <AnimatedCounter target={avgOTE} prefix="$" suffix="k" /> : '—'}</div>
               <div className="text-white/50 text-sm">Average OTE</div>
             </div>
           </div>

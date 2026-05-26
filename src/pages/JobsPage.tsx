@@ -11,11 +11,10 @@ import {
   SelectContent as UISelectContent,
   SelectItem as UISelectItem,
   Skeleton,
-  StatGroup,
-  Stat,
   EmptyState,
   toast
 } from '@blinkdotnew/ui'
+import AnimatedCounter from '../components/AnimatedCounter'
 import { Search, MapPin, Briefcase, SlidersHorizontal, Building2, ShieldAlert, Share2 } from 'lucide-react'
 import { type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
@@ -35,7 +34,7 @@ export function JobsPage() {
   const [workTypeFilters, setWorkTypeFilters] = useState<string[]>([])
   const [seniorityFilters, setSeniorityFilters] = useState<string[]>([])
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
-  const [stats, setStats] = useState({ liveRoles: 0, avgOte: '$0' })
+  const [stats, setStats] = useState({ liveRoles: 0, avgOteNum: 0 })
   const [reportingJobId, setReportingJobId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('latest')
   const [showFilters, setShowFilters] = useState(false)
@@ -101,7 +100,7 @@ export function JobsPage() {
 
         setStats({
           liveRoles: unique.length,
-          avgOte: unique.length > 0 ? `$${Math.round(totalOte / unique.length)}k` : '$0'
+          avgOteNum: unique.length > 0 ? Math.round(totalOte / unique.length) : 0
         })
         setIsLoading(false)
       } catch (err) {
@@ -169,10 +168,16 @@ export function JobsPage() {
         </div>
         <Card className="p-8 bg-card/50 border border-white/5 backdrop-blur-xl w-full md:w-auto min-w-[260px] shrink-0 shadow-2xl relative group">
           <div className="absolute top-0 left-0 w-1 h-full bg-primary rounded-l-full" />
-          <StatGroup className="flex gap-12">
-            <Stat label="Live Roles" value={stats.liveRoles.toString()} />
-            <Stat label="Average OTE" value={stats.avgOte} />
-          </StatGroup>
+          <div className="flex gap-12">
+            <div className="space-y-1">
+              <p className="text-2xl font-black tracking-tighter"><AnimatedCounter target={stats.liveRoles} /></p>
+              <p className="text-xs text-muted-foreground font-bold tracking-widest">Live Roles</p>
+            </div>
+            <div className="space-y-1">
+              <p className="text-2xl font-black tracking-tighter"><AnimatedCounter target={stats.avgOteNum} prefix="$" suffix="k" /></p>
+              <p className="text-xs text-muted-foreground font-bold tracking-widest">Average OTE</p>
+            </div>
+          </div>
         </Card>
       </div>
 
