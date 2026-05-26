@@ -23,6 +23,7 @@ export interface Job {
   is_partner?: boolean
   perks?: string[]
   company_description?: string
+  source_tag?: string
 }
 
 const CACHE_KEY = 'salesroles_jobs_cache_v2'
@@ -309,6 +310,192 @@ export function parseOteValue(oteString: string): number {
   return num
 }
 
+// Regex word-boundary patterns for precise sales title matching.
+// Test: "Field Engineer" → false (no pattern fires)
+// Test: "Field Sales Manager" → true (\bsales\b matches "Sales")
+const SALES_PATTERNS: RegExp[] = [
+  /\bsales\b/i,
+  /\bae\b/i,
+  /\bsdr\b/i,
+  /\bbdr\b/i,
+  /\baccount executive\b/i,
+  /\bbusiness development\b/i,
+  /\baccount manager\b/i,
+  /\bsales manager\b/i,
+  /\bsales director\b/i,
+  /\bvp of sales\b/i,
+  /\bvp sales\b/i,
+  /\bhead of sales\b/i,
+  /\brevenue\b/i,
+  /\bpartnership\b/i,
+  /\bsales development\b/i,
+  /\binside sales\b/i,
+  /\bfield sales\b/i,
+  /\benterprise sales\b/i,
+]
+
+function isSalesTitle(title: string): boolean {
+  return SALES_PATTERNS.some(p => p.test(title))
+}
+
+const ARBEITNOW_ALLOWED_LOCATIONS = [
+  'united kingdom', 'uk', 'england', 'scotland', 'wales',
+  'united states', 'usa', 'u.s.', 'australia', 'canada',
+  'remote', 'worldwide', 'global', 'anywhere',
+]
+
+async function fetchArbeitnowJobs(): Promise<Job[]> {
+  try {
+    const response = await fetch('https://arbeitnow.com/api/job-board-api')
+    if (!response.ok) throw new Error('API down')
+    const result = await response.json()
+
+    return result.data
+      .filter((job: any) => {
+        if (job.remote) return true
+        const loc = (job.location || '').toLowerCase()
+        return ARBEITNOW_ALLOWED_LOCATIONS.some(l => loc.includes(l))
+      })
+      .filter((job: any) => isSalesTitle(job.title || ''))
+      .filter((job: any) => (job.salary_from && job.salary_from > 0) || (job.salary_to && job.salary_to > 0))
+      .map((job: any) => {
+        const domain = extractDomain(job.company_name)
+        const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
+        const salaryStr = job.salary_from && job.salary_to
+          ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
+          : job.salary_from
+            ? `${curr}${Math.round(job.salary_from / 1000)}k+`
+            : null
+        return {
+          id: job.slug,
+          title: toTitleCase(job.title),
+          company: toTitleCase(job.company_name),
+          domain,
+          location: toTitleCase(job.location),
+          job_type: job.remote ? 'Remote' : 'On-site',
+          sector: 'Sales',
+          seniority: 'Mid-Level',
+          description: job.description,
+          base_salary: salaryStr || 'Salary Not Disclosed',
+          ote: salaryStr || 'Salary Not Disclosed',
+          commission_structure: 'Uncapped commission with accelerators.',
+          currency: job.salary_currency || 'USD',
+          application_url: job.url,
+          contact_email: 'apply@partner.com',
+          status: 'live',
+          featured: false,
+          created_at: new Date().toISOString(),
+          is_partner: true,
+          source_tag: 'Via Arbeitnow',
+        } as Job
+      })
+  } catch {
+    console.warn('Arbeitnow API unavailable')
+    return []
+  }
+}
+
+async function fetchAdzunaJobs(): Promise<Job[]> {
+  const appId = import.meta.env.VITE_ADZUNA_APP_ID
+  const appKey = import.meta.env.VITE_ADZUNA_APP_KEY
+  if (!appId || !appKey) return []
+
+  const countries = ['gb', 'us', 'au', 'ca']
+  const currencyMap: Record<string, string> = { gb: '£', us: '$', au: 'A$', ca: 'C$' }
+  const currencyCodeMap: Record<string, string> = { gb: 'GBP', us: 'USD', au: 'AUD', ca: 'CAD' }
+
+  const settled = await Promise.allSettled(
+    countries.map(country =>
+      fetch(
+        `https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=20&what=sales&salary_include_unknown=0`
+      )
+        .then(r => (r.ok ? r.json() : { results: [] }))
+        .then((data: any) => ({ country, results: (data.results || []) as any[] }))
+    )
+  )
+
+  const jobs: Job[] = []
+  for (const result of settled) {
+    if (result.status !== 'fulfilled') continue
+    const { country, results: countryJobs } = result.value
+    const curr = currencyMap[country]
+    const currCode = currencyCodeMap[country]
+
+    for (const job of countryJobs) {
+      if (!isSalesTitle(job.title || '')) continue
+
+      const salaryStr = job.salary_min && job.salary_max
+        ? `${curr}${Math.round(job.salary_min / 1000)}k – ${curr}${Math.round(job.salary_max / 1000)}k`
+        : job.salary_min
+          ? `${curr}${Math.round(job.salary_min / 1000)}k+`
+          : null
+      if (!salaryStr) continue
+
+      jobs.push({
+        id: `adzuna-${job.id}`,
+        title: toTitleCase(job.title || ''),
+        company: toTitleCase(job.company?.display_name || 'Unknown'),
+        domain: extractDomain(job.company?.display_name || ''),
+        location: toTitleCase(job.location?.display_name || 'Unknown'),
+        job_type: 'On-site',
+        sector: job.category?.label || 'Sales',
+        seniority: 'Mid-Level',
+        description: job.description || '',
+        base_salary: salaryStr,
+        ote: salaryStr,
+        commission_structure: 'Commission structure available on application.',
+        currency: currCode,
+        application_url: job.redirect_url || '',
+        contact_email: 'apply@partner.com',
+        status: 'live',
+        featured: false,
+        created_at: job.created || new Date().toISOString(),
+        is_partner: true,
+        source_tag: 'Via Adzuna',
+      })
+    }
+  }
+
+  return jobs
+}
+
+async function fetchRemotiveJobs(): Promise<Job[]> {
+  try {
+    const res = await fetch('https://remotive.com/api/remote-jobs?category=sales')
+    if (!res.ok) throw new Error('Remotive API down')
+    const data = await res.json()
+
+    return (data.jobs || [])
+      .filter((job: any) => typeof job.salary === 'string' && job.salary.trim() !== '')
+      .filter((job: any) => isSalesTitle(job.title || ''))
+      .map((job: any) => ({
+        id: `remotive-${job.id}`,
+        title: toTitleCase(job.title || ''),
+        company: toTitleCase(job.company_name || 'Unknown'),
+        domain: extractDomain(job.company_name || ''),
+        location: 'Remote (Global)',
+        job_type: 'Remote',
+        sector: 'Sales',
+        seniority: 'Mid-Level',
+        description: job.description || '',
+        base_salary: job.salary,
+        ote: job.salary,
+        commission_structure: 'Commission structure available on application.',
+        currency: 'USD',
+        application_url: job.url || '',
+        contact_email: 'apply@partner.com',
+        status: 'live',
+        featured: false,
+        created_at: job.publication_date || new Date().toISOString(),
+        is_partner: true,
+        source_tag: 'Via Remotive',
+      } as Job))
+  } catch {
+    console.warn('Remotive API unavailable')
+    return []
+  }
+}
+
 export async function fetchPartnerJobs(): Promise<Job[]> {
   try {
     const cached = localStorage.getItem(CACHE_KEY)
@@ -319,76 +506,13 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
       }
     }
 
-    let apiJobs: Job[] = []
-    try {
-      const response = await fetch('https://arbeitnow.com/api/job-board-api')
-      if (!response.ok) throw new Error('API down')
-      const result = await response.json()
+    const [arbeitnowJobs, adzunaJobs, remotiveJobs] = await Promise.all([
+      fetchArbeitnowJobs(),
+      fetchAdzunaJobs(),
+      fetchRemotiveJobs(),
+    ])
 
-      const salesKeywords = [
-        'sales', 'account executive', 'ae', 'sdr', 'bdr',
-        'business development', 'account manager', 'sales manager',
-        'sales director', 'vp sales', 'vp of sales', 'revenue',
-        'partnerships', 'sales development', 'inside sales',
-        'field sales', 'enterprise sales', 'representative', 'customer success',
-      ]
-      const allowedLocations = [
-        'united kingdom', 'uk', 'england', 'scotland', 'wales',
-        'united states', 'usa', 'u.s.', 'australia', 'canada',
-        'remote', 'worldwide', 'global', 'anywhere',
-      ]
-
-      apiJobs = result.data
-        .filter((job: any) => {
-          // Location: pass if remote flag is set, or location matches allowed list
-          if (job.remote) return true
-          const loc = (job.location || '').toLowerCase()
-          return allowedLocations.some(l => loc.includes(l))
-        })
-        .filter((job: any) => {
-          // Title must match a sales keyword
-          const title = (job.title || '').toLowerCase()
-          return salesKeywords.some(kw => title.includes(kw))
-        })
-        .filter((job: any) => {
-          // Salary required — at least one non-zero value
-          return (job.salary_from && job.salary_from > 0) || (job.salary_to && job.salary_to > 0)
-        })
-        .map((job: any) => {
-          const domain = extractDomain(job.company_name)
-          const curr = job.salary_currency === 'GBP' ? '£' : job.salary_currency === 'EUR' ? '€' : '$'
-          const salaryStr = job.salary_from && job.salary_to
-            ? `${curr}${Math.round(job.salary_from / 1000)}k – ${curr}${Math.round(job.salary_to / 1000)}k`
-            : job.salary_from
-              ? `${curr}${Math.round(job.salary_from / 1000)}k+`
-              : null
-          return {
-            id: job.slug,
-            title: toTitleCase(job.title),
-            company: toTitleCase(job.company_name),
-            domain,
-            location: toTitleCase(job.location),
-            job_type: job.remote ? 'Remote' : 'On-site',
-            sector: 'Sales',
-            seniority: 'Mid-Level',
-            description: job.description,
-            base_salary: salaryStr || 'Salary Not Disclosed',
-            ote: salaryStr || 'Salary Not Disclosed',
-            commission_structure: 'Uncapped commission with accelerators.',
-            currency: job.salary_currency || 'USD',
-            application_url: job.url,
-            contact_email: 'apply@partner.com',
-            status: 'live',
-            featured: false,
-            created_at: new Date().toISOString(),
-            is_partner: true
-          }
-        })
-    } catch {
-      console.warn('Partner API unavailable — seed data only')
-    }
-
-    const combined = [...SEED_JOBS, ...apiJobs]
+    const combined = [...SEED_JOBS, ...arbeitnowJobs, ...adzunaJobs, ...remotiveJobs]
 
     const uniqueById = new Map<string, Job>()
     combined.forEach(job => {
@@ -398,10 +522,18 @@ export async function fetchPartnerJobs(): Promise<Job[]> {
     const uniqueByTitleCompany = new Map<string, Job>()
     uniqueById.forEach(job => {
       const key = `${job.title.toLowerCase()}-${job.company.toLowerCase()}`
-      if (!uniqueByTitleCompany.has(key)) uniqueByTitleCompany.set(key, job)
+      if (!uniqueByTitleCompany.has(key)) {
+        uniqueByTitleCompany.set(key, job)
+      } else {
+        // Keep whichever entry has real salary data
+        const existing = uniqueByTitleCompany.get(key)!
+        if (existing.base_salary === 'Salary Not Disclosed' && job.base_salary !== 'Salary Not Disclosed') {
+          uniqueByTitleCompany.set(key, job)
+        }
+      }
     })
 
-    const uniqueJobs = Array.from(uniqueByTitleCompany.values()) as Job[];
+    const uniqueJobs = Array.from(uniqueByTitleCompany.values()) as Job[]
 
     localStorage.setItem(CACHE_KEY, JSON.stringify({
       data: uniqueJobs,

@@ -1,25 +1,25 @@
-import React from 'react'
-import { 
-  Container, 
-  Card, 
-  Badge, 
-  Accordion, 
-  AccordionItem, 
-  AccordionTrigger, 
-  AccordionContent, 
-  Tabs as UITabs, 
-  TabsList as UITabsList, 
-  TabsTrigger as UITabsTrigger, 
-  TabsContent as UITabsContent 
+import React, { useState } from 'react'
+import {
+  Container,
+  Card,
+  Badge,
+  Tabs as UITabs,
+  TabsContent as UITabsContent
 } from '@blinkdotnew/ui'
 
 const Tabs = UITabs as any;
-const TabsList = UITabsList as any;
-const TabsTrigger = UITabsTrigger as any;
 const TabsContent = UITabsContent as any;
 
 export function FAQPage() {
-  const faqs = {
+  const [activeTab, setActiveTab] = useState('candidates')
+
+  const tabLabels: Record<string, string> = {
+    candidates: 'For Candidates',
+    companies: 'For Companies',
+    about: 'About Us',
+  }
+
+  const faqs: Record<string, { q: string; a: string }[]> = {
     candidates: [
       { q: "Is it free to find and apply for jobs on SalesRoles.co?", a: "Yes, SalesRoles.co is completely free for candidates. You can browse all listings, create a profile, save jobs, and apply at no cost." },
       { q: "How do job alerts work?", a: "Sign up for job alerts and we will email you every Monday morning with new roles matching your preferences including role type, location, and salary range." },
@@ -62,13 +62,23 @@ export function FAQPage() {
       </Container>
 
       <Container className="max-w-4xl mx-auto">
-        <Tabs defaultValue="candidates">
+        <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="mb-12">
-            <TabsList className="bg-card border border-border p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full gap-0.5">
-              <TabsTrigger value="candidates" className="w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg border-0 outline-none ring-0 focus:outline-none focus-visible:ring-0">For Candidates</TabsTrigger>
-              <TabsTrigger value="companies" className="w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg border-0 outline-none ring-0 focus:outline-none focus-visible:ring-0">For Companies</TabsTrigger>
-              <TabsTrigger value="about" className="w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg border-0 outline-none ring-0 focus:outline-none focus-visible:ring-0">About Us</TabsTrigger>
-            </TabsList>
+            <div className="bg-card border border-border p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full gap-0.5">
+              {Object.keys(faqs).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveTab(tab)}
+                  className={`w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors ${
+                    activeTab === tab
+                      ? 'bg-background text-foreground shadow-sm'
+                      : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  {tabLabels[tab]}
+                </button>
+              ))}
+            </div>
           </div>
 
           {Object.entries(faqs).map(([category, items]) => (
