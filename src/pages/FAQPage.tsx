@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useRef, useEffect } from 'react'
 import {
   Container,
   Card,
@@ -11,7 +11,17 @@ const Tabs = UITabs as any;
 const TabsContent = UITabsContent as any;
 
 export function FAQPage() {
-  const [activeTab, setActiveTab] = useState('candidates')
+  const [activeTab, setActiveTab] = useState('companies')
+  const tabScrollRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (tabScrollRef.current) {
+      const activeEl = tabScrollRef.current.children[1] as HTMLElement
+      if (activeEl) {
+        tabScrollRef.current.scrollLeft = activeEl.offsetLeft - tabScrollRef.current.clientWidth / 2 + activeEl.clientWidth / 2
+      }
+    }
+  }, [])
 
   const tabLabels: Record<string, string> = {
     candidates: 'For Candidates',
@@ -64,20 +74,43 @@ export function FAQPage() {
       <Container className="max-w-4xl mx-auto">
         <Tabs value={activeTab} onValueChange={setActiveTab}>
           <div className="mb-12">
-            <div className="bg-card p-1 rounded-xl flex flex-col sm:flex-row sm:justify-center w-full gap-0.5 sm:border sm:border-border">
-              {Object.keys(faqs).map((tab) => (
+            {/* Mobile: horizontal scrollable pills */}
+            <div
+              ref={tabScrollRef}
+              className="flex flex-row overflow-x-auto gap-3 w-full sm:hidden [&::-webkit-scrollbar]:hidden"
+              style={{ WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}
+            >
+              {['candidates', 'companies', 'about'].map((tab) => (
                 <div
                   key={tab}
                   onClick={() => setActiveTab(tab)}
-                  className={`cursor-pointer w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors ${
+                  className={`shrink-0 cursor-pointer px-5 py-2 rounded-full border text-sm font-medium transition-colors ${
                     activeTab === tab
-                      ? 'bg-background text-foreground shadow-sm'
-                      : 'text-muted-foreground hover:text-foreground'
+                      ? 'bg-emerald-500 text-white border-emerald-500'
+                      : 'bg-transparent text-muted-foreground border-border'
                   }`}
                 >
                   {tabLabels[tab]}
                 </div>
               ))}
+            </div>
+            {/* Desktop: segmented control */}
+            <div className="hidden sm:flex">
+              <div className="bg-card p-1 rounded-xl flex sm:flex-row sm:justify-center w-full gap-0.5 sm:border sm:border-border">
+                {Object.keys(faqs).map((tab) => (
+                  <div
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`cursor-pointer w-full sm:w-auto px-6 sm:px-8 py-2.5 font-bold tracking-tight text-sm rounded-lg transition-colors ${
+                      activeTab === tab
+                        ? 'bg-background text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
+                  >
+                    {tabLabels[tab]}
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 
