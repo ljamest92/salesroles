@@ -40,6 +40,7 @@ export function JobsPage() {
   const [reportingJobId, setReportingJobId] = useState<string | null>(null)
   const [sortBy, setSortBy] = useState('latest')
   const [showFilters, setShowFilters] = useState(false)
+  const [selectedOTERange, setSelectedOTERange] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
 
   useEffect(() => {
@@ -123,6 +124,13 @@ export function JobsPage() {
     setWorkTypeFilters([])
     setSeniorityFilters([])
     setSectorFilters([])
+    setSelectedOTERange('')
+  }
+
+  const parseOTE = (ote: any): number => {
+    if (!ote) return 0
+    if (typeof ote === 'number') return ote
+    return parseInt(String(ote).replace(/\D/g, '')) || 0
   }
 
   const filteredJobs = jobs.filter(job => {
@@ -136,7 +144,20 @@ export function JobsPage() {
     const matchesWorkType = workTypeFilters.length === 0 || workTypeFilters.includes(job.job_type)
     const matchesSeniority = seniorityFilters.length === 0 || seniorityFilters.includes(job.seniority)
     const matchesSector = sectorFilters.length === 0 || sectorFilters.includes(job.sector)
-    return matchesSearch && matchesLocation && matchesWorkType && matchesSeniority && matchesSector
+    const matchesOTE = !selectedOTERange || (() => {
+      const ote = parseOTE(job.ote)
+      const ranges: Record<string, [number, number]> = {
+        '$50k – $100k': [50000, 100000],
+        '$100k – $150k': [100000, 150000],
+        '$150k – $200k': [150000, 200000],
+        '$200k – $300k': [200000, 300000],
+        '$300k+': [300000, Infinity],
+      }
+      const range = ranges[selectedOTERange]
+      if (!range) return true
+      return ote >= range[0] && ote <= range[1]
+    })()
+    return matchesSearch && matchesLocation && matchesWorkType && matchesSeniority && matchesSector && matchesOTE
   })
 
   const sortedJobs = [...filteredJobs].sort((a, b) => {
@@ -158,7 +179,7 @@ export function JobsPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, locationQuery, workTypeFilters, seniorityFilters, sectorFilters, sortBy])
+  }, [searchQuery, locationQuery, workTypeFilters, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -283,15 +304,17 @@ export function JobsPage() {
 
             <div className="space-y-3">
               <label className="text-xs font-bold tracking-wider text-muted-foreground">OTE Range</label>
-              <Select>
+              <Select value={selectedOTERange} onValueChange={setSelectedOTERange}>
                 <SelectTrigger className="w-full bg-secondary border-border">
-                  <SelectValue placeholder="Select Range" />
+                  <SelectValue placeholder="All OTE Ranges" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="0-50k">$0 – $50k</SelectItem>
-                  <SelectItem value="50-100k">$50k – $100k</SelectItem>
-                  <SelectItem value="100-200k">$100k – $200k</SelectItem>
-                  <SelectItem value="200k+">$200k+</SelectItem>
+                  <SelectItem value="">All OTE Ranges</SelectItem>
+                  <SelectItem value="$50k – $100k">$50k – $100k</SelectItem>
+                  <SelectItem value="$100k – $150k">$100k – $150k</SelectItem>
+                  <SelectItem value="$150k – $200k">$150k – $200k</SelectItem>
+                  <SelectItem value="$200k – $300k">$200k – $300k</SelectItem>
+                  <SelectItem value="$300k+">$300k+</SelectItem>
                 </SelectContent>
               </Select>
             </div>
