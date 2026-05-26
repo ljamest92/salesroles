@@ -132,7 +132,7 @@ export function AppLayout() {
                 © {new Date().getFullYear()} SalesRoles.co. Built for Sales Professionals.
               </p>
               <p className="text-[10px] text-muted-foreground/25">
-                <a href="https://logos-api.apistemic.com" target="_blank" rel="noopener noreferrer" className="hover:text-muted-foreground/50 transition-colors">Logos by apistemic</a>
+                <a href="https://www.logo.dev" target="_blank" rel="noopener noreferrer" className="text-white/30 hover:text-white/50 text-xs transition-colors">Logos provided by Logo.dev</a>
               </p>
             </div>
             <div className="flex gap-8">
