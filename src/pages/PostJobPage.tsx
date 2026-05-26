@@ -109,6 +109,20 @@ export function PostJobPage() {
     }
   }
 
+  const handleProceedToPayment = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) { setStep(3); return }
+    try {
+      const res = await fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      const userData = await res.json()
+      if (userData.is_pro) {
+        await handleTestSubmit()
+        return
+      }
+    } catch {}
+    setStep(3)
+  }
+
   const handleCheckout = async () => {
     setIsSubmitting(true)
     setPaymentError('')
@@ -455,7 +469,7 @@ export function PostJobPage() {
 
           <div className="flex justify-between">
             <Button variant="ghost" className="font-bold" onClick={() => setStep(1)}>Back</Button>
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-12" onClick={() => setStep(3)}>Continue to Checkout</Button>
+            <Button size="lg" className="bg-primary text-primary-foreground font-black px-12" onClick={handleProceedToPayment}>Continue to Checkout</Button>
           </div>
         </div>
       )}

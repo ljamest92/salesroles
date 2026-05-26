@@ -36,6 +36,8 @@ export function ProfileEditPage() {
   const [lookingFor, setLookingFor] = useState<string[]>([])
   const [workHistory, setWorkHistory] = useState<WorkEntry[]>([])
   const [isPublic, setIsPublic] = useState(false)
+  const [cvFilename, setCvFilename] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
@@ -56,6 +58,8 @@ export function ProfileEditPage() {
         setCompaniesClosed(data.companies_closed != null ? String(data.companies_closed) : '')
         setBio(data.bio || '')
         setIsPublic(!!data.is_public)
+        if (data.cv_filename) setCvFilename(data.cv_filename)
+        if (data.avatar_url) setAvatarUrl(data.avatar_url)
         try { setCurrentRoles(JSON.parse(data.current_roles || '[]')) } catch {}
         try { setLookingFor(JSON.parse(data.looking_for || '[]')) } catch {}
         try { setWorkHistory(JSON.parse(data.work_history || '[]')) } catch {}
@@ -63,6 +67,49 @@ export function ProfileEditPage() {
       })
       .catch(() => setLoaded(true))
   }, [user])
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const token = localStorage.getItem(TOKEN_KEY)
+    const fd = new FormData()
+    fd.append('avatar', file)
+    const res = await fetch('/api/candidate/upload-avatar', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    }).catch(() => null)
+    if (res?.ok) {
+      const data = await res.json()
+      if (data.ok) setAvatarUrl(data.avatar_url)
+    }
+  }
+
+  const handleDeleteCV = async () => {
+    const token = localStorage.getItem(TOKEN_KEY)
+    await fetch('/api/candidate/delete-cv', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {})
+    setCvFilename('')
+  }
+
+  const handleCVUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const token = localStorage.getItem(TOKEN_KEY)
+    const fd = new FormData()
+    fd.append('cv', file)
+    const res = await fetch('/api/candidate/upload-cv', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: fd,
+    }).catch(() => null)
+    if (res?.ok) {
+      const data = await res.json()
+      if (data.ok) setCvFilename(data.filename)
+    }
+  }
 
   const toggleTag = (arr: string[], val: string, set: (v: string[]) => void) => {
     set(arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val])
@@ -150,6 +197,41 @@ export function ProfileEditPage() {
 
       <Card className="p-8 border border-white/5 bg-card/50 space-y-6 rounded-[32px]">
         <h3 className="font-bold tracking-wider text-sm text-muted-foreground">Basic Info</h3>
+
+        {/* Headshot */}
+        <div className="flex items-center gap-4">
+          <div className="w-20 h-20 rounded-full bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
+            {avatarUrl ? (
+              <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Headshot" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-white/30 text-2xl font-bold">{name?.[0]?.toUpperCase() || '?'}</span>
+            )}
+          </div>
+          <label className="cursor-pointer text-sm text-emerald-400 hover:text-emerald-300 transition-colors">
+            <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />
+            {avatarUrl ? 'Change Photo' : 'Upload Photo'}
+          </label>
+        </div>
+
+        {/* CV management */}
+        <div className="space-y-2">
+          <label className={labelCls}>CV / RESUME</label>
+          {cvFilename ? (
+            <div className="flex items-center gap-3 bg-white/5 border border-white/10 rounded-xl px-4 py-3">
+              <span className="text-sm text-white/70 flex-1 truncate">{cvFilename}</span>
+              <button onClick={handleDeleteCV} className="text-red-400/60 hover:text-red-400 text-xs transition-colors shrink-0">Remove</button>
+              <label className="cursor-pointer text-xs text-emerald-400 hover:text-emerald-300 transition-colors shrink-0">
+                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVUpload} />
+                Replace
+              </label>
+            </div>
+          ) : (
+            <label className="cursor-pointer flex items-center gap-2 border border-dashed border-white/20 rounded-xl px-4 py-3 hover:border-emerald-500/50 transition-colors">
+              <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={handleCVUpload} />
+              <span className="text-sm text-white/40">Upload CV (PDF, DOC, DOCX)</span>
+            </label>
+          )}
+        </div>
 
         <div className="space-y-2">
           <label className={labelCls}>FULL NAME</label>

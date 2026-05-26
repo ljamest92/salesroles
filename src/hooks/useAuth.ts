@@ -14,12 +14,24 @@ export function useAuth() {
   const [user, setUser] = useState<AuthUser | null>(() => {
     try {
       const token = localStorage.getItem(TOKEN_KEY)
-      if (token) {
-        const payload = JSON.parse(atob(token.split('.')[1]))
-        return payload as AuthUser
+      if (!token) return null
+      // base64url → base64 so atob works with jose-issued JWTs
+      const base64 = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')
+      const payload = JSON.parse(atob(base64))
+      if (payload.exp && payload.exp * 1000 < Date.now()) {
+        localStorage.removeItem(TOKEN_KEY)
+        localStorage.removeItem(STORAGE_KEY)
+        return null
       }
+      // Merge with stored user to recover displayName
       const stored = localStorage.getItem(STORAGE_KEY)
-      return stored ? JSON.parse(stored) : null
+      if (stored) {
+        try {
+          const storedUser = JSON.parse(stored)
+          return { ...payload, displayName: storedUser.displayName || '' } as AuthUser
+        } catch {}
+      }
+      return payload as AuthUser
     } catch {
       return null
     }

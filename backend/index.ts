@@ -92,6 +92,7 @@ try {
   pool.execute(`ALTER TABLE users ADD COLUMN work_history TEXT`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN is_public TINYINT DEFAULT 0`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN is_pro TINYINT DEFAULT 0`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN avatar_url VARCHAR(500)`).catch(() => {})
   pool.execute(`
     CREATE TABLE IF NOT EXISTS profile_views (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -256,10 +257,24 @@ app.get('/api/auth/me', async (c) => {
 
   try {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
-    const [rows] = await pool.execute('SELECT id, name, email, role FROM users WHERE id = ?', [String(payload.id)]) as any[]
+    const [rows] = await pool.execute(
+      'SELECT id, name, email, role, headline, cv_filename, avatar_url, is_pro, is_public FROM users WHERE id = ?',
+      [String(payload.id)]
+    ) as any[]
     const user = rows[0]
     if (!user) return c.json({ error: 'User not found' }, 404)
-    return c.json({ user: { id: user.id.toString(), email: user.email, displayName: user.name, role: user.role } })
+    return c.json({
+      id: user.id.toString(),
+      email: user.email,
+      name: user.name,
+      displayName: user.name,
+      role: user.role,
+      headline: user.headline || null,
+      cv_filename: user.cv_filename || null,
+      avatar_url: user.avatar_url || null,
+      is_pro: !!user.is_pro,
+      is_public: !!user.is_public,
+    })
   } catch {
     return c.json({ error: 'Invalid token' }, 401)
   }
@@ -820,6 +835,36 @@ app.post('/api/candidate/upload-cv', async (c) => {
   }
 })
 
+app.delete('/api/candidate/delete-cv', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    await pool.execute('UPDATE users SET cv_filename = NULL WHERE id = ?', [String(payload.id)])
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+})
+
+app.post('/api/candidate/upload-avatar', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const formData = await c.req.formData()
+    const file = formData.get('avatar') as File | null
+    if (!file) return c.json({ error: 'No file' }, 400)
+    const filename = `avatar-${payload.id}-${Date.now()}.jpg`
+    await pool.execute('UPDATE users SET avatar_url = ? WHERE id = ?', [filename, String(payload.id)])
+    return c.json({ ok: true, avatar_url: filename })
+  } catch {
+    return c.json({ error: 'Upload failed' }, 500)
+  }
+})
+
 // --- Candidate profile update ---
 
 app.put('/api/candidate/profile', async (c) => {
@@ -860,7 +905,7 @@ app.get('/api/candidate/me', async (c) => {
     const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
     const userId = String(payload.id)
     const [rows] = await pool.execute(
-      `SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_public, is_pro FROM users WHERE id = ?`,
+      `SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro FROM users WHERE id = ?`,
       [userId]
     ) as any[]
     const user = (rows as any[])[0]
@@ -880,7 +925,7 @@ app.get('/api/candidates', async (c) => {
     const [rows] = await pool.execute(
       `SELECT id, name, headline, location, years_in_sales, total_revenue, current_roles, looking_for, cv_filename, is_pro
        FROM users
-       WHERE role = 'candidate' AND is_public = 1
+       WHERE role = 'candidate' AND (is_public = 1 OR is_public IS NULL)
        AND (name LIKE ? OR headline LIKE ? OR current_roles LIKE ? OR looking_for LIKE ?)
        ORDER BY is_pro DESC, created_at DESC`,
       [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]
@@ -917,12 +962,40 @@ app.get('/api/candidates/:id', async (c) => {
   const id = c.req.param('id')
   try {
     const [rows] = await pool.execute(
-      `SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro
-       FROM users WHERE id = ? AND is_public = 1`,
+      `SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro, email
+       FROM users WHERE id = ? AND (is_public = 1 OR is_public IS NULL)`,
       [id]
     ) as any[]
     if (!(rows as any[]).length) return c.json({ error: 'Not found' }, 404)
-    return c.json((rows as any[])[0])
+    const candidate = (rows as any[])[0]
+
+    // Record profile view if viewer is authenticated
+    const auth = c.req.header('Authorization')
+    if (auth?.startsWith('Bearer ')) {
+      try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+        const viewerId = String(payload.id)
+        if (viewerId !== id) {
+          await pool.execute(
+            'INSERT INTO profile_views (viewer_id, candidate_id, action) VALUES (?, ?, ?)',
+            [viewerId, id, 'view']
+          ).catch(() => {})
+          if (candidate.is_pro && candidate.email) {
+            const [viewerRows] = await pool.execute('SELECT name FROM users WHERE id = ?', [viewerId]) as any[]
+            const viewerName = (viewerRows as any[])[0]?.name || 'A company'
+            sendEmail(
+              candidate.email,
+              'Your profile was viewed on SalesRoles.co',
+              `<p>Hi ${candidate.name},</p><p><strong>${viewerName}</strong> viewed your profile on SalesRoles.co.</p><p><a href="https://salesroles.co/dashboard">View your profile activity</a></p><p>The SalesRoles.co team</p>`
+            )
+          }
+        }
+      } catch {}
+    }
+
+    // Don't expose email in the response
+    const { email: _email, ...publicCandidate } = candidate
+    return c.json(publicCandidate)
   } catch {
     return c.json({ error: 'Not found' }, 404)
   }

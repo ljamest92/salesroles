@@ -53,6 +53,9 @@ export function DashboardPage() {
   const [cvFilename, setCvFilename] = useState('')
   const [profileViews, setProfileViews] = useState<any[]>([])
   const [isPro, setIsPro] = useState(false)
+  const [profileName, setProfileName] = useState('')
+  const [headline, setHeadline] = useState('')
+  const [avatarUrl, setAvatarUrl] = useState('')
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -138,6 +141,15 @@ export function DashboardPage() {
     } catch {}
   }
 
+  const handleDeleteCV = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    await fetch('/api/candidate/delete-cv', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {})
+    setCvFilename('')
+  }
+
   // Load candidate profile data (cv, pro status)
   useEffect(() => {
     if (!user || role !== 'candidate') return
@@ -182,6 +194,22 @@ export function DashboardPage() {
       .catch(() => {})
   }, [])
 
+  // FIX 6: load full profile from /api/auth/me on mount
+  useEffect(() => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    fetch('/api/auth/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.name) setProfileName(data.name)
+        if (data.cv_filename) setCvFilename(data.cv_filename)
+        if (data.headline) setHeadline(data.headline)
+        if (data.avatar_url) setAvatarUrl(data.avatar_url)
+        if (data.is_pro) setIsPro(true)
+      })
+      .catch(() => {})
+  }, [])
+
   if (isLoading) {
     return (
       <Container className="py-24 flex items-center justify-center min-h-[60vh]">
@@ -223,7 +251,7 @@ export function DashboardPage() {
       <div className="flex flex-col md:flex-row justify-between items-end gap-6">
         <div className="space-y-2">
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Dashboard</h1>
-          <p className="text-muted-foreground font-medium text-lg">Welcome back, {user.displayName || 'Sales Professional'}.</p>
+          <p className="text-muted-foreground font-medium text-lg">Welcome back, {profileName || user?.displayName || 'there'}.</p>
         </div>
         <div className="flex flex-wrap gap-3">
           {role === 'company' ? (
@@ -390,15 +418,31 @@ export function DashboardPage() {
               <Separator className="bg-border" />
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <User size={18} className="text-primary" />
-                  <span className="text-sm font-medium">{user.displayName}</span>
+                  <div className="w-10 h-10 rounded-full bg-white/10 border border-white/20 flex items-center justify-center overflow-hidden shrink-0">
+                    {avatarUrl ? (
+                      <img src={`/api/candidate/avatar/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
+                    ) : (
+                      <span className="text-white/50 font-bold text-sm">{(profileName || user?.displayName || '?')[0]?.toUpperCase()}</span>
+                    )}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-bold truncate">{profileName || user?.displayName}</p>
+                    {headline && <p className="text-xs text-white/40 truncate">{headline}</p>}
+                  </div>
                 </div>
                 <div className="flex items-center gap-3">
-                  <Briefcase size={18} className="text-primary" />
-                  <span className="text-sm font-medium">{user.email}</span>
+                  <Briefcase size={18} className="text-primary shrink-0" />
+                  <span className="text-sm font-medium truncate">{user.email}</span>
                 </div>
+                {cvFilename && (
+                  <div className="flex items-center gap-2 pl-0">
+                    <span className="text-white/40 text-xs">CV:</span>
+                    <span className="text-white/70 text-xs truncate flex-1">{cvFilename}</span>
+                    <button onClick={handleDeleteCV} className="text-red-400/60 hover:text-red-400 text-xs shrink-0 transition-colors">Remove</button>
+                  </div>
+                )}
                 <div className="flex items-center gap-3">
-                  <Settings size={18} className="text-primary" />
+                  <Settings size={18} className="text-primary shrink-0" />
                   <Link to="/dashboard/profile" search={{ mode: 'candidate' } as any} className="text-sm font-bold text-primary hover:underline">Edit Profile</Link>
                 </div>
               </div>
@@ -406,7 +450,7 @@ export function DashboardPage() {
 
             <div className="md:col-span-2 space-y-8">
               <Tabs defaultValue="saved">
-                <TabsList className="bg-card border border-border p-1 rounded-xl overflow-x-auto flex-nowrap inline-flex">
+                <TabsList className="bg-card border border-border p-1 rounded-xl inline-flex">
                   <TabsTrigger value="saved" className="px-6 font-bold tracking-tight whitespace-nowrap">Saved Jobs</TabsTrigger>
                   <TabsTrigger value="pro" className="px-6 font-bold tracking-tight whitespace-nowrap flex items-center gap-1.5">
                     <Star size={12} className="text-emerald-400" /> Pro

@@ -210,13 +210,15 @@ export function JobDetailPage() {
                   </div>
                 </div>
               </div>
-              <div className="flex gap-3 w-full md:w-auto relative z-10 shrink-0">
-                <Button onClick={handleShare} variant="outline" className="flex-1 md:flex-none gap-2.5 font-bold text-xs h-12 border-white/10 hover:bg-white/5 transition-all">
-                  <Share2 size={16} /> {copied ? 'Copied!' : 'Share'}
-                </Button>
-                <Button onClick={() => setIsReportModalOpen(true)} variant="outline" className="flex-1 md:flex-none gap-2.5 font-bold text-xs h-12 text-destructive border-destructive/20 hover:bg-destructive/10">
-                  <ShieldAlert size={16} /> Report
-                </Button>
+              <div className="flex items-center gap-3 w-full md:w-auto relative z-10 shrink-0">
+                <button onClick={handleShare} className="flex items-center gap-2 border border-white/20 text-white/70 hover:text-white hover:border-white/40 px-4 py-2 rounded-lg text-sm transition-colors">
+                  <Share2 className="w-4 h-4" />
+                  {copied ? 'Copied!' : 'Share'}
+                </button>
+                <button onClick={() => setIsReportModalOpen(true)} className="flex items-center gap-2 border border-red-500/30 text-red-400/70 hover:text-red-400 hover:border-red-500/50 px-4 py-2 rounded-lg text-sm transition-colors">
+                  <ShieldAlert className="w-4 h-4" />
+                  Report
+                </button>
               </div>
             </div>
 
