@@ -23,6 +23,8 @@ import { RegistrationPage } from './pages/RegistrationPage'
 import { ProfileEditPage } from './pages/ProfileEditPage'
 import { PostJobSuccessPage } from './pages/PostJobSuccessPage'
 import { RemoteSalesJobsPage } from './pages/RemoteSalesJobsPage'
+import { CandidateProfilePage } from './pages/CandidateProfilePage'
+import { CandidateSearchPage } from './pages/CandidateSearchPage'
 
 const rootRoute = createRootRoute({
   component: () => <AppLayout />,
@@ -50,6 +52,9 @@ const termsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/terms'
 const privacyRoute = createRoute({ getParentRoute: () => rootRoute, path: '/privacy', component: PrivacyPage })
 const cookiesRoute = createRoute({ getParentRoute: () => rootRoute, path: '/cookies', component: CookiePolicyPage })
 const salaryInsightsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/salary-insights', component: SalaryInsightsPage })
+
+const candidateProfileRoute = createRoute({ getParentRoute: () => rootRoute, path: '/profile/$id', component: CandidateProfilePage })
+const candidateSearchRoute = createRoute({ getParentRoute: () => rootRoute, path: '/companies/candidates', component: CandidateSearchPage })
 
 // SEO Routes
 const remoteJobsRoute = createRoute({
@@ -111,6 +116,8 @@ const routeTree = rootRoute.addChildren([
   privacyRoute,
   cookiesRoute,
   salaryInsightsRoute,
+  candidateProfileRoute,
+  candidateSearchRoute,
   remoteJobsRoute,
   aeJobsRoute,
   sdrJobsRoute,

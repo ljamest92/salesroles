@@ -77,6 +77,27 @@ try {
   `).catch(() => { });
     pool.execute(`ALTER TABLE jobs ADD COLUMN company_id INT DEFAULT NULL`).catch(() => { });
     pool.execute(`ALTER TABLE jobs ADD COLUMN screening_questions TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN cv_filename VARCHAR(255)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN headline VARCHAR(255)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN location VARCHAR(255)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN years_in_sales INT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN total_revenue VARCHAR(100)`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN companies_closed INT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN current_roles TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN looking_for TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN bio TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN work_history TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN is_public TINYINT DEFAULT 0`).catch(() => { });
+    pool.execute(`ALTER TABLE users ADD COLUMN is_pro TINYINT DEFAULT 0`).catch(() => { });
+    pool.execute(`
+    CREATE TABLE IF NOT EXISTS profile_views (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      viewer_id INT,
+      candidate_id INT NOT NULL,
+      action VARCHAR(50) DEFAULT 'view',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => { });
     pool.execute(`
     CREATE TABLE IF NOT EXISTS applications (
       id INT AUTO_INCREMENT PRIMARY KEY,
@@ -142,6 +163,10 @@ app.post('/api/webhooks/stripe', async (c) => {
     if (event.type === 'checkout.session.completed') {
         const session = event.data.object;
         const jobId = session.metadata?.jobId;
+        const userId = session.metadata?.userId;
+        if (userId && session.mode === 'subscription' && pool) {
+            await pool.execute('UPDATE users SET is_pro = 1 WHERE id = ?', [userId]).catch(() => { });
+        }
         if (jobId && pool) {
             await pool.execute("UPDATE jobs SET status = 'pending' WHERE id = ?", [jobId]).catch((err) => console.error('Failed to update job status:', err));
             console.log(`Job ${jobId} moved to pending after payment`);
@@ -722,6 +747,202 @@ app.get('/api/company/applications/:jobId', async (c) => {
     }
     catch {
         return c.json([]);
+    }
+});
+// --- Candidate CV upload ---
+app.post('/api/candidate/upload-cv', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const formData = await c.req.formData();
+        const file = formData.get('cv');
+        if (!file)
+            return c.json({ error: 'No file' }, 400);
+        const filename = file.name;
+        await pool.execute('UPDATE users SET cv_filename = ? WHERE id = ?', [filename, userId]);
+        return c.json({ ok: true, filename });
+    }
+    catch {
+        return c.json({ error: 'Upload failed' }, 500);
+    }
+});
+// --- Candidate profile update ---
+app.put('/api/candidate/profile', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const data = await c.req.json();
+        await pool.execute(`UPDATE users SET headline=?, location=?, years_in_sales=?, total_revenue=?, companies_closed=?, current_roles=?, looking_for=?, bio=?, work_history=?, is_public=? WHERE id=?`, [
+            data.headline || null,
+            data.location || null,
+            data.years_in_sales || null,
+            data.total_revenue || null,
+            data.companies_closed || null,
+            JSON.stringify(data.current_roles || []),
+            JSON.stringify(data.looking_for || []),
+            data.bio || null,
+            JSON.stringify(data.work_history || []),
+            data.is_public ? 1 : 0,
+            userId,
+        ]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Update failed' }, 500);
+    }
+});
+app.get('/api/candidate/me', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const [rows] = await pool.execute(`SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_public, is_pro FROM users WHERE id = ?`, [userId]);
+        const user = rows[0];
+        if (!user)
+            return c.json({ error: 'Not found' }, 404);
+        return c.json(user);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+// --- Public candidate search & profiles ---
+app.get('/api/candidates', async (c) => {
+    if (!pool)
+        return c.json([]);
+    const search = c.req.query('search') || '';
+    try {
+        const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, current_roles, looking_for, cv_filename, is_pro
+       FROM users
+       WHERE role = 'candidate' AND is_public = 1
+       AND (name LIKE ? OR headline LIKE ? OR current_roles LIKE ? OR looking_for LIKE ?)
+       ORDER BY is_pro DESC, created_at DESC`, [`%${search}%`, `%${search}%`, `%${search}%`, `%${search}%`]);
+        return c.json(rows);
+    }
+    catch {
+        return c.json([]);
+    }
+});
+app.get('/api/candidates/:id/download-cv', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const viewerId = String(payload.id);
+        const candidateId = c.req.param('id');
+        const [rows] = await pool.execute('SELECT cv_filename FROM users WHERE id = ?', [candidateId]);
+        const user = rows[0];
+        if (!user?.cv_filename)
+            return c.json({ error: 'No CV on file' }, 404);
+        await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action) VALUES (?, ?, ?)', [viewerId, candidateId, 'cv_download']).catch(() => { });
+        return c.json({ filename: user.cv_filename });
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+app.get('/api/candidates/:id', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const id = c.req.param('id');
+    try {
+        const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro
+       FROM users WHERE id = ? AND is_public = 1`, [id]);
+        if (!rows.length)
+            return c.json({ error: 'Not found' }, 404);
+        return c.json(rows[0]);
+    }
+    catch {
+        return c.json({ error: 'Not found' }, 404);
+    }
+});
+app.post('/api/candidates/:id/view', async (c) => {
+    if (!pool)
+        return c.json({ ok: true });
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ ok: true });
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const viewerId = String(payload.id);
+        const candidateId = c.req.param('id');
+        await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action) VALUES (?, ?, ?)', [viewerId, candidateId, 'view']).catch(() => { });
+    }
+    catch { }
+    return c.json({ ok: true });
+});
+app.get('/api/candidate/profile-views', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        const userId = String(payload.id);
+        const [userRows] = await pool.execute('SELECT is_pro FROM users WHERE id = ?', [userId]);
+        if (!userRows[0]?.is_pro)
+            return c.json({ error: 'Pro required' }, 403);
+        const [views] = await pool.execute(`SELECT pv.action, pv.created_at, u.name as viewer_name, u.email as viewer_email
+       FROM profile_views pv
+       LEFT JOIN users u ON pv.viewer_id = u.id
+       WHERE pv.candidate_id = ?
+       ORDER BY pv.created_at DESC
+       LIMIT 50`, [userId]);
+        return c.json(views);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+// --- Pro membership checkout ---
+app.get('/api/payments/pro-checkout', async (c) => {
+    if (!process.env.STRIPE_SECRET_KEY || !stripe)
+        return c.json({ error: 'Stripe not configured' }, 503);
+    const authHeader = c.req.header('Authorization') || '';
+    const tokenParam = c.req.query('token') || '';
+    const token = authHeader.replace('Bearer ', '') || tokenParam;
+    if (!token)
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(token, JWT_SECRET);
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items: [{
+                    price_data: {
+                        currency: 'usd',
+                        product_data: { name: 'SalesRoles.co Pro Membership' },
+                        unit_amount: 4900,
+                        recurring: { interval: 'month' },
+                    },
+                    quantity: 1,
+                }],
+            mode: 'subscription',
+            success_url: `${process.env.SITE_URL || 'https://salesroles.co'}/dashboard?pro=success`,
+            cancel_url: `${process.env.SITE_URL || 'https://salesroles.co'}/dashboard`,
+            metadata: { userId: String(payload.id) },
+        });
+        return c.redirect(session.url);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
     }
 });
 // --- Test endpoint: simulate Stripe webhook payment completion ---

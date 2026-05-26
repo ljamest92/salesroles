@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, User, CheckCircle2, Building2, MapPin, Users } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, User, CheckCircle2, Building2, MapPin, Users, Star, Download } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -50,6 +50,9 @@ export function DashboardPage() {
   const [pendingJobs, setPendingJobs] = useState<any[]>([])
   const [applications, setApplications] = useState<any[]>([])
   const [expandedNotes, setExpandedNotes] = useState<Set<number>>(new Set())
+  const [cvFilename, setCvFilename] = useState('')
+  const [profileViews, setProfileViews] = useState<any[]>([])
+  const [isPro, setIsPro] = useState(false)
 
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
@@ -120,6 +123,44 @@ export function DashboardPage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleCVUpload = async (file: File) => {
+    const token = localStorage.getItem('salesroles_token')
+    const formData = new FormData()
+    formData.append('cv', file)
+    try {
+      const res = await fetch('/api/candidate/upload-cv', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: formData,
+      })
+      const data = await res.json()
+      if (data.ok) setCvFilename(data.filename)
+    } catch {}
+  }
+
+  // Load candidate profile data (cv, pro status)
+  useEffect(() => {
+    if (!user || role !== 'candidate') return
+    const token = localStorage.getItem('salesroles_token')
+    fetch('/api/candidate/me', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.cv_filename) setCvFilename(data.cv_filename)
+        if (data.is_pro) setIsPro(true)
+      })
+      .catch(() => {})
+  }, [user, role])
+
+  // Load profile views for Pro candidates
+  useEffect(() => {
+    if (!user || role !== 'candidate' || !isPro) return
+    const token = localStorage.getItem('salesroles_token')
+    fetch('/api/candidate/profile-views', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) setProfileViews(data) })
+      .catch(() => {})
+  }, [user, role, isPro])
+
   // FIX 1: fetch saved jobs for candidate view
   useEffect(() => {
     if (!user || role !== 'candidate') return
@@ -184,25 +225,24 @@ export function DashboardPage() {
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Dashboard</h1>
           <p className="text-muted-foreground font-medium text-lg">Welcome back, {user.displayName || 'Sales Professional'}.</p>
         </div>
-        <div className="flex gap-4">
-          {/* FIX 2: no switch button — role comes from user.role */}
+        <div className="flex flex-wrap gap-3">
           {role === 'company' ? (
-            <Link to="/post-job">
-              <Button size="sm" className="bg-primary text-primary-foreground font-bold">Post New Job</Button>
-            </Link>
+            <>
+              <Link to="/companies/candidates">
+                <Button size="sm" variant="outline" className="font-bold border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10">Browse Candidates</Button>
+              </Link>
+              <Link to="/post-job">
+                <Button size="sm" className="bg-primary text-primary-foreground font-bold">Post New Job</Button>
+              </Link>
+            </>
           ) : (
-            <label className="cursor-pointer inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">
-              <input
-                type="file"
-                accept=".pdf"
-                className="hidden"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) alert(`CV "${file.name}" selected. File upload coming soon.`)
-                }}
-              />
-              Upload CV
-            </label>
+            <div className="flex flex-col items-end gap-1">
+              <label className="cursor-pointer inline-flex items-center gap-2 bg-emerald-500 hover:bg-emerald-400 text-white font-semibold px-4 py-2 rounded-lg transition-colors text-sm">
+                <input type="file" accept=".pdf,.doc,.docx" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCVUpload(f) }} />
+                {cvFilename ? 'Change CV' : 'Upload CV'}
+              </label>
+              {cvFilename && <p className="text-white/40 text-xs">{cvFilename}</p>}
+            </div>
           )}
         </div>
       </div>
@@ -342,7 +382,10 @@ export function DashboardPage() {
           <div className="grid md:grid-cols-3 gap-8">
             <Card className="p-8 border-border bg-card/30 space-y-4 col-span-1 rounded-[32px]">
               <div className="space-y-2">
-                <h3 className="font-bold tracking-widest text-xs text-muted-foreground">Profile</h3>
+                <div className="flex items-center gap-2">
+                  <h3 className="font-bold tracking-widest text-xs text-muted-foreground">Profile</h3>
+                  {isPro && <span className="text-[10px] bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">PRO</span>}
+                </div>
               </div>
               <Separator className="bg-border" />
               <div className="space-y-4">
@@ -356,50 +399,103 @@ export function DashboardPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Settings size={18} className="text-primary" />
-                  {/* FIX 8: pass mode=candidate so back button returns to correct view */}
                   <Link to="/dashboard/profile" search={{ mode: 'candidate' } as any} className="text-sm font-bold text-primary hover:underline">Edit Profile</Link>
                 </div>
               </div>
             </Card>
 
             <div className="md:col-span-2 space-y-8">
-              <h3 className="text-2xl font-black tracking-tighter">Saved Opportunities</h3>
-              <div className="grid gap-4">
-                {savedLoading ? (
-                  Array(2).fill(0).map((_, i) => (
-                    <Card key={i} className="p-6 h-24 animate-pulse bg-card/20 rounded-2xl" />
-                  ))
-                ) : savedJobs.length === 0 ? (
-                  <EmptyState
-                    icon={<Briefcase size={40} />}
-                    title="No Saved Opportunities Yet"
-                    description="Browse jobs and click Save to add roles here."
-                    action={{ label: "Browse Jobs", onClick: () => { window.location.href = '/jobs' } }}
-                    className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
-                  />
-                ) : (
-                  savedJobs.map(job => (
-                    <Link key={job.id} to={`/jobs/${job.id}`}>
-                      <Card className="job-card-hover p-6 border border-white/5 group rounded-2xl">
-                        <div className="flex flex-col sm:flex-row justify-between gap-4">
-                          <div className="space-y-1">
-                            <h4 className="font-bold group-hover:text-primary transition-colors">{job.title}</h4>
-                            <div className="flex flex-wrap gap-3 text-xs text-muted-foreground font-medium">
-                              <span className="flex items-center gap-1"><Briefcase size={12} className="text-primary" /> {job.company_name}</span>
-                              <span className="flex items-center gap-1"><MapPin size={12} className="text-primary" /> {job.location}</span>
-                              <Badge variant="outline" className="text-[10px] border-white/10">{job.work_type}</Badge>
+              <Tabs defaultValue="saved">
+                <TabsList className="bg-card border border-border p-1 rounded-xl overflow-x-auto flex-nowrap inline-flex">
+                  <TabsTrigger value="saved" className="px-6 font-bold tracking-tight whitespace-nowrap">Saved Jobs</TabsTrigger>
+                  <TabsTrigger value="pro" className="px-6 font-bold tracking-tight whitespace-nowrap flex items-center gap-1.5">
+                    <Star size={12} className="text-emerald-400" /> Pro
+                  </TabsTrigger>
+                </TabsList>
+
+                <TabsContent value="saved" className="mt-6">
+                  <div className="grid gap-4">
+                    {savedLoading ? (
+                      Array(2).fill(0).map((_, i) => (
+                        <Card key={i} className="p-6 h-24 animate-pulse bg-card/20 rounded-2xl" />
+                      ))
+                    ) : savedJobs.length === 0 ? (
+                      <EmptyState
+                        icon={<Briefcase size={40} />}
+                        title="No Saved Opportunities Yet"
+                        description="Browse jobs and click Save to add roles here."
+                        action={{ label: "Browse Jobs", onClick: () => { window.location.href = '/jobs' } }}
+                        className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
+                      />
+                    ) : (
+                      savedJobs.map(job => (
+                        <Link key={job.id} to={`/jobs/${job.id}`}>
+                          <Card className="job-card-hover p-6 border border-white/5 group rounded-2xl">
+                            <div className="flex flex-col sm:flex-row justify-between gap-4">
+                              <div className="space-y-1">
+                                <h4 className="font-bold group-hover:text-primary transition-colors">{job.title}</h4>
+                                <div className="flex flex-wrap gap-3 text-xs text-muted-foreground font-medium">
+                                  <span className="flex items-center gap-1"><Briefcase size={12} className="text-primary" /> {job.company_name}</span>
+                                  <span className="flex items-center gap-1"><MapPin size={12} className="text-primary" /> {job.location}</span>
+                                  <Badge variant="outline" className="text-[10px] border-white/10">{job.work_type}</Badge>
+                                </div>
+                              </div>
+                              <div className="shrink-0 text-right">
+                                <p className="text-xs text-muted-foreground font-bold">OTE</p>
+                                <p className="font-black text-primary">{job.ote || '—'}</p>
+                              </div>
                             </div>
-                          </div>
-                          <div className="shrink-0 text-right">
-                            <p className="text-xs text-muted-foreground font-bold">OTE</p>
-                            <p className="font-black text-primary">{job.ote || '—'}</p>
-                          </div>
-                        </div>
-                      </Card>
-                    </Link>
-                  ))
-                )}
-              </div>
+                          </Card>
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </TabsContent>
+
+                <TabsContent value="pro" className="mt-6">
+                  {!isPro ? (
+                    <div className="bg-white/5 border border-emerald-500/20 rounded-xl p-6">
+                      <div className="flex items-center gap-2 mb-3">
+                        <Star size={18} className="text-emerald-400" />
+                        <h3 className="text-white font-bold text-lg">Go Pro</h3>
+                      </div>
+                      <p className="text-white/60 text-sm mb-4">See exactly which companies are viewing your profile and downloading your CV.</p>
+                      <ul className="space-y-2 mb-6">
+                        {['See who viewed your profile', 'See who downloaded your CV', 'Pro badge on your profile', 'Priority placement in search'].map(b => (
+                          <li key={b} className="flex items-center gap-2 text-sm text-white/70">
+                            <span className="text-emerald-400">✓</span>{b}
+                          </li>
+                        ))}
+                      </ul>
+                      <a
+                        href={`/api/payments/pro-checkout?token=${localStorage.getItem('salesroles_token') || ''}`}
+                        className="w-full block text-center bg-emerald-500 hover:bg-emerald-400 text-white font-semibold py-3 rounded-lg transition-colors"
+                      >
+                        Upgrade to Pro — $49/month
+                      </a>
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      <h3 className="text-lg font-black tracking-tight text-emerald-400 flex items-center gap-2"><Star size={16} /> Pro Activity</h3>
+                      {profileViews.length === 0 ? (
+                        <p className="text-white/40 text-sm p-8 text-center border border-dashed border-white/10 rounded-xl">No profile views yet. Make your profile public to start appearing in company searches.</p>
+                      ) : (
+                        profileViews.map((v, i) => (
+                          <Card key={i} className="p-4 border border-white/5 bg-card/30 rounded-xl">
+                            <div className="flex justify-between items-center">
+                              <div>
+                                <p className="text-sm font-bold">{v.viewer_name || 'A company'}</p>
+                                <p className="text-xs text-white/40">{v.action === 'cv_download' ? 'Downloaded your CV' : 'Viewed your profile'}</p>
+                              </div>
+                              <p className="text-xs text-white/30">{new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                            </div>
+                          </Card>
+                        ))
+                      )}
+                    </div>
+                  )}
+                </TabsContent>
+              </Tabs>
             </div>
           </div>
         </div>

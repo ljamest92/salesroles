@@ -24,6 +24,11 @@ export function AppLayout() {
             <NavbarItem>
               <Link to="/jobs" className="text-sm font-bold tracking-tight hover:text-primary transition-colors">Find Jobs</Link>
             </NavbarItem>
+            {(user as any)?.role === 'company' && (
+              <NavbarItem>
+                <Link to="/companies/candidates" className="text-sm font-bold tracking-tight hover:text-primary transition-colors">Find Candidates</Link>
+              </NavbarItem>
+            )}
             <NavbarItem>
               <Link to="/pricing" className="text-sm font-bold tracking-tight hover:text-primary transition-colors">Pricing</Link>
             </NavbarItem>
@@ -103,6 +108,7 @@ export function AppLayout() {
               <h4 className="font-black mb-8 text-[11px] tracking-[0.2em] text-foreground/30">For Companies</h4>
               <ul className="space-y-4 text-[13px] font-bold text-muted-foreground">
                 <li><Link to="/post-job" className="hover:text-primary transition-colors">Post a Job</Link></li>
+                <li><Link to="/companies/candidates" className="hover:text-primary transition-colors">Find Candidates</Link></li>
                 <li><Link to="/pricing" className="hover:text-primary transition-colors">Pricing Plans</Link></li>
                 <li><Link to="/dashboard" search={{ mode: 'company' } as any} className="hover:text-primary transition-colors">Company Dashboard</Link></li>
                 <li><Link to="/faq" className="hover:text-primary transition-colors">Employer FAQ</Link></li>

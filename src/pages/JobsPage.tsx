@@ -212,7 +212,7 @@ export function JobsPage() {
               <p className="text-xs text-muted-foreground font-bold tracking-widest">Live Roles</p>
             </div>
             <div className="space-y-1">
-              <p className="text-2xl font-black tracking-tighter"><AnimatedCounter target={stats.avgOteNum} prefix="$" suffix="k" /></p>
+              <p className="text-2xl font-black tracking-tighter text-emerald-400"><AnimatedCounter target={stats.avgOteNum} prefix="$" suffix="k" /></p>
               <p className="text-xs text-muted-foreground font-bold tracking-widest">Average OTE</p>
             </div>
           </div>
