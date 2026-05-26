@@ -74,6 +74,7 @@ export function CandidateProfilePage() {
   const [notFound, setNotFound] = useState(false)
   const [copied, setCopied] = useState(false)
   const [cvMsg, setCvMsg] = useState('')
+  const [avatarError, setAvatarError] = useState(false)
 
   useEffect(() => {
     if (!identifier) return
@@ -152,16 +153,20 @@ export function CandidateProfilePage() {
           <div className="flex items-start gap-5">
             {/* Avatar */}
             <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-500/10 border border-emerald-500/20 flex items-center justify-center overflow-hidden">
-              {profile.avatar_url
-                ? <img
-                    src={profile.avatar_url.startsWith('http') ? profile.avatar_url : `/uploads/avatars/${profile.avatar_url}`}
-                    alt={profile.name}
-                    className="w-full h-full object-cover"
-                    onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
-                  />
-                : null
-              }
-              {!profile.avatar_url && (
+              {profile.avatar_url && !avatarError ? (
+                <img
+                  src={
+                    profile.avatar_url.startsWith('http')
+                      ? profile.avatar_url
+                      : profile.avatar_url.startsWith('/uploads/')
+                        ? profile.avatar_url
+                        : `/uploads/avatars/${profile.avatar_url}`
+                  }
+                  alt={profile.name}
+                  className="w-full h-full object-cover"
+                  onError={() => setAvatarError(true)}
+                />
+              ) : (
                 <span className="text-2xl font-black text-emerald-400">{initials}</span>
               )}
             </div>

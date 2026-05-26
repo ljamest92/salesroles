@@ -10,7 +10,7 @@ import path, { extname } from 'path';
 import { readFileSync, createReadStream, existsSync } from 'fs';
 import { promises as fsPromises } from 'fs';
 import { fileURLToPath } from 'url';
-import { randomBytes } from 'crypto';
+import { randomBytes, createHash } from 'crypto';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const distPath = path.join(__dirname, '..', 'dist');
@@ -176,6 +176,15 @@ try {
       details TEXT,
       status ENUM('pending', 'reviewed', 'dismissed') DEFAULT 'pending',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => { });
+    pool.execute(`
+    CREATE TABLE IF NOT EXISTS job_views (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      job_id VARCHAR(255) NOT NULL,
+      visitor_hash VARCHAR(64) NOT NULL,
+      viewed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX idx_job_visitor (job_id, visitor_hash, viewed_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => { });
 }
@@ -546,12 +555,22 @@ app.get('/api/jobs/:id', async (c) => {
         return c.json({ error: 'Failed to fetch job' }, 500);
     }
 });
-// Dedicated view-increment endpoint — called once by the frontend with a ref guard
+// Dedicated view-increment endpoint — deduplicates by visitor hash (IP + UA) per hour
 app.post('/api/jobs/:id/view', async (c) => {
     const id = c.req.param('id');
-    if (pool && id) {
-        pool.execute('UPDATE jobs SET views = COALESCE(views, 0) + 1 WHERE id = ?', [id]).catch(() => { });
+    if (!pool || !id)
+        return c.json({ ok: true });
+    try {
+        const ip = c.req.header('x-forwarded-for') || c.req.header('x-real-ip') || '';
+        const ua = c.req.header('user-agent') || '';
+        const visitorHash = createHash('md5').update(ip + ua).digest('hex');
+        const [recent] = await pool.execute(`SELECT id FROM job_views WHERE job_id = ? AND visitor_hash = ? AND viewed_at > DATE_SUB(NOW(), INTERVAL 1 HOUR)`, [id, visitorHash]);
+        if (recent.length === 0) {
+            pool.execute('INSERT INTO job_views (job_id, visitor_hash) VALUES (?, ?)', [id, visitorHash]).catch(() => { });
+            pool.execute('UPDATE jobs SET views = COALESCE(views, 0) + 1 WHERE id = ?', [id]).catch(() => { });
+        }
     }
+    catch { }
     return c.json({ ok: true });
 });
 // --- Admin Stats ---
