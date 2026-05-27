@@ -1,4 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" width="1200" height="630">
+  <defs>
+    <style><![CDATA[@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500&display=swap');]]></style>
+  </defs>
+
   <!-- Background -->
   <rect width="1200" height="630" fill="#0F172A"/>
 
@@ -9,9 +13,18 @@
   <!-- Emerald glow blob -->
   <ellipse cx="1100" cy="500" rx="300" ry="200" fill="#10B981" fill-opacity="0.06"/>
 
-  <!-- SR monogram — top right -->
-  <rect x="1058" y="48" width="96" height="96" rx="18" fill="#10B981"/>
-  <text x="1106" y="96" dominant-baseline="central" text-anchor="middle" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="900" font-size="44" fill="#0F172A">SR</text>
+  <!-- SR monogram — top right, dark navy + emerald serif (matches logo.svg) -->
+  <rect x="1058" y="48" width="96" height="96" rx="18" fill="#0F172A"/>
+  <rect x="1058" y="48" width="96" height="96" rx="18" fill="none" stroke="#10B981" stroke-width="1.5" stroke-opacity="0.35"/>
+  <text
+    x="1106"
+    y="100"
+    text-anchor="middle"
+    font-family="'Playfair Display', Georgia, 'Times New Roman', serif"
+    font-weight="500"
+    font-size="44"
+    letter-spacing="-2"
+    fill="#10B981">SR</text>
 
   <!-- Main headline -->
   <text x="80" y="256" font-family="system-ui, -apple-system, BlinkMacSystemFont, sans-serif" font-weight="900" font-size="88" fill="#FFFFFF" letter-spacing="-2">SalesRoles.co</text>
