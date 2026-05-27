@@ -475,7 +475,7 @@ export function PostJobPage() {
       )}
 
       {step === 3 && (
-        <Card className="p-12 text-center space-y-8 animate-fade-in border-dashed border-2 border-primary/20 bg-primary/5 rounded-[48px]">
+        <Card className="p-6 md:p-12 text-center space-y-8 animate-fade-in border-dashed border-2 border-primary/20 bg-primary/5 rounded-[48px] overflow-x-hidden">
           <div className="mx-auto w-20 h-20 rounded-full bg-primary/20 flex items-center justify-center text-primary">
             <Zap size={40} />
           </div>
@@ -484,7 +484,7 @@ export function PostJobPage() {
             <p className="text-muted-foreground max-w-md mx-auto text-balance font-medium text-lg">Click the button below to complete your payment securely via Stripe. Your listing will be reviewed by our team within 2 hours.</p>
           </div>
 
-          <div className="max-w-xs mx-auto p-6 bg-card rounded-xl border border-border text-left space-y-4">
+          <div className="w-full max-w-xs mx-auto p-6 bg-card rounded-xl border border-border text-left space-y-4">
             <div className="flex justify-between font-bold">
               <span>{plan === 'featured' ? 'Featured Listing' : 'Standard Listing'}</span>
               <span>${plan === 'featured' ? '249' : '99'}</span>
@@ -496,12 +496,12 @@ export function PostJobPage() {
             </div>
           </div>
 
-          <div className="space-y-4 pt-4">
+          <div className="w-full max-w-xs mx-auto space-y-4 pt-4">
             <Button
               size="lg"
               disabled={isSubmitting}
               onClick={handleCheckout}
-              className="bg-primary text-primary-foreground font-black px-20 py-8 text-xl tracking-tighter shadow-[0_0_40px_rgba(34,197,94,0.3)] disabled:opacity-60"
+              className="w-full max-w-full bg-primary text-primary-foreground font-black py-8 text-xl tracking-tighter shadow-[0_0_40px_rgba(34,197,94,0.3)] disabled:opacity-60"
             >
               {isSubmitting ? 'Redirecting...' : 'Complete Payment'}
             </Button>
