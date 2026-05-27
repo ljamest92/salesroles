@@ -1118,17 +1118,7 @@ export function DashboardPage() {
                         className="p-16 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
                       />
                     ) : (
-                      (() => {
-                        const appStatusColors: Record<string, string> = {
-                          'New': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                          'new': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                          'Reviewing': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-                          'Contacting': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-                          'Interviewing': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-                          'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
-                          'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
-                        }
-                        return appliedJobs.map((app: any) => (
+                      appliedJobs.map((app: any) => (
                           <Link key={app.id} to={`/jobs/${app.job_id}`}>
                             <Card className="job-card-hover p-5 border border-white/5 group rounded-2xl">
                               <div className="flex flex-col sm:flex-row justify-between gap-3">
@@ -1140,16 +1130,12 @@ export function DashboardPage() {
                                   </div>
                                 </div>
                                 <div className="flex items-center gap-3 shrink-0">
-                                  <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${appStatusColors[app.status] || appStatusColors['New']}`}>
-                                    {app.status === 'new' ? 'New' : (app.status || 'New')}
-                                  </span>
                                   <span className="text-xs text-muted-foreground">{new Date(app.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
                                 </div>
                               </div>
                             </Card>
                           </Link>
                         ))
-                      })()
                     )}
                   </div>
                 </TabsContent>
