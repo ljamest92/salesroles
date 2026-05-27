@@ -964,7 +964,7 @@ app.get('/api/admin/candidates', async (c) => {
   if (!pool) return c.json([])
   try {
     const [users] = await pool.execute(
-      `SELECT u.id, u.name, u.email, u.role, u.created_at,
+      `SELECT u.id, u.name, u.email, u.role, u.created_at, u.profile_slug,
         (SELECT company_name FROM jobs WHERE company_id = u.id LIMIT 1) as company_name
        FROM users u
        ORDER BY u.created_at DESC`
