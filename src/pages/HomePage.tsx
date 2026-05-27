@@ -459,15 +459,16 @@ export function HomePage() {
                   whileInView={{ opacity: 1, scale: 1 }}
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
+                  className="h-full"
                 >
-                  <Link to={`/company/${company.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="group">
-                    <div className="bg-card p-10 rounded-[32px] border border-white/5 text-center space-y-6 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_50px_rgba(16,185,129,0.12)] relative overflow-hidden h-full">
+                  <Link to={`/company/${company.name.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="group block h-full">
+                    <div className="bg-card p-5 md:p-10 rounded-[32px] border border-white/5 text-center space-y-4 md:space-y-6 transition-all duration-500 hover:border-primary/50 hover:shadow-[0_0_50px_rgba(16,185,129,0.12)] relative overflow-hidden h-full flex flex-col items-center">
                       <div className="absolute top-0 left-0 w-full h-1.5 bg-primary transform scale-x-0 group-hover:scale-x-100 transition-transform duration-700" />
-                      <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground border border-white/5 group-hover:border-primary/30 transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden relative">
+                      <div className="w-20 h-20 rounded-3xl bg-secondary mx-auto flex items-center justify-center text-muted-foreground border border-white/5 group-hover:border-primary/30 transition-all duration-500 group-hover:scale-110 shadow-xl overflow-hidden relative shrink-0">
                         <CompanyLogo domain={company.domain} name={company.name} />
                       </div>
                       <div>
-                        <h3 className="font-black group-hover:text-primary transition-colors text-xl tracking-tight leading-none">{company.name}</h3>
+                        <h3 className="font-black group-hover:text-primary transition-colors text-base md:text-xl tracking-tight leading-tight line-clamp-2">{company.name}</h3>
                         <p className="text-[10px] text-muted-foreground font-black tracking-[0.1em] mt-4 opacity-50">{company.count} Active Roles</p>
                       </div>
                     </div>
