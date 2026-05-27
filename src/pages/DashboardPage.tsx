@@ -257,6 +257,25 @@ export function DashboardPage() {
     if (avatarUrl) setAvatarError(false)
   }, [avatarUrl])
 
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const token = localStorage.getItem('salesroles_token')
+    const fd = new FormData()
+    fd.append('logo', file)
+    try {
+      const res = await fetch('/api/upload/logo', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: fd,
+      })
+      const data = await res.json()
+      if (data.ok && data.logo_url) {
+        setCompanyProfile(p => ({ ...p, company_logo_url: data.logo_url }))
+      }
+    } catch {}
+  }
+
   const saveCompanyProfile = async () => {
     const token = localStorage.getItem('salesroles_token')
     setCpSaving(true)
@@ -762,16 +781,43 @@ export function DashboardPage() {
                     />
                   </div>
 
-                  {/* Logo URL */}
-                  <div className="space-y-1.5">
-                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">LOGO URL</label>
-                    <input
-                      type="url"
-                      value={companyProfile.company_logo_url}
-                      onChange={e => setCompanyProfile(p => ({ ...p, company_logo_url: e.target.value }))}
-                      placeholder="https://yourcompany.com/logo.png"
-                      className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
-                    />
+                  {/* Logo Upload + URL */}
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black tracking-[0.2em] text-white/40">COMPANY LOGO</label>
+                    {companyProfile.company_logo_url && (
+                      <div className="w-16 h-16 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center overflow-hidden">
+                        <img
+                          src={companyProfile.company_logo_url.startsWith('http') ? companyProfile.company_logo_url : `/uploads/logos/${companyProfile.company_logo_url}`}
+                          alt="Company logo preview"
+                          className="w-full h-full object-contain"
+                          onError={e => { (e.currentTarget as HTMLImageElement).style.display = 'none' }}
+                        />
+                      </div>
+                    )}
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-white/40 font-medium">Upload a file</p>
+                      <label className="cursor-pointer inline-flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl text-xs font-bold text-white/70 hover:text-white transition-all">
+                        <Camera size={14} />
+                        Choose image
+                        <input
+                          type="file"
+                          accept="image/jpeg,image/png,image/webp,image/svg+xml"
+                          className="hidden"
+                          onChange={handleLogoUpload}
+                        />
+                      </label>
+                      <p className="text-[10px] text-white/30 mt-1">JPG, PNG, WebP, SVG</p>
+                    </div>
+                    <div className="space-y-1">
+                      <p className="text-[10px] text-white/40 font-medium">Or paste a URL</p>
+                      <input
+                        type="url"
+                        value={companyProfile.company_logo_url}
+                        onChange={e => setCompanyProfile(p => ({ ...p, company_logo_url: e.target.value }))}
+                        placeholder="https://yourcompany.com/logo.png"
+                        className="w-full bg-[#0f1629] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/30 focus:outline-none focus:border-emerald-500/50 transition-all"
+                      />
+                    </div>
                   </div>
 
                   {/* Company Size */}

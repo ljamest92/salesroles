@@ -1370,6 +1370,33 @@ app.post('/api/candidate/upload-avatar', async (c) => {
   }
 })
 
+// --- Company logo upload ---
+
+app.post('/api/upload/logo', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    if ((payload as any).role !== 'company') return c.json({ error: 'Company account required' }, 403)
+    const formData = await c.req.formData()
+    const file = formData.get('logo') as File | null
+    if (!file) return c.json({ error: 'No file' }, 400)
+    const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || 'jpg' : 'jpg'
+    const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'svg']
+    if (!allowedExts.includes(ext)) return c.json({ error: 'Invalid file type. Use JPG, PNG, WebP, or SVG.' }, 400)
+    const filename = `logo-${payload.id}-${Date.now()}.${ext}`
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'logos')
+    await fsPromises.mkdir(uploadsDir, { recursive: true })
+    const arrayBuffer = await file.arrayBuffer()
+    await fsPromises.writeFile(path.join(uploadsDir, filename), Buffer.from(arrayBuffer))
+    return c.json({ ok: true, logo_url: filename })
+  } catch (err) {
+    console.error('Logo upload error:', err)
+    return c.json({ error: 'Upload failed' }, 500)
+  }
+})
+
 // --- Candidate profile update ---
 
 app.put('/api/candidate/profile', async (c) => {
@@ -1977,6 +2004,18 @@ app.post('/api/test/simulate-payment', async (c) => {
     [jobId]
   )
   return c.json({ ok: true, message: `Job ${jobId} moved to pending — expires in 30 days` })
+})
+
+// --- Logo static serving ---
+app.get('/uploads/logos/:filename', (c) => {
+  const filename = c.req.param('filename')
+  if (filename.includes('..') || filename.includes('/')) return c.notFound()
+  const filePath = path.join(__dirname, '..', 'uploads', 'logos', filename)
+  if (!existsSync(filePath)) return c.notFound()
+  const ext = extname(filename).toLowerCase()
+  const mime = ext === '.png' ? 'image/png' : ext === '.svg' ? 'image/svg+xml' : ext === '.webp' ? 'image/webp' : 'image/jpeg'
+  const stream = createReadStream(filePath)
+  return new Response(stream as any, { headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000' } })
 })
 
 // --- Avatar static serving ---

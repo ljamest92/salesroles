@@ -470,78 +470,137 @@ app.get('/api/jobs', async (c) => {
         return c.json({ jobs: [] });
     }
 });
+// Regex word-boundary patterns for precise sales title matching.
+// "Field Engineer" → false (no pattern fires)
+// "Field Sales Manager" → true (\bsales\b matches "Sales")
+const SALES_TITLE_PATTERNS = [
+    /\bsales\b/i,
+    /\bae\b/i,
+    /\bsdr\b/i,
+    /\bbdr\b/i,
+    /\baccount executive\b/i,
+    /\bbusiness development\b/i,
+    /\baccount manager\b/i,
+    /\bsales manager\b/i,
+    /\bsales director\b/i,
+    /\bvp of sales\b/i,
+    /\bvp sales\b/i,
+    /\bhead of sales\b/i,
+    /\brevenue\b/i,
+    /\bpartnership\b/i,
+    /\bsales development\b/i,
+    /\binside sales\b/i,
+    /\bfield sales\b/i,
+    /\benterprise sales\b/i,
+];
+function isSalesTitle(title) {
+    return SALES_TITLE_PATTERNS.some(p => p.test(title));
+}
 app.get('/api/jobs/external', async (c) => {
+    const results = [];
+    // --- Adzuna ---
+    const adzunaAppId = process.env.ADZUNA_APP_ID;
+    const adzunaAppKey = process.env.ADZUNA_APP_KEY;
+    if (adzunaAppId && adzunaAppKey) {
+        const adzunaCountries = ['gb', 'us', 'au', 'ca'];
+        const adzunaCurrMap = { gb: '£', us: '$', au: 'A$', ca: 'C$' };
+        const adzunaSettled = await Promise.allSettled(adzunaCountries.map(country => fetch(`https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${adzunaAppId}&app_key=${adzunaAppKey}&results_per_page=20&what=sales&salary_include_unknown=0`)
+            .then(r => r.ok ? r.json() : { results: [] })
+            .then((d) => ({ country, jobs: (d.results || []) }))));
+        let adzunaTotal = 0;
+        for (const settled of adzunaSettled) {
+            if (settled.status !== 'fulfilled') {
+                console.warn('[adzuna] A country fetch failed:', settled.reason);
+                continue;
+            }
+            const { country, jobs: countryJobs } = settled.value;
+            const curr = adzunaCurrMap[country];
+            let skippedKeyword = 0, skippedSalary = 0;
+            console.log(`[adzuna][${country}] Raw jobs from API: ${countryJobs.length}`);
+            if (countryJobs.length === 0) {
+                console.warn(`[adzuna][${country}] Zero raw jobs returned`);
+            }
+            for (const job of countryJobs) {
+                if (!isSalesTitle(job.title || '')) {
+                    skippedKeyword++;
+                    continue;
+                }
+                const salaryStr = job.salary_min && job.salary_max
+                    ? `${curr}${Math.round(job.salary_min / 1000)}k – ${curr}${Math.round(job.salary_max / 1000)}k`
+                    : job.salary_min ? `${curr}${Math.round(job.salary_min / 1000)}k+` : null;
+                if (!salaryStr) {
+                    skippedSalary++;
+                    continue;
+                }
+                results.push({
+                    id: `adzuna-${job.id}`,
+                    title: job.title,
+                    company_name: job.company?.display_name || 'Unknown',
+                    company_website: '',
+                    location: job.location?.display_name || 'Unknown',
+                    work_type: 'On-site',
+                    sector: job.category?.label || 'Sales',
+                    seniority: 'Mid-Level',
+                    description: job.description || '',
+                    base_salary: salaryStr,
+                    ote: salaryStr,
+                    apply_url: job.redirect_url || '',
+                    via_partner: true,
+                    created_at: job.created || new Date().toISOString(),
+                    domain: '',
+                    source_tag: 'Via Adzuna',
+                });
+                adzunaTotal++;
+            }
+            console.log(`[adzuna][${country}] Kept: ${countryJobs.length - skippedKeyword - skippedSalary} | Excl keyword: ${skippedKeyword} | Excl salary: ${skippedSalary}`);
+            if (countryJobs.length > 0 && countryJobs.length - skippedKeyword - skippedSalary === 0) {
+                console.warn(`[adzuna][${country}] Zero after filters — sample:`, countryJobs.slice(0, 3).map((j) => ({ title: j.title, salary_min: j.salary_min, salary_max: j.salary_max })));
+            }
+        }
+        console.log(`[adzuna] Total kept across all countries: ${adzunaTotal}`);
+    }
+    // --- Remotive ---
     try {
-        const res = await fetch('https://arbeitnow.com/api/job-board-api');
-        const data = await res.json();
-        const salesJobs = data.data.filter((job) => SALES_KEYWORDS.some(kw => job.title.toLowerCase().includes(kw) ||
-            job.tags?.some((t) => t.toLowerCase().includes(kw))));
-        const mapped = salesJobs.map((job) => {
-            const cleanName = (job.company_name || '').replace(LANG_SUFFIX, '').trim();
-            return {
-                id: `arbeitnow-${job.slug}`,
-                title: job.title,
-                company_name: cleanName,
-                company_website: '', // Arbeitnow job URLs are arbeitnow.com links — not the company's site
-                location: job.location || 'Remote',
-                work_type: job.remote ? 'Remote' : 'On-site',
-                sector: 'Sales',
-                seniority: 'Mid-Level',
-                description: job.description,
-                base_salary: null,
-                ote: null,
-                apply_url: job.url,
-                via_partner: true,
-                created_at: job.created_at,
-                domain: '', // Never use arbeitnow.com as the company logo domain
-            };
-        });
-        return c.json(mapped);
+        const remRes = await fetch('https://remotive.com/api/remote-jobs?category=sales');
+        if (remRes.ok) {
+            const remData = await remRes.json();
+            const allRem = remData.jobs || [];
+            const afterSalary = allRem.filter((job) => typeof job.salary === 'string' && job.salary.trim() !== '');
+            const afterKeyword = afterSalary.filter((job) => isSalesTitle(job.title || ''));
+            console.log(`[remotive] Raw: ${allRem.length} | After salary: ${afterSalary.length} | After keyword: ${afterKeyword.length} | Excl salary: ${allRem.length - afterSalary.length} | Excl keyword: ${afterSalary.length - afterKeyword.length}`);
+            if (allRem.length > 0 && afterKeyword.length === 0) {
+                console.warn('[remotive] Zero after filters — sample:', allRem.slice(0, 3).map((j) => ({ title: j.title, salary: j.salary })));
+            }
+            for (const job of afterKeyword) {
+                results.push({
+                    id: `remotive-${job.id}`,
+                    title: job.title,
+                    company_name: job.company_name || 'Unknown',
+                    company_website: '',
+                    location: 'Remote (Global)',
+                    work_type: 'Remote',
+                    sector: 'Sales',
+                    seniority: 'Mid-Level',
+                    description: job.description || '',
+                    base_salary: job.salary,
+                    ote: job.salary,
+                    apply_url: job.url || '',
+                    via_partner: true,
+                    created_at: job.publication_date || new Date().toISOString(),
+                    domain: '',
+                    source_tag: 'Via Remotive',
+                });
+            }
+        }
     }
     catch (e) {
-        console.error('Arbeitnow fetch failed:', e);
-        return c.json([]);
+        console.error('Remotive fetch failed:', e);
     }
+    console.log(`[/api/jobs/external] Total results: ${results.length}`);
+    return c.json(results);
 });
 app.get('/api/jobs/:id', async (c) => {
     const id = c.req.param('id');
-    if (id.startsWith('arbeitnow-')) {
-        const slug = id.replace('arbeitnow-', '');
-        try {
-            const res = await fetch('https://arbeitnow.com/api/job-board-api');
-            const data = await res.json();
-            const job = data.data.find((j) => j.slug === slug);
-            if (!job)
-                return c.json({ error: 'Job not found' }, 404);
-            const cleanName = (job.company_name || '').replace(LANG_SUFFIX, '').trim();
-            return c.json({ job: {
-                    id: `arbeitnow-${job.slug}`,
-                    title: job.title,
-                    company: cleanName,
-                    company_name: cleanName,
-                    company_website: '', // Arbeitnow job URLs are arbeitnow.com links — not the company's site
-                    location: job.location || 'Remote',
-                    job_type: job.remote ? 'Remote' : 'On-site',
-                    work_type: job.remote ? 'Remote' : 'On-site',
-                    description: job.description,
-                    application_url: job.url,
-                    base_salary: null,
-                    ote: null,
-                    via_partner: true,
-                    created_at: job.created_at,
-                    domain: '', // Never use arbeitnow.com as the company logo domain
-                    sector: 'Sales',
-                    seniority: 'Mid-Level',
-                    currency: null,
-                    commission_structure: null,
-                    status: 'live',
-                    featured: false,
-                } });
-        }
-        catch {
-            return c.json({ error: 'Failed to fetch job' }, 500);
-        }
-    }
     if (!pool)
         return c.json({ error: 'Database not configured' }, 503);
     try {
@@ -1233,6 +1292,37 @@ app.post('/api/candidate/upload-avatar', async (c) => {
         return c.json({ error: 'Upload failed' }, 500);
     }
 });
+// --- Company logo upload ---
+app.post('/api/upload/logo', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company')
+            return c.json({ error: 'Company account required' }, 403);
+        const formData = await c.req.formData();
+        const file = formData.get('logo');
+        if (!file)
+            return c.json({ error: 'No file' }, 400);
+        const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || 'jpg' : 'jpg';
+        const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
+        if (!allowedExts.includes(ext))
+            return c.json({ error: 'Invalid file type. Use JPG, PNG, WebP, or SVG.' }, 400);
+        const filename = `logo-${payload.id}-${Date.now()}.${ext}`;
+        const uploadsDir = path.join(__dirname, '..', 'uploads', 'logos');
+        await fsPromises.mkdir(uploadsDir, { recursive: true });
+        const arrayBuffer = await file.arrayBuffer();
+        await fsPromises.writeFile(path.join(uploadsDir, filename), Buffer.from(arrayBuffer));
+        return c.json({ ok: true, logo_url: filename });
+    }
+    catch (err) {
+        console.error('Logo upload error:', err);
+        return c.json({ error: 'Upload failed' }, 500);
+    }
+});
 // --- Candidate profile update ---
 app.put('/api/candidate/profile', async (c) => {
     if (!pool)
@@ -1244,12 +1334,13 @@ app.put('/api/candidate/profile', async (c) => {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const userId = String(payload.id);
         const data = await c.req.json();
+        const providedAvatar = typeof data.avatar_url === 'string' && data.avatar_url.length > 0 ? data.avatar_url : null;
         await pool.execute(`UPDATE users SET
         headline=?, location=?, years_in_sales=?, total_revenue=?, companies_closed=?,
         current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
         phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
         target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
-        sales_methodology=?, current_ote=?
+        sales_methodology=?, current_ote=?${providedAvatar ? ', avatar_url=?' : ''}
        WHERE id=?`, [
             data.headline || null,
             data.location || null,
@@ -1273,6 +1364,7 @@ app.put('/api/candidate/profile', async (c) => {
             JSON.stringify(data.deal_sizes || []),
             JSON.stringify(data.sales_methodology || []),
             data.current_ote || null,
+            ...(providedAvatar ? [providedAvatar] : []),
             userId,
         ]);
         return c.json({ ok: true });
@@ -1802,6 +1894,19 @@ app.post('/api/test/simulate-payment', async (c) => {
     await pool.execute("UPDATE jobs SET status = 'pending', expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id = ?", [jobId]);
     return c.json({ ok: true, message: `Job ${jobId} moved to pending — expires in 30 days` });
 });
+// --- Logo static serving ---
+app.get('/uploads/logos/:filename', (c) => {
+    const filename = c.req.param('filename');
+    if (filename.includes('..') || filename.includes('/'))
+        return c.notFound();
+    const filePath = path.join(__dirname, '..', 'uploads', 'logos', filename);
+    if (!existsSync(filePath))
+        return c.notFound();
+    const ext = extname(filename).toLowerCase();
+    const mime = ext === '.png' ? 'image/png' : ext === '.svg' ? 'image/svg+xml' : ext === '.webp' ? 'image/webp' : 'image/jpeg';
+    const stream = createReadStream(filePath);
+    return new Response(stream, { headers: { 'Content-Type': mime, 'Cache-Control': 'public, max-age=31536000' } });
+});
 // --- Avatar static serving ---
 app.get('/uploads/avatars/:filename', (c) => {
     const filename = c.req.param('filename');
@@ -1855,57 +1960,97 @@ app.get('*', (c) => {
         return c.text('App not built. Run npm run build first.', 404);
     }
 });
-// --- Arbeitnow job sync ---
-async function syncArbeitnowJobs() {
+// --- Adzuna job sync ---
+async function syncAdzunaJobs() {
+    if (!pool)
+        return;
+    const appId = process.env.ADZUNA_APP_ID;
+    const appKey = process.env.ADZUNA_APP_KEY;
+    if (!appId || !appKey)
+        return;
+    try {
+        console.log('[adzuna] Starting sync...');
+        const countries = ['gb', 'us', 'au', 'ca'];
+        const currMap = { gb: '£', us: '$', au: 'A$', ca: 'C$' };
+        let inserted = 0;
+        const settled = await Promise.allSettled(countries.map(country => fetch(`https://api.adzuna.com/v1/api/jobs/${country}/search/1?app_id=${appId}&app_key=${appKey}&results_per_page=20&what=sales&salary_include_unknown=0`)
+            .then(r => r.ok ? r.json() : { results: [] })
+            .then((d) => ({ country, jobs: (d.results || []) }))));
+        for (const result of settled) {
+            if (result.status !== 'fulfilled')
+                continue;
+            const { country, jobs } = result.value;
+            const curr = currMap[country];
+            for (const job of jobs) {
+                if (!isSalesTitle(job.title || ''))
+                    continue;
+                const salaryStr = job.salary_min && job.salary_max
+                    ? `${curr}${Math.round(job.salary_min / 1000)}k – ${curr}${Math.round(job.salary_max / 1000)}k`
+                    : job.salary_min ? `${curr}${Math.round(job.salary_min / 1000)}k+` : null;
+                if (!salaryStr)
+                    continue;
+                const externalId = `adzuna-${job.id}`;
+                const [existing] = await pool.execute('SELECT id FROM jobs WHERE external_id = ?', [externalId]);
+                if (existing.length > 0)
+                    continue;
+                try {
+                    await pool.execute(`INSERT INTO jobs (id, title, company_name, location, work_type, description, status, source, external_id, url, base_salary, ote, created_at)
+             VALUES (?, ?, ?, ?, ?, ?, 'live', 'adzuna', ?, ?, ?, ?, NOW())`, [externalId, job.title || 'Untitled', job.company?.display_name || 'Unknown',
+                        job.location?.display_name || 'Unknown', 'On-site', job.description || '',
+                        externalId, job.redirect_url || '', salaryStr, salaryStr]);
+                    inserted++;
+                }
+                catch { /* ignore duplicate key */ }
+            }
+        }
+        console.log(`[adzuna] Sync complete — ${inserted} new jobs inserted`);
+    }
+    catch (err) {
+        console.error('[adzuna] Sync failed:', err);
+    }
+}
+// --- Remotive job sync ---
+async function syncRemotiveJobs() {
     if (!pool)
         return;
     try {
-        console.log('[arbeitnow] Starting sync...');
-        const res = await fetch('https://www.arbeitnow.com/api/job-board-api?page=1');
+        console.log('[remotive] Starting sync...');
+        const res = await fetch('https://remotive.com/api/remote-jobs?category=sales');
         if (!res.ok) {
-            console.warn('[arbeitnow] API error:', res.status);
+            console.warn('[remotive] API error:', res.status);
             return;
         }
         const json = await res.json();
-        const jobs = Array.isArray(json.data) ? json.data : [];
-        // Filter for sales-relevant roles
-        const salesKeywords = ['sales', 'account executive', 'account manager', 'bdr', 'sdr', 'business development', 'revenue', 'commercial', 'account director', 'partnership'];
-        const filtered = jobs.filter(j => {
-            const text = `${j.title} ${j.tags?.join(' ') || ''}`.toLowerCase();
-            return salesKeywords.some(kw => text.includes(kw));
-        });
+        const jobs = Array.isArray(json.jobs) ? json.jobs : [];
+        const filtered = jobs
+            .filter(j => typeof j.salary === 'string' && j.salary.trim() !== '')
+            .filter(j => isSalesTitle(j.title || ''));
         let inserted = 0;
         for (const job of filtered) {
-            const externalId = `arbeitnow-${job.slug}`;
-            // Check if already exists
+            const externalId = `remotive-${job.id}`;
             const [existing] = await pool.execute('SELECT id FROM jobs WHERE external_id = ?', [externalId]);
             if (existing.length > 0)
                 continue;
-            const id = externalId;
-            const title = job.title || 'Untitled';
-            const companyName = job.company_name || 'Unknown Company';
-            const location = job.location || 'Remote';
-            const description = job.description || '';
-            const url = job.url || `https://www.arbeitnow.com/jobs/${job.slug}`;
-            const workType = job.remote ? 'Remote' : 'On-site';
             try {
-                await pool.execute(`INSERT INTO jobs (id, title, company_name, location, work_type, description, status, source, external_id, url, created_at)
-           VALUES (?, ?, ?, ?, ?, ?, 'live', 'arbeitnow', ?, ?, NOW())`, [id, title, companyName, location, workType, description, externalId, url]);
+                await pool.execute(`INSERT INTO jobs (id, title, company_name, location, work_type, description, status, source, external_id, url, base_salary, ote, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, 'live', 'remotive', ?, ?, ?, ?, NOW())`, [externalId, job.title || 'Untitled', job.company_name || 'Unknown',
+                    'Remote (Global)', 'Remote', job.description || '',
+                    externalId, job.url || '', job.salary, job.salary]);
                 inserted++;
             }
-            catch {
-                // Ignore duplicate key or other insert errors
-            }
+            catch { /* ignore duplicate key */ }
         }
-        console.log(`[arbeitnow] Sync complete — ${inserted} new jobs inserted from ${filtered.length} sales-relevant (${jobs.length} total)`);
+        console.log(`[remotive] Sync complete — ${inserted} new jobs inserted from ${filtered.length} sales-relevant (${jobs.length} total)`);
     }
     catch (err) {
-        console.error('[arbeitnow] Sync failed:', err);
+        console.error('[remotive] Sync failed:', err);
     }
 }
 // Run on startup then every 6 hours
-syncArbeitnowJobs();
-setInterval(syncArbeitnowJobs, 6 * 60 * 60 * 1000);
+syncAdzunaJobs();
+syncRemotiveJobs();
+setInterval(syncAdzunaJobs, 6 * 60 * 60 * 1000);
+setInterval(syncRemotiveJobs, 6 * 60 * 60 * 1000);
 // --- Server ---
 const port = parseInt(process.env.PORT || '4000');
 serve({ fetch: app.fetch, port }, () => console.log(`Server running on http://localhost:${port}`));
