@@ -177,17 +177,17 @@ export function HomePage() {
   return (
     <div className="flex flex-col page-transition overflow-x-hidden">
       <Helmet>
-        <title>SalesRoles.co | Sales Jobs With Full Compensation Transparency</title>
-        <meta name="description" content="Find sales jobs that show base salary, OTE, and commission upfront. The only job board built exclusively for sales professionals where every role shows full comp. No guessing." />
-        <meta property="og:title" content="SalesRoles.co | Sales Jobs With Full Compensation Transparency" />
-        <meta property="og:description" content="Find sales jobs that show base salary, OTE, and commission upfront. Every role. Every time." />
+        <title>SalesRoles.co | Sales Jobs With Full Salary & OTE Transparency</title>
+        <meta name="description" content="The only job board built exclusively for sales professionals. 118 live roles with base salary, OTE, and commission shown upfront. Account Executive, SDR, BDR, and sales management roles in the US, UK, and Australia." />
+        <meta property="og:title" content="SalesRoles.co | Sales Jobs With Full Salary & OTE Transparency" />
+        <meta property="og:description" content="Browse 100+ sales jobs that show base salary, OTE, and commission upfront. Every role. Every time." />
         <meta property="og:url" content="https://salesroles.co" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://salesroles.co/og-image.svg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="SalesRoles.co | Sales Jobs With Full Compensation Transparency" />
-        <meta name="twitter:description" content="The only sales job board where every role shows full comp upfront." />
-        <meta name="twitter:image" content="https://salesroles.co/og-image.svg" />
+        <meta property="og:image" content="https://salesroles.co/logo.svg" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="SalesRoles.co | Sales Jobs With Full Salary & OTE Transparency" />
+        <meta name="twitter:description" content="Browse 100+ sales jobs that show base salary, OTE, and commission upfront. Every role. Every time." />
+        <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
       </Helmet>
       {/* Hero Section */}
       <section className="relative pt-8 pb-24 md:pt-16 md:pb-48 hero-glow overflow-hidden">

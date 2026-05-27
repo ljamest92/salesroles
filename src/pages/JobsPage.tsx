@@ -210,17 +210,17 @@ export function JobsPage() {
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-16 animate-fade-in overflow-x-hidden">
       <Helmet>
-        <title>Sales Jobs | Browse Roles With Full Comp Transparency | SalesRoles.co</title>
-        <meta name="description" content="Browse hundreds of sales jobs with base salary, OTE, and commission structure shown upfront. Filter by role, location, and seniority. No salary guessing." />
-        <meta property="og:title" content="Sales Jobs With Full Comp Transparency | SalesRoles.co" />
-        <meta property="og:description" content="Browse hundreds of sales jobs with base salary, OTE, and commission structure shown upfront. Filter by role, location, and seniority. No salary guessing." />
+        <title>Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co</title>
+        <meta name="description" content="Search 100+ sales jobs with full compensation transparency. Filter by role, location, and seniority. Base salary, OTE, and commission shown on every listing. No surprises at offer stage." />
+        <meta property="og:title" content="Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co" />
+        <meta property="og:description" content="Search 100+ sales jobs with full compensation transparency. Filter by role, location, and seniority. Base salary, OTE, and commission shown on every listing. No surprises at offer stage." />
         <meta property="og:url" content="https://salesroles.co/jobs" />
         <meta property="og:type" content="website" />
-        <meta property="og:image" content="https://salesroles.co/og-image.svg" />
-        <meta name="twitter:card" content="summary_large_image" />
-        <meta name="twitter:title" content="Sales Jobs With Full Comp Transparency | SalesRoles.co" />
-        <meta name="twitter:description" content="Browse hundreds of sales jobs with base salary, OTE, and commission shown upfront. No salary guessing." />
-        <meta name="twitter:image" content="https://salesroles.co/og-image.svg" />
+        <meta property="og:image" content="https://salesroles.co/logo.svg" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co" />
+        <meta name="twitter:description" content="Search 100+ sales jobs with full compensation transparency. Filter by role, location, and seniority. Base salary, OTE, and commission shown on every listing. No surprises at offer stage." />
+        <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
       </Helmet>
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">
         <div className="space-y-6 max-w-2xl">
