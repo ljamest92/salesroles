@@ -1,14 +1,29 @@
-SalesRoles.co - Premium Sales Job Board
+# SalesRoles.co
 
-SalesRoles.co is the world's best job board exclusively for sales professionals. 
-Our core differentiator is mandatory compensation transparency: every listing must show base salary, OTE, and commission structure.
+> The only job board built exclusively for sales professionals where compensation transparency is mandatory. Every role shows base salary, OTE, and commission structure upfront.
 
-Key Pages:
-- Homepage: /
-- Job Search: /jobs
-- Post a Job: /post-job
-- Pricing: /pricing
-- Resources: /blog
-- About Us: /about
+## About
+SalesRoles.co is a premium sales-specific job board. Unlike generic job boards, every listing on SalesRoles.co must include base salary, OTE (on-target earnings), and commission structure. No exceptions.
 
-Transparency is our mission. Efficiency is our result.
+## Pages
+- [Home](https://salesroles.co): Homepage with live job listings and Companies to Watch
+- [Find Jobs](https://salesroles.co/jobs): Browse all live sales roles with full comp transparency
+- [Remote Sales Jobs](https://salesroles.co/remote-sales-jobs): Remote-only sales roles worldwide
+- [Account Executive Jobs](https://salesroles.co/account-executive-jobs): AE roles with full comp
+- [SDR Jobs](https://salesroles.co/sdr-jobs): Sales Development Representative roles
+- [Business Development Jobs](https://salesroles.co/business-development-jobs): BDR and BDM roles
+- [Sales Jobs Australia](https://salesroles.co/sales-jobs-australia): Sales roles in Australia
+- [Sales Jobs UK](https://salesroles.co/sales-jobs-uk): Sales roles in the United Kingdom
+- [Sales Jobs USA](https://salesroles.co/sales-jobs-usa): Sales roles in the United States
+- [Post a Job](https://salesroles.co/post-job): Post a sales role with mandatory comp transparency
+- [Pricing](https://salesroles.co/pricing): Listing packages and pricing
+- [For Companies](https://salesroles.co/for-companies): Why companies post on SalesRoles.co
+- [For Candidates](https://salesroles.co/for-candidates): Why sales professionals use SalesRoles.co
+- [Blog](https://salesroles.co/blog): Salary insights, career advice, and hiring guides
+
+## Key Facts
+- Mandatory compensation transparency on every listing
+- Base salary, OTE, and commission structure required on all roles
+- Roles across US, UK, Australia, Canada, and remote globally
+- Role types: Account Executive, SDR, BDR, Sales Manager, VP Sales, Account Manager, Sales Director
+- Pricing: Standard listing $99/30 days, Featured $249/30 days, Annual unlimited $999/year

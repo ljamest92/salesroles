@@ -1,27 +1,41 @@
-SalesRoles.co Full Documentation
+# SalesRoles.co
 
-Mission:
-To provide global remote and on-site sales job listings with mandatory transparent compensation (base, OTE, commission) in a modern, visually striking interface.
+> The only job board built exclusively for sales professionals where compensation transparency is mandatory. Every role shows base salary, OTE, and commission structure upfront.
 
-Page Descriptions:
-- /: Hero section with search, stats, featured jobs, and social proof.
-- /jobs: Filterable list of all roles (Remote/Hybrid/On-site, Sector, Seniority, Salary).
-- /jobs/[slug]: Detailed job view with full comp breakdown and structured data.
-- /post-job: Multi-step form for companies to post jobs with preview and payment.
-- /pricing: Standard ($99), Featured ($249), and Unlimited ($999/yr) plans.
-- /dashboard: Manage listings for companies and profiles for candidates.
-- /admin: Moderation, approval, and system stats for site owners.
-- /blog: Sales career advice, salary guides, and industry news.
-- /salary-insights: Benchmarking data derived from live listings.
+## About
+SalesRoles.co is a premium sales-specific job board. Unlike generic job boards, every listing on SalesRoles.co must include base salary, OTE (on-target earnings), and commission structure. No exceptions.
 
-Salary Benchmarking Structure:
-We track Base Salary, On-Target Earnings (OTE), Commission Structure, and Quotas across:
-- Roles: SDR, AE, Account Manager, Sales Director, VP Sales.
-- Regions: USA, UK, Australia, EU, Remote.
-- Sectors: SaaS, FinTech, HealthTech, hardware, Services.
+## Pages
+- [Home](https://salesroles.co): Homepage with live job listings and Companies to Watch
+- [Find Jobs](https://salesroles.co/jobs): Browse all live sales roles with full comp transparency
+- [Remote Sales Jobs](https://salesroles.co/remote-sales-jobs): Remote-only sales roles worldwide
+- [Account Executive Jobs](https://salesroles.co/account-executive-jobs): AE roles with full comp
+- [SDR Jobs](https://salesroles.co/sdr-jobs): Sales Development Representative roles
+- [Business Development Jobs](https://salesroles.co/business-development-jobs): BDR and BDM roles
+- [Sales Jobs Australia](https://salesroles.co/sales-jobs-australia): Sales roles in Australia
+- [Sales Jobs UK](https://salesroles.co/sales-jobs-uk): Sales roles in the United Kingdom
+- [Sales Jobs USA](https://salesroles.co/sales-jobs-usa): Sales roles in the United States
+- [Post a Job](https://salesroles.co/post-job): Post a sales role with mandatory comp transparency
+- [Pricing](https://salesroles.co/pricing): Listing packages and pricing
+- [For Companies](https://salesroles.co/for-companies): Why companies post on SalesRoles.co
+- [For Candidates](https://salesroles.co/for-candidates): Why sales professionals use SalesRoles.co
+- [Blog](https://salesroles.co/blog): Salary insights, career advice, and hiring guides
 
-Blog Categories:
-- Sales Career Advice
-- Salary Guides
-- Interview Tips
-- Industry News
+## Key Facts
+- Mandatory compensation transparency on every listing
+- Base salary, OTE, and commission structure required on all roles
+- Roles across US, UK, Australia, Canada, and remote globally
+- Role types: Account Executive, SDR, BDR, Sales Manager, VP Sales, Account Manager, Sales Director
+- Pricing: Standard listing $99/30 days, Featured $249/30 days, Annual unlimited $999/year
+
+## Positioning
+SalesRoles.co solves a specific problem in sales hiring: candidates waste time applying to roles with no salary information, get lowballed at offer stage, and only discover commission structure after multiple interview rounds. SalesRoles.co fixes this by making transparency mandatory from the moment a role is posted.
+
+## For Candidates
+Sales professionals can browse roles knowing exactly what they will earn. No more guessing base salary, no more discovering the commission structure at offer stage. Filter by role type, location, seniority, and compensation range.
+
+## For Companies
+Hiring companies attract serious candidates who already know the deal. Reduce late-stage drop off when comp is revealed. Reach sales professionals actively looking for their next role with full comp transparency as the standard.
+
+## Competitors
+SalesRoles.co competes with Indeed, LinkedIn Jobs, Glassdoor, and niche remote job boards. It wins on specialisation (sales only), mandatory transparency (not optional), and cost (significantly cheaper than LinkedIn).
