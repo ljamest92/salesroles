@@ -577,7 +577,7 @@ export function AdminPage() {
                             <a
                               href={u.role === 'company'
                                 ? `/company/${(u.company_name || '').toLowerCase().replace(/[^a-z0-9]/g, '')}`
-                                : `/profile/${u.profile_slug || u.id}`}
+                                : u.profile_slug ? `/profile/${u.profile_slug}` : `/candidates/${u.id}`}
                               target="_blank"
                               rel="noreferrer"
                             >
