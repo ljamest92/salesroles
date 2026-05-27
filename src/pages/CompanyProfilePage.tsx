@@ -136,8 +136,8 @@ export function CompanyProfilePage() {
     <div className="pt-20 pb-12 md:py-24 space-y-16 page-transition">
       <Container>
         <div className="flex flex-col md:flex-row gap-12 items-start animate-fade-in">
-          <div className="w-32 h-32 rounded-[32px] bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative group">
-            <CompanyLogo domain={companyDomain} name={companyData.name} uploadedLogoUrl={uploadedLogoUrl} />
+          <div className="w-20 h-20 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden">
+            <CompanyLogo domain={companyDomain} name={companyData.name} uploadedLogoUrl={uploadedLogoUrl} size="lg" />
           </div>
           <div className="space-y-8 flex-1">
             <div className="space-y-4">
