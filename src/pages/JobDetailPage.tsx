@@ -8,6 +8,10 @@ import { formatSalary } from '../utils/formatSalary'
 import { getDomain } from '../utils/getDomain'
 import { useAuth } from '../hooks/useAuth'
 
+function sanitizeDescription(html: string): string {
+  return html.replace(/\s*style="[^"]*"/gi, '')
+}
+
 export function JobDetailPage() {
   const { slug } = useParams({ from: '/jobs/$slug' })
   const { user } = useAuth()
@@ -350,7 +354,10 @@ export function JobDetailPage() {
 
           <div className="prose prose-invert max-w-none">
             <h2 className="text-2xl font-black tracking-tighter mb-6">Job Description</h2>
-            <div className="text-muted-foreground leading-relaxed space-y-4" dangerouslySetInnerHTML={{ __html: job.description }} />
+            <div
+              className="text-muted-foreground leading-relaxed space-y-4"
+              dangerouslySetInnerHTML={{ __html: (job as any).source === 'remotive' ? sanitizeDescription(job.description) : job.description }}
+            />
           </div>
 
           {!((job.via_partner || job.is_partner) && !job.base_salary && !job.ote) && (
