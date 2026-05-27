@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Link } from '@tanstack/react-router'
 import {
   Button, Container, Card, Badge,
@@ -163,6 +164,19 @@ export function RemoteSalesJobsPage() {
 
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
+      <Helmet>
+        <title>Remote Sales Jobs | Work From Anywhere | SalesRoles.co</title>
+        <meta name="description" content="Browse remote sales jobs worldwide with full compensation transparency. Base salary, OTE, and commission shown on every listing. Find your next remote sales role." />
+        <meta property="og:title" content="Remote Sales Jobs With Full Comp Transparency | SalesRoles.co" />
+        <meta property="og:description" content="Browse remote sales jobs worldwide with full compensation transparency. Base salary, OTE, and commission shown on every listing." />
+        <meta property="og:url" content="https://salesroles.co/remote-sales-jobs" />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://salesroles.co/og-image.svg" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content="Remote Sales Jobs With Full Comp Transparency | SalesRoles.co" />
+        <meta name="twitter:description" content="Browse remote sales jobs worldwide with full compensation transparency. Every role shows base, OTE, and commission." />
+        <meta name="twitter:image" content="https://salesroles.co/og-image.svg" />
+      </Helmet>
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">
         <div className="space-y-4">
           <Badge variant="outline" className="px-4 py-1 text-primary border-primary/20 bg-primary/5 text-[10px] font-black">Remote Only</Badge>
