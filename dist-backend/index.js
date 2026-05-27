@@ -253,8 +253,10 @@ app.post('/api/webhooks/stripe', async (c) => {
             await pool.execute('UPDATE users SET is_pro = 1 WHERE id = ?', [userId]).catch(() => { });
         }
         if (jobId && pool) {
-            await pool.execute("UPDATE jobs SET status = 'pending', expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id = ?", [jobId]).catch((err) => console.error('Failed to update job status:', err));
-            console.log(`Job ${jobId} moved to pending after payment — expires in 30 days`);
+            const plan = session.metadata?.plan;
+            const featuredVal = plan === 'featured' ? 1 : 0;
+            await pool.execute("UPDATE jobs SET status = 'pending', featured = ?, expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id = ?", [featuredVal, jobId]).catch((err) => console.error('Failed to update job status:', err));
+            console.log(`Job ${jobId} moved to pending — plan: ${plan}, featured: ${featuredVal}`);
         }
     }
     return c.json({ received: true });
@@ -833,6 +835,44 @@ app.get('/api/admin/pending-jobs', async (c) => {
     }
     catch {
         return c.json([]);
+    }
+});
+// TEMPORARY — delete after one-time use
+app.post('/api/admin/seed-demo-featured', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123';
+    if (auth !== `Bearer ${adminPassword}`)
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const [userRows] = await pool.execute("SELECT id FROM users WHERE email = 'demo@salesroles.co' LIMIT 1");
+        const user = userRows[0];
+        if (!user)
+            return c.json({ error: 'Demo user not found' }, 404);
+        const id = `demo-featured-${Date.now()}`;
+        await pool.execute(`INSERT INTO jobs (id, title, company_name, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, featured, company_id, created_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`, [
+            id,
+            'Senior Account Executive',
+            'SalesRoles Demo Co',
+            'Remote (Global)',
+            'Remote',
+            'Senior',
+            'SaaS',
+            'We are looking for a Senior AE to join our growing sales team. You will own the full sales cycle from qualified lead to close, targeting mid-market SaaS companies.',
+            '$120k - $150k',
+            '$240k - $300k',
+            '20% commission on new ARR, uncapped',
+            'USD',
+            'live',
+            1,
+            user.id,
+        ]);
+        return c.json({ ok: true, id });
+    }
+    catch (err) {
+        return c.json({ error: err.message || 'Seed failed' }, 500);
     }
 });
 app.post('/api/admin/jobs/:id/approve', async (c) => {
