@@ -9,6 +9,7 @@ import { PricingPage } from './pages/PricingPage'
 import { DashboardPage } from './pages/DashboardPage'
 import { AdminPage } from './pages/AdminPage'
 import { BlogPage } from './pages/BlogPage'
+import { BlogPostPage } from './pages/BlogPostPage'
 import { AboutPage } from './pages/AboutPage'
 import { ContactPage } from './pages/ContactPage'
 import { FAQPage } from './pages/FAQPage'
@@ -47,6 +48,7 @@ const postJobSuccessRoute = createRoute({ getParentRoute: () => rootRoute, path:
 const adminRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin', component: AdminPage })
 const adminLoginRoute = createRoute({ getParentRoute: () => rootRoute, path: '/admin/login', component: AdminLoginPage })
 const blogRoute = createRoute({ getParentRoute: () => rootRoute, path: '/blog', component: BlogPage })
+const blogPostRoute = createRoute({ getParentRoute: () => rootRoute, path: '/blog/$slug', component: BlogPostPage })
 const aboutRoute = createRoute({ getParentRoute: () => rootRoute, path: '/about', component: AboutPage })
 const contactRoute = createRoute({ getParentRoute: () => rootRoute, path: '/contact', component: ContactPage })
 const faqRoute = createRoute({ getParentRoute: () => rootRoute, path: '/faq', component: FAQPage })
@@ -113,8 +115,9 @@ const routeTree = rootRoute.addChildren([
   postJobSuccessRoute,
   adminRoute, 
   adminLoginRoute,
-  blogRoute, 
-  aboutRoute, 
+  blogRoute,
+  blogPostRoute,
+  aboutRoute,
   contactRoute, 
   faqRoute,
   companyProfileRoute,

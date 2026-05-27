@@ -3,6 +3,7 @@ import { Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, Input, Separator } from '@blinkdotnew/ui'
 import { Search, Clock, ArrowRight, BookOpen, TrendingUp, UserCheck, Calendar } from 'lucide-react'
 import { motion } from 'framer-motion'
+import { blogPosts } from '../data/blogPosts'
 
 export function BlogPage() {
   const [activeCategory, setActiveCategory] = useState('All')
@@ -33,14 +34,14 @@ export function BlogPage() {
   }
   const categories = ['All', 'Salary Guides', 'Career Advice', 'Industry News', 'Interview Tips']
 
-  const posts = [
-    { title: "The 2024 Sales Salary Guide: What to expect this year", category: "Salary Guides", icon: <TrendingUp className="text-primary" />, date: "May 12, 2024", readTime: "5 min" },
-    { title: "How to negotiate your commission structure like a pro", category: "Career Advice", icon: <UserCheck className="text-primary" />, date: "May 10, 2024", readTime: "8 min" },
-    { title: "Why transparency is winning the sales talent war", category: "Industry News", icon: <BookOpen className="text-primary" />, date: "May 08, 2024", readTime: "4 min" },
-    { title: "Top 10 questions to ask in an Enterprise AE interview", category: "Interview Tips", icon: <UserCheck className="text-primary" />, date: "May 05, 2024", readTime: "6 min" }
-  ]
+  const categoryIcons: Record<string, React.ReactNode> = {
+    'Salary Guides': <TrendingUp className="text-primary" size={16} />,
+    'Career Advice': <UserCheck className="text-primary" size={16} />,
+    'Industry News': <BookOpen className="text-primary" size={16} />,
+    'Interview Tips': <UserCheck className="text-primary" size={16} />,
+  }
 
-  const filteredPosts = activeCategory === 'All' ? posts : posts.filter(p => p.category === activeCategory)
+  const filteredPosts = activeCategory === 'All' ? blogPosts : blogPosts.filter(p => p.category === activeCategory)
 
   return (
     <div className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-24 page-transition">
@@ -93,18 +94,18 @@ export function BlogPage() {
               <div className="p-10 space-y-6 flex-1 flex flex-col">
                 <div className="flex items-center gap-3">
                   <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    {post.icon}
+                    {categoryIcons[post.category] ?? <BookOpen size={16} className="text-primary" />}
                   </div>
                   <span className="text-[10px] font-black tracking-[0.2em] text-primary">{post.category}</span>
                 </div>
                 <h3 className="text-2xl font-black tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2">{post.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 font-medium">Get actionable insights from market leaders on how to master your sales cycle and optimize your earnings potential.</p>
+                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 font-medium">{post.excerpt}</p>
                 <div className="pt-8 mt-auto flex items-center justify-between border-t border-white/5">
                   <div className="flex items-center gap-4 text-[10px] font-black tracking-widest text-muted-foreground/60">
                     <span className="flex items-center gap-1.5"><Calendar size={12} /> {post.date}</span>
                     <span className="flex items-center gap-1.5"><Clock size={12} /> {post.readTime}</span>
                   </div>
-                  <Link to={`/blog/${post.title.toLowerCase().replace(/ /g, '-')}`} className="text-primary font-black text-[10px] tracking-widest flex items-center gap-2 group/link">
+                  <Link to={`/blog/${post.slug}`} className="text-primary font-black text-[10px] tracking-widest flex items-center gap-2 group/link">
                     Read Post <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
                   </Link>
                 </div>
