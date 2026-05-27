@@ -490,7 +490,7 @@ app.get('/api/jobs', async (c) => {
   if (!pool) return c.json({ jobs: [] })
   try {
     const [rows] = await pool.execute(
-      "SELECT * FROM jobs WHERE status = 'live' AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY featured DESC, created_at DESC"
+      "SELECT j.*, u.company_logo_url FROM jobs j LEFT JOIN users u ON j.company_id = u.id WHERE j.status = 'live' AND (j.expires_at IS NULL OR j.expires_at > NOW()) ORDER BY j.featured DESC, j.created_at DESC"
     ) as any[]
     const jobs = (rows as any[]).map(row => ({
       ...row,
@@ -500,6 +500,7 @@ app.get('/api/jobs', async (c) => {
       application_url: row.application_url || '',
       contact_email: row.contact_email || '',
       featured: !!row.featured,
+      company_logo_url: row.company_logo_url || null,
     }))
     return c.json({ jobs })
   } catch {
@@ -643,10 +644,10 @@ app.get('/api/jobs/:id', async (c) => {
 
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   try {
-    const [rows] = await pool.execute('SELECT * FROM jobs WHERE id = ?', [id]) as any[]
+    const [rows] = await pool.execute('SELECT j.*, u.company_logo_url FROM jobs j LEFT JOIN users u ON j.company_id = u.id WHERE j.id = ?', [id]) as any[]
     const row = (rows as any[])[0]
     if (!row) return c.json({ error: 'Job not found' }, 404)
-    return c.json({ job: { ...row, company: row.company_name, domain: extractDomainFromUrl(row.company_website || ''), job_type: row.work_type, featured: !!row.featured } })
+    return c.json({ job: { ...row, company: row.company_name, domain: extractDomainFromUrl(row.company_website || ''), job_type: row.work_type, featured: !!row.featured, company_logo_url: row.company_logo_url || null } })
   } catch {
     return c.json({ error: 'Failed to fetch job' }, 500)
   }

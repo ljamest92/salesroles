@@ -404,7 +404,7 @@ export function JobsPage() {
                       <div className="flex flex-col md:flex-row justify-between gap-6 md:gap-10 min-w-0">
                         <div className="flex gap-4 sm:gap-6 md:gap-8 min-w-0">
                           <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl transition-all group-hover:scale-105 duration-500 overflow-hidden relative">
-                            <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} />
+                            <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} uploadedLogoUrl={job.company_logo_url} />
                           </div>
                           <div className="space-y-2 min-w-0">
                             <div className="flex flex-wrap items-center gap-3">

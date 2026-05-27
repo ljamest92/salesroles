@@ -24,6 +24,7 @@ export interface Job {
   perks?: string[]
   company_description?: string
   source_tag?: string
+  company_logo_url?: string
 }
 
 const CACHE_KEY = 'salesroles_jobs_cache_v2'

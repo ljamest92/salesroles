@@ -282,7 +282,7 @@ export function JobDetailPage() {
             {/* Row 1: Logo + company meta */}
             <div className="flex items-center gap-4 md:gap-6">
               <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
-                <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
+                <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} uploadedLogoUrl={(job as any).company_logo_url} />
               </div>
               <div className="flex flex-wrap gap-3 md:gap-6 text-muted-foreground font-bold text-sm items-center">
                 <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
@@ -458,7 +458,7 @@ export function JobDetailPage() {
               <h4 className="text-[10px] font-black text-muted-foreground/50">Company Profile</h4>
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-lg overflow-hidden">
-                  <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} />
+                  <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} uploadedLogoUrl={(job as any).company_logo_url} />
                 </div>
                 <div>
                   <p className="font-bold text-lg">{job.company}</p>
@@ -517,7 +517,7 @@ export function JobDetailPage() {
               <Card className="job-card-hover p-6 border border-border group space-y-4">
                 <div className="flex items-center gap-4">
                   <div className="w-10 h-10 rounded bg-secondary flex items-center justify-center text-muted-foreground border border-border/50 overflow-hidden">
-                    <CompanyLogo domain={relJob.domain} name={relJob.company} />
+                    <CompanyLogo domain={relJob.domain} name={relJob.company} uploadedLogoUrl={relJob.company_logo_url} />
                   </div>
                   <div>
                     <h4 className="font-bold group-hover:text-primary transition-colors line-clamp-1">{relJob.title}</h4>

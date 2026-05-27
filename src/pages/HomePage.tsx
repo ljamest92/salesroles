@@ -282,7 +282,7 @@ export function HomePage() {
                     <div className="flex flex-col md:flex-row justify-between gap-6 md:gap-8">
                       <div className="flex gap-4 md:gap-6 min-w-0">
                         <div className="w-14 h-14 md:w-16 md:h-16 rounded-xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-border/50 overflow-hidden relative">
-                          <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} />
+                          <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} uploadedLogoUrl={job.company_logo_url} />
                         </div>
                         <div className="space-y-1 min-w-0">
                           <div className="flex items-center gap-2 flex-wrap">

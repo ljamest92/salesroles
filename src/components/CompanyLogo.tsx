@@ -7,6 +7,7 @@ interface CompanyLogoProps {
   size?: 'sm' | 'md' | 'lg'
   className?: string
   imgClassName?: string
+  uploadedLogoUrl?: string | null
 }
 
 const sizeMap = {
@@ -15,8 +16,10 @@ const sizeMap = {
   lg: 'w-16 h-16 text-base',
 }
 
-export function CompanyLogo({ domain, name, size = 'md', className = '', imgClassName = '' }: CompanyLogoProps) {
-  const [failed, setFailed] = useState(false)
+export function CompanyLogo({ domain, name, size = 'md', className = '', imgClassName = '', uploadedLogoUrl }: CompanyLogoProps) {
+  const [uploadedFailed, setUploadedFailed] = useState(false)
+  const [domainFailed, setDomainFailed] = useState(false)
+
   const initials = name
     .split(' ')
     .slice(0, 2)
@@ -24,20 +27,37 @@ export function CompanyLogo({ domain, name, size = 'md', className = '', imgClas
     .join('')
     .toUpperCase()
 
-  if (!domain || failed) {
+  const uploadedSrc = uploadedLogoUrl
+    ? uploadedLogoUrl.startsWith('http') ? uploadedLogoUrl : `/uploads/logos/${uploadedLogoUrl}`
+    : null
+
+  const imgClass = `${sizeMap[size]} ${className} ${imgClassName} rounded-lg object-contain bg-white p-1`.trim()
+
+  if (uploadedSrc && !uploadedFailed) {
     return (
-      <div className={`${sizeMap[size]} ${className} rounded-lg bg-[#0f1629] border border-white/10 flex items-center justify-center font-semibold text-emerald-400`}>
-        {initials}
-      </div>
+      <img
+        src={uploadedSrc}
+        alt={`${name} logo`}
+        onError={() => setUploadedFailed(true)}
+        className={imgClass}
+      />
+    )
+  }
+
+  if (domain && !domainFailed) {
+    return (
+      <img
+        src={getLogoUrl(domain)}
+        alt={`${name} logo`}
+        onError={() => setDomainFailed(true)}
+        className={imgClass}
+      />
     )
   }
 
   return (
-    <img
-      src={getLogoUrl(domain)}
-      alt={`${name} logo`}
-      onError={() => setFailed(true)}
-      className={`${sizeMap[size]} ${className} ${imgClassName} rounded-lg object-contain bg-white p-1`.trim()}
-    />
+    <div className={`${sizeMap[size]} ${className} rounded-lg bg-[#0f1629] border border-white/10 flex items-center justify-center font-semibold text-emerald-400`}>
+      {initials}
+    </div>
   )
 }
