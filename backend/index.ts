@@ -122,19 +122,6 @@ try {
   pool.execute(`ALTER TABLE jobs ADD COLUMN edit_note VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN stripe_subscription_id VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users MODIFY COLUMN is_public TINYINT DEFAULT 1`).catch(() => {})
-  // Demo company account (INSERT IGNORE — no-op if already exists)
-  pool.execute(
-    `INSERT IGNORE INTO users (name, email, password_hash, role, company_name, created_at)
-     VALUES ('SalesRoles Demo', 'demo@salesroles.co', '$2b$10$nSHW9/N3aDwoWhEQSYW.x.DgNOU4FdWhVnBkaE97tC4Mvi.RpKe9W', 'company', 'SalesRoles Demo Co', NOW())`
-  ).catch(() => {})
-  // Demo job linked to demo company (INSERT IGNORE — idempotent via primary key)
-  pool.execute(
-    `INSERT IGNORE INTO jobs (id, title, company_name, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, featured, company_id, created_at)
-     SELECT 'demo-sr-senior-ae', 'Senior Account Executive', 'SalesRoles Demo Co', 'Remote (Global)', 'Remote', 'Senior', 'SaaS',
-       'We are looking for a Senior AE to join our growing sales team. You will own the full sales cycle from qualified lead to close, targeting mid-market SaaS companies.',
-       '$120k - $150k', '$240k - $300k', '20% of ARR, uncapped, paid monthly', 'USD', 'live', 1, id, NOW()
-     FROM users WHERE email = 'demo@salesroles.co' LIMIT 1`
-  ).catch(() => {})
   // Backfill slugs for existing users who have none
   pool.execute(`
     SELECT id, name FROM users WHERE profile_slug IS NULL OR profile_slug = ''
@@ -717,6 +704,25 @@ app.get('/api/admin/stats', async (c) => {
   }
 })
 
+app.delete('/api/company/jobs/:id', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const companyId = String(payload.id)
+    const jobId = c.req.param('id')
+    const [rows] = await pool.execute('SELECT company_id FROM jobs WHERE id = ?', [jobId]) as any[]
+    const job = (rows as any[])[0]
+    if (!job) return c.json({ error: 'Not found' }, 404)
+    if (String(job.company_id) !== companyId) return c.json({ error: 'Forbidden' }, 403)
+    await pool.execute('DELETE FROM jobs WHERE id = ?', [jobId])
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ error: 'Delete failed' }, 500)
+  }
+})
+
 app.delete('/api/admin/jobs/:id', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   try {
@@ -917,45 +923,6 @@ app.get('/api/admin/pending-jobs', async (c) => {
   }
 })
 
-// TEMPORARY — delete after one-time use
-app.post('/api/admin/seed-demo-featured', async (c) => {
-  if (!pool) return c.json({ error: 'Database not configured' }, 503)
-  const auth = c.req.header('Authorization')
-  const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'
-  if (auth !== `Bearer ${adminPassword}`) return c.json({ error: 'Unauthorized' }, 401)
-  try {
-    const [userRows] = await pool.execute(
-      "SELECT id FROM users WHERE email = 'demo@salesroles.co' LIMIT 1"
-    ) as any[]
-    const user = (userRows as any[])[0]
-    if (!user) return c.json({ error: 'Demo user not found' }, 404)
-    const id = `demo-featured-${Date.now()}`
-    await pool.execute(
-      `INSERT INTO jobs (id, title, company_name, location, work_type, seniority, sector, description, base_salary, ote, commission_structure, currency, status, featured, company_id, created_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NOW())`,
-      [
-        id,
-        'Senior Account Executive',
-        'SalesRoles Demo Co',
-        'Remote (Global)',
-        'Remote',
-        'Senior',
-        'SaaS',
-        'We are looking for a Senior AE to join our growing sales team. You will own the full sales cycle from qualified lead to close, targeting mid-market SaaS companies.',
-        '$120k - $150k',
-        '$240k - $300k',
-        '20% commission on new ARR, uncapped',
-        'USD',
-        'live',
-        1,
-        user.id,
-      ]
-    )
-    return c.json({ ok: true, id })
-  } catch (err: any) {
-    return c.json({ error: err.message || 'Seed failed' }, 500)
-  }
-})
 
 app.post('/api/admin/jobs/:id/approve', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)

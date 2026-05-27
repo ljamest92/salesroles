@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil, Trash2 } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -63,6 +63,7 @@ export function DashboardPage() {
   const [redirectToast, setRedirectToast] = useState<string | null>(null)
   // Company-specific state
   const [liveJobs, setLiveJobs] = useState<any[]>([])
+  const [deleteJobDialog, setDeleteJobDialog] = useState<{ open: boolean; jobId: string | null; loading: boolean }>({ open: false, jobId: null, loading: false })
   const [companyProfile, setCompanyProfile] = useState({
     company_name: '', company_website: '', company_logo_url: '',
     company_size: '', company_industry: '', location: '', bio: '',
@@ -315,6 +316,24 @@ export function DashboardPage() {
       description: job.description || '',
       saving: false, error: ''
     })
+  }
+
+  const confirmDeleteJob = async () => {
+    if (!deleteJobDialog.jobId) return
+    setDeleteJobDialog(prev => ({ ...prev, loading: true }))
+    const token = localStorage.getItem('salesroles_token')
+    try {
+      const res = await fetch(`/api/company/jobs/${deleteJobDialog.jobId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      if (res.ok) {
+        setLiveJobs(prev => prev.filter(j => j.id !== deleteJobDialog.jobId))
+        setDeleteJobDialog({ open: false, jobId: null, loading: false })
+      }
+    } catch {
+      setDeleteJobDialog(prev => ({ ...prev, loading: false }))
+    }
   }
 
   const saveEditJob = async () => {
@@ -593,6 +612,12 @@ export function DashboardPage() {
                         <Link to={`/jobs/${job.id}`}>
                           <button className="text-xs border border-white/10 text-white/50 hover:text-white px-3 py-1.5 rounded-lg transition-colors">View →</button>
                         </Link>
+                        <button
+                          onClick={() => setDeleteJobDialog({ open: true, jobId: job.id, loading: false })}
+                          className="text-xs border border-red-500/20 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 font-bold"
+                        >
+                          <Trash2 size={12} /> Delete
+                        </button>
                       </div>
                     </div>
                   </Card>
@@ -1292,6 +1317,38 @@ export function DashboardPage() {
                   )}
                 </TabsContent>
               </Tabs>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Job Confirmation Dialog */}
+      {deleteJobDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setDeleteJobDialog({ open: false, jobId: null, loading: false })} />
+          <div className="relative bg-card border border-white/10 rounded-[24px] p-8 w-full max-w-sm space-y-6 shadow-2xl">
+            <div className="space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center mb-4">
+                <Trash2 size={22} className="text-red-400" />
+              </div>
+              <h2 className="text-xl font-black tracking-tight">Delete Listing</h2>
+              <p className="text-white/50 text-sm font-medium">Are you sure you want to delete this listing? This cannot be undone.</p>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteJobDialog({ open: false, jobId: null, loading: false })}
+                disabled={deleteJobDialog.loading}
+                className="flex-1 border border-white/10 text-white/60 hover:text-white font-bold text-sm py-2.5 rounded-xl transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmDeleteJob}
+                disabled={deleteJobDialog.loading}
+                className="flex-1 bg-red-500 hover:bg-red-400 text-white font-bold text-sm py-2.5 rounded-xl transition-colors disabled:opacity-50"
+              >
+                {deleteJobDialog.loading ? 'Deleting…' : 'Delete'}
+              </button>
             </div>
           </div>
         </div>
