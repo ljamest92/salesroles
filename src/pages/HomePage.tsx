@@ -268,8 +268,16 @@ export function HomePage() {
       </section>
 
       {/* Latest Openings */}
-      <section className="py-20 md:py-32 bg-background">
-        <Container className="space-y-16">
+      <section className="py-20 md:py-32 bg-background relative overflow-hidden">
+        {/* Shooting star meteors */}
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <span className="sr-meteor" style={{ width: 90, top: '3%', left: '12%', '--sr-angle': '34deg', animationName: 'sr-meteor-shoot', animationDuration: '2.5s', animationDelay: '0s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
+          <span className="sr-meteor" style={{ width: 110, top: '1%', left: '52%', animationName: 'sr-meteor-arc', animationDuration: '2.8s', animationDelay: '0.8s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
+          <span className="sr-meteor" style={{ width: 70, top: '26%', left: '2%', '--sr-angle': '31deg', animationName: 'sr-meteor-shoot', animationDuration: '2.3s', animationDelay: '1.6s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
+          <span className="sr-meteor" style={{ width: 95, top: '2%', left: '76%', '--sr-angle': '41deg', animationName: 'sr-meteor-shoot', animationDuration: '3s', animationDelay: '2.4s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
+          <span className="sr-meteor" style={{ width: 80, top: '48%', left: '5%', animationName: 'sr-meteor-arc', animationDuration: '2.6s', animationDelay: '3.2s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
+        </div>
+        <Container className="space-y-16 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 text-center md:text-left">
             <div className="space-y-2">
               <h2 className="text-4xl md:text-5xl font-black tracking-tighter">Latest Openings</h2>
@@ -380,8 +388,22 @@ export function HomePage() {
       </section>
 
       {/* Companies to Watch */}
-      <section className="py-20 md:py-32 bg-background">
-        <Container className="space-y-16">
+      <section className="py-20 md:py-32 bg-background relative overflow-hidden">
+        {/* Aurora falling light columns */}
+        <div className="absolute top-0 left-0 right-0 h-[200px] overflow-hidden pointer-events-none" aria-hidden="true">
+          <span className="sr-aurora-bar" style={{ left: '7%',  width: 2, animationDuration: '2.2s',  animationDelay: '0s' }} />
+          <span className="sr-aurora-bar" style={{ left: '18%', width: 3, animationDuration: '1.8s',  animationDelay: '0.35s' }} />
+          <span className="sr-aurora-bar" style={{ left: '31%', width: 2, animationDuration: '2.6s',  animationDelay: '0.75s' }} />
+          <span className="sr-aurora-bar" style={{ left: '44%', width: 3, animationDuration: '1.55s', animationDelay: '1.2s' }} />
+          <span className="sr-aurora-bar" style={{ left: '57%', width: 2, animationDuration: '2.9s',  animationDelay: '0.5s' }} />
+          <span className="sr-aurora-bar" style={{ left: '71%', width: 3, animationDuration: '2.1s',  animationDelay: '0.95s' }} />
+          <span className="sr-aurora-bar" style={{ left: '84%', width: 2, animationDuration: '1.9s',  animationDelay: '1.55s' }} />
+          <span className="sr-aurora-dot" style={{ left: '13%', animationDuration: '1.7s',  animationDelay: '0.2s' }} />
+          <span className="sr-aurora-dot" style={{ left: '39%', animationDuration: '2.4s',  animationDelay: '0.85s' }} />
+          <span className="sr-aurora-dot" style={{ left: '63%', animationDuration: '1.5s',  animationDelay: '1.1s' }} />
+          <span className="sr-aurora-dot" style={{ left: '80%', animationDuration: '2.2s',  animationDelay: '0.4s' }} />
+        </div>
+        <Container className="space-y-16 relative z-10">
           <div className="text-center space-y-4">
             <h2 className="text-4xl md:text-5xl font-black tracking-tighter leading-none">Companies to Watch</h2>
             <p className="text-muted-foreground text-lg font-medium leading-relaxed">High-growth teams hiring aggressively this month.</p>
