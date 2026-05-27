@@ -8,7 +8,7 @@ import {
   StatGroup,
   Stat,
 } from '@blinkdotnew/ui'
-import { ShieldCheck, ShieldAlert, Users, Briefcase, DollarSign, Check, X, AlertTriangle, LogOut, Trash2, Settings } from 'lucide-react'
+import { ShieldCheck, ShieldAlert, Users, Briefcase, DollarSign, Check, X, AlertTriangle, LogOut, Trash2, Settings, ExternalLink } from 'lucide-react'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { getDomain } from '../utils/getDomain'
 
@@ -479,6 +479,15 @@ export function AdminPage() {
                   {job.featured && (
                     <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Featured</Badge>
                   )}
+                  <a
+                    href={`/jobs/${job.id}`}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    <Button size="sm" variant="ghost" className="font-bold gap-2 text-xs">
+                      <ExternalLink size={14} /> View
+                    </Button>
+                  </a>
                   <Button
                     size="sm"
                     variant="ghost"
@@ -564,14 +573,25 @@ export function AdminPage() {
                         {userSubTab === 'companies' && <td className="py-4 text-muted-foreground">{blinded ? 'Hidden' : (u.company_name || '—')}</td>}
                         <td className="py-4 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('en-GB')}</td>
                         <td className="py-4">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-destructive font-bold gap-1.5 hover:bg-destructive/10 text-[10px] h-8 px-3"
-                            onClick={() => handleDeleteUser(u.id, u.name)}
-                          >
-                            <Trash2 size={12} /> Delete
-                          </Button>
+                          <div className="flex items-center gap-2">
+                            <a
+                              href={u.role === 'company' ? `/company/${u.id}` : `/candidates/${u.id}`}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              <Button size="sm" variant="ghost" className="font-bold gap-1.5 text-[10px] h-8 px-3">
+                                <ExternalLink size={12} /> View Profile
+                              </Button>
+                            </a>
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-destructive font-bold gap-1.5 hover:bg-destructive/10 text-[10px] h-8 px-3"
+                              onClick={() => handleDeleteUser(u.id, u.name)}
+                            >
+                              <Trash2 size={12} /> Delete
+                            </Button>
+                          </div>
                         </td>
                       </tr>
                     ))}
