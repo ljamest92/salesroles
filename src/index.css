@@ -241,43 +241,6 @@ html.dark {
   --ring: 161 84% 39% !important;
 }
 
-/* ── Shooting star meteors — Latest Openings section ─────────────────────── */
-@keyframes sr-meteor-shoot {
-  0%   { transform: rotate(var(--sr-angle, 35deg)) translateX(-150px); opacity: 0; }
-  4%   { opacity: 1; }
-  88%  { opacity: 0.6; }
-  100% { transform: rotate(var(--sr-angle, 35deg)) translateX(1800px); opacity: 0; }
-}
-
-@keyframes sr-meteor-arc {
-  0%   { transform: rotate(27deg) translateX(-150px) translateY(0px); opacity: 0; }
-  4%   { opacity: 1; }
-  48%  { transform: rotate(36deg) translateX(650px) translateY(35px); opacity: 0.85; }
-  88%  { opacity: 0.5; }
-  100% { transform: rotate(43deg) translateX(1700px) translateY(85px); opacity: 0; }
-}
-
-.sr-meteor {
-  position: absolute;
-  height: 1.5px;
-  border-radius: 9999px;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.65) 50%, rgba(255,255,255,0.95));
-  pointer-events: none;
-}
-
-.sr-meteor::after {
-  content: '';
-  position: absolute;
-  right: 0;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 4px;
-  height: 4px;
-  border-radius: 50%;
-  background: #fff;
-  box-shadow: 0 0 4px 1px rgba(16,185,129,0.9), 0 0 10px 3px rgba(16,185,129,0.4);
-}
-
 /* ── Aurora light columns — Companies to Watch section ───────────────────── */
 @keyframes sr-aurora-fall {
   0%   { transform: translateY(-200px); opacity: 0; }

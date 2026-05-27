@@ -269,14 +269,46 @@ export function HomePage() {
 
       {/* Latest Openings */}
       <section className="py-20 md:py-32 bg-background relative overflow-hidden">
-        {/* Shooting star meteors */}
-        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
-          <span className="sr-meteor" style={{ width: 90, top: '3%', left: '12%', '--sr-angle': '34deg', animationName: 'sr-meteor-shoot', animationDuration: '2.5s', animationDelay: '0s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
-          <span className="sr-meteor" style={{ width: 110, top: '1%', left: '52%', animationName: 'sr-meteor-arc', animationDuration: '2.8s', animationDelay: '0.8s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
-          <span className="sr-meteor" style={{ width: 70, top: '26%', left: '2%', '--sr-angle': '31deg', animationName: 'sr-meteor-shoot', animationDuration: '2.3s', animationDelay: '1.6s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
-          <span className="sr-meteor" style={{ width: 95, top: '2%', left: '76%', '--sr-angle': '41deg', animationName: 'sr-meteor-shoot', animationDuration: '3s', animationDelay: '2.4s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
-          <span className="sr-meteor" style={{ width: 80, top: '48%', left: '5%', animationName: 'sr-meteor-arc', animationDuration: '2.6s', animationDelay: '3.2s', animationTimingFunction: 'linear', animationIterationCount: 'infinite' } as React.CSSProperties} />
-        </div>
+        {/* Orbit streaks — travel the section perimeter */}
+        <svg
+          aria-hidden="true"
+          viewBox="0 0 1000 700"
+          preserveAspectRatio="none"
+          className="absolute inset-0 w-full h-full pointer-events-none"
+          style={{ overflow: 'visible' }}
+        >
+          {[0, 2.33, 4.67].map((begin) => (
+            <g key={begin}>
+              {/* Tail layers — stacked lines widening toward the head */}
+              <line x1="-40" y1="0" x2="0" y2="0" stroke="white" strokeWidth="1" strokeOpacity="0.10" strokeLinecap="round">
+                <animateMotion dur="7s" begin={`${begin}s`} repeatCount="indefinite" rotate="auto"
+                  path="M 8,1 L 992,1 Q 999,1 999,8 L 999,692 Q 999,699 992,699 L 8,699 Q 1,699 1,692 L 1,8 Q 1,1 8,1 Z" />
+              </line>
+              <line x1="-28" y1="0" x2="0" y2="0" stroke="white" strokeWidth="1.3" strokeOpacity="0.25" strokeLinecap="round">
+                <animateMotion dur="7s" begin={`${begin}s`} repeatCount="indefinite" rotate="auto"
+                  path="M 8,1 L 992,1 Q 999,1 999,8 L 999,692 Q 999,699 992,699 L 8,699 Q 1,699 1,692 L 1,8 Q 1,1 8,1 Z" />
+              </line>
+              <line x1="-16" y1="0" x2="0" y2="0" stroke="white" strokeWidth="1.7" strokeOpacity="0.50" strokeLinecap="round">
+                <animateMotion dur="7s" begin={`${begin}s`} repeatCount="indefinite" rotate="auto"
+                  path="M 8,1 L 992,1 Q 999,1 999,8 L 999,692 Q 999,699 992,699 L 8,699 Q 1,699 1,692 L 1,8 Q 1,1 8,1 Z" />
+              </line>
+              <line x1="-6" y1="0" x2="0" y2="0" stroke="white" strokeWidth="2" strokeOpacity="0.85" strokeLinecap="round">
+                <animateMotion dur="7s" begin={`${begin}s`} repeatCount="indefinite" rotate="auto"
+                  path="M 8,1 L 992,1 Q 999,1 999,8 L 999,692 Q 999,699 992,699 L 8,699 Q 1,699 1,692 L 1,8 Q 1,1 8,1 Z" />
+              </line>
+              {/* White head dot */}
+              <circle cx="0" cy="0" r="2" fill="white" fillOpacity="0.9">
+                <animateMotion dur="7s" begin={`${begin}s`} repeatCount="indefinite" rotate="auto"
+                  path="M 8,1 L 992,1 Q 999,1 999,8 L 999,692 Q 999,699 992,699 L 8,699 Q 1,699 1,692 L 1,8 Q 1,1 8,1 Z" />
+              </circle>
+              {/* Emerald glow dot */}
+              <circle cx="0" cy="0" r="3" fill="none" stroke="#10B981" strokeWidth="1.5" strokeOpacity="0.7">
+                <animateMotion dur="7s" begin={`${begin}s`} repeatCount="indefinite" rotate="auto"
+                  path="M 8,1 L 992,1 Q 999,1 999,8 L 999,692 Q 999,699 992,699 L 8,699 Q 1,699 1,692 L 1,8 Q 1,1 8,1 Z" />
+              </circle>
+            </g>
+          ))}
+        </svg>
         <Container className="space-y-16 relative z-10">
           <div className="flex flex-col md:flex-row justify-between items-center md:items-end gap-6 text-center md:text-left">
             <div className="space-y-2">
