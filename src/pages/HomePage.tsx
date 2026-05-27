@@ -192,8 +192,8 @@ export function HomePage() {
       {/* Hero Section */}
       <section className="relative pt-8 pb-24 md:pt-16 md:pb-48 hero-glow overflow-hidden">
         {/* Radial glow orbs */}
-        <div aria-hidden="true" className="pointer-events-none absolute left-0 top-1/3 -translate-x-1/2 w-[600px] h-[600px] rounded-full z-[1]" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.30) 0%, transparent 70%)', filter: 'blur(90px)' }} />
-        <div aria-hidden="true" className="pointer-events-none absolute right-0 top-1/3 translate-x-1/2 w-[600px] h-[600px] rounded-full z-[1]" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.30) 0%, transparent 70%)', filter: 'blur(90px)' }} />
+        <div aria-hidden="true" className="pointer-events-none absolute left-0 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full z-[1]" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.30) 0%, rgba(16,185,129,0.10) 45%, transparent 70%)', filter: 'blur(80px)' }} />
+        <div aria-hidden="true" className="pointer-events-none absolute right-0 top-1/2 translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full z-[1]" style={{ background: 'radial-gradient(circle, rgba(16,185,129,0.30) 0%, rgba(16,185,129,0.10) 45%, transparent 70%)', filter: 'blur(80px)' }} />
         <Container className="text-center space-y-10 md:space-y-16 relative z-10">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
