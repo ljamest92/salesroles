@@ -400,8 +400,8 @@ export function PostJobPage() {
             </div>
           </div>
 
-          <div className="flex justify-end pt-4">
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-16 h-16 text-lg tracking-tighter cta-glow" onClick={handleNextStep}>
+          <div className="flex flex-col sm:flex-row sm:justify-end pt-4">
+            <Button size="lg" className="w-full sm:w-auto bg-primary text-primary-foreground font-black px-16 h-16 text-lg tracking-tighter cta-glow" onClick={handleNextStep}>
               Next Step →
             </Button>
           </div>
@@ -467,9 +467,9 @@ export function PostJobPage() {
             </div>
           </Card>
 
-          <div className="flex justify-between">
-            <Button variant="ghost" className="font-bold" onClick={() => setStep(1)}>Back</Button>
-            <Button size="lg" className="bg-primary text-primary-foreground font-black px-12" onClick={handleProceedToPayment}>Continue to Checkout</Button>
+          <div className="flex flex-col-reverse sm:flex-row sm:justify-between gap-3">
+            <Button variant="ghost" className="w-full sm:w-auto font-bold" onClick={() => setStep(1)}>Back</Button>
+            <Button size="lg" className="w-full sm:w-auto bg-primary text-primary-foreground font-black px-12" onClick={handleProceedToPayment}>Continue to Checkout</Button>
           </div>
         </div>
       )}
