@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Link, Outlet, useLocation } from '@tanstack/react-router'
+import { Link, Outlet, useLocation, useNavigate } from '@tanstack/react-router'
 import { Button, Navbar, NavbarBrand, NavbarContent, NavbarItem } from '@blinkdotnew/ui'
 import { useAuth } from '../hooks/useAuth'
 import { Briefcase, User, LogOut, Menu, X, ArrowRight } from 'lucide-react'
@@ -9,7 +9,24 @@ import { motion, AnimatePresence } from 'framer-motion'
 export function AppLayout() {
   const { user, logout } = useAuth()
   const location = useLocation()
+  const navigate = useNavigate()
   const [menuOpen, setMenuOpen] = useState(false)
+
+  const goToCompanyDashboard = () => {
+    if (user) {
+      navigate({ to: '/dashboard', search: { mode: 'company' } as any })
+    } else {
+      navigate({ to: '/login', search: { redirect: '/dashboard?mode=company' } as any })
+    }
+  }
+
+  const goToCandidateDashboard = () => {
+    if (user) {
+      navigate({ to: '/dashboard', search: { mode: 'candidate' } as any })
+    } else {
+      navigate({ to: '/login', search: { redirect: '/dashboard?mode=candidate' } as any })
+    }
+  }
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -219,8 +236,8 @@ export function AppLayout() {
               </p>
             </div>
             <div className="flex gap-8">
-               <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><Briefcase size={16} /></a>
-               <a href="#" className="text-muted-foreground hover:text-primary transition-colors"><User size={16} /></a>
+               <button onClick={goToCompanyDashboard} className="text-muted-foreground hover:text-primary transition-colors" aria-label="Company dashboard"><Briefcase size={16} /></button>
+               <button onClick={goToCandidateDashboard} className="text-muted-foreground hover:text-primary transition-colors" aria-label="Candidate dashboard"><User size={16} /></button>
             </div>
           </div>
         </div>
