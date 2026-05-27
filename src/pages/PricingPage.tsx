@@ -34,7 +34,7 @@ export function PricingPage() {
             <li className="flex items-center gap-3"><Check size={18} className="text-primary shrink-0" /> Syndicated to Google Jobs</li>
             <li className="flex items-center gap-3"><Check size={18} className="text-primary shrink-0" /> Social media promotion</li>
           </ul>
-          <Link to="/post-job">
+          <Link to="/post-job" className="mt-6 block">
             <Button variant="outline" className="w-full font-bold tracking-tight">Post Standard Job</Button>
           </Link>
         </Card>
@@ -57,7 +57,7 @@ export function PricingPage() {
             <li className="flex items-center gap-3"><Check size={18} className="text-primary shrink-0" /> Everything in Standard</li>
             <li className="flex items-center gap-3"><Check size={18} className="text-primary shrink-0" /> Priority Review (Within 1hr)</li>
           </ul>
-          <Link to="/post-job">
+          <Link to="/post-job" className="mt-6 block">
             <Button className="w-full bg-primary text-primary-foreground font-black tracking-tight py-6">Post Featured Job</Button>
           </Link>
         </Card>

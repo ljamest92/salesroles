@@ -120,6 +120,7 @@ try {
   pool.execute(`ALTER TABLE users ADD COLUMN company_logo_url VARCHAR(500)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_domain VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE jobs ADD COLUMN edit_note VARCHAR(255)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN stripe_subscription_id VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users MODIFY COLUMN is_public TINYINT DEFAULT 1`).catch(() => {})
   // Demo company account (INSERT IGNORE — no-op if already exists)
   pool.execute(
@@ -260,7 +261,11 @@ app.post('/api/webhooks/stripe', async (c) => {
     const jobId = session.metadata?.jobId
     const userId = session.metadata?.userId
     if (userId && session.mode === 'subscription' && pool) {
-      await pool.execute('UPDATE users SET is_pro = 1 WHERE id = ?', [userId]).catch(() => {})
+      const subscriptionId = session.subscription as string | null
+      await pool.execute(
+        'UPDATE users SET is_pro = 1, stripe_subscription_id = ? WHERE id = ?',
+        [subscriptionId || null, userId]
+      ).catch(() => {})
     }
     if (jobId && pool) {
       const plan = session.metadata?.plan
@@ -272,6 +277,24 @@ app.post('/api/webhooks/stripe', async (c) => {
       console.log(`Job ${jobId} moved to pending — plan: ${plan}, featured: ${featuredVal}`)
     }
   }
+
+  // Revoke Pro when a subscription is cancelled or lapses
+  if ((event.type === 'customer.subscription.deleted' || event.type === 'customer.subscription.updated') && pool) {
+    const subscription = event.data.object as any
+    if (event.type === 'customer.subscription.updated' && subscription.status !== 'canceled' && subscription.status !== 'unpaid') {
+      // Only act on terminal states
+    } else {
+      const customerId = subscription.customer as string
+      if (customerId && stripe) {
+        // Look up the userId via the subscription metadata (set at checkout)
+        const userId = subscription.metadata?.userId
+        if (userId) {
+          await pool.execute('UPDATE users SET is_pro = 0 WHERE id = ?', [userId]).catch(() => {})
+        }
+      }
+    }
+  }
+
   return c.json({ received: true })
 })
 
@@ -964,7 +987,7 @@ app.get('/api/admin/candidates', async (c) => {
   if (!pool) return c.json([])
   try {
     const [users] = await pool.execute(
-      `SELECT u.id, u.name, u.email, u.role, u.created_at, u.profile_slug,
+      `SELECT u.id, u.name, u.email, u.role, u.created_at, u.profile_slug, u.is_pro, u.stripe_subscription_id,
         (SELECT company_name FROM jobs WHERE company_id = u.id LIMIT 1) as company_name
        FROM users u
        ORDER BY u.created_at DESC`
@@ -972,6 +995,70 @@ app.get('/api/admin/candidates', async (c) => {
     return c.json(users)
   } catch {
     return c.json([])
+  }
+})
+
+// --- Subscription management ---
+
+app.get('/api/payments/subscription-status', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const userId = String(payload.id)
+    const [rows] = await pool.execute('SELECT is_pro, stripe_subscription_id FROM users WHERE id = ?', [userId]) as any[]
+    const user = (rows as any[])[0]
+    if (!user?.is_pro) return c.json({ active: false })
+    if (!stripe || !user.stripe_subscription_id) {
+      return c.json({ active: true, plan: '$49/month', nextBillingDate: null })
+    }
+    const sub = await stripe.subscriptions.retrieve(user.stripe_subscription_id)
+    const nextBillingDate = new Date((sub as any).current_period_end * 1000).toLocaleDateString('en-US', {
+      month: 'long', day: 'numeric', year: 'numeric',
+    })
+    return c.json({ active: true, plan: '$49/month', nextBillingDate, status: (sub as any).status })
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+})
+
+app.post('/api/payments/cancel-subscription', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const userId = String(payload.id)
+    const [rows] = await pool.execute('SELECT stripe_subscription_id FROM users WHERE id = ?', [userId]) as any[]
+    const user = (rows as any[])[0]
+    if (user?.stripe_subscription_id && stripe) {
+      await stripe.subscriptions.cancel(user.stripe_subscription_id).catch(() => {})
+    }
+    await pool.execute('UPDATE users SET is_pro = 0, stripe_subscription_id = NULL WHERE id = ?', [userId])
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+})
+
+app.post('/api/admin/revoke-pro/:candidateId', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  try {
+    const { password } = await c.req.json()
+    if (password !== (process.env.ADMIN_PASSWORD || 'admin123')) {
+      return c.json({ error: 'Unauthorized' }, 401)
+    }
+    const candidateId = c.req.param('candidateId')
+    const [rows] = await pool.execute('SELECT stripe_subscription_id FROM users WHERE id = ?', [candidateId]) as any[]
+    const user = (rows as any[])[0]
+    if (user?.stripe_subscription_id && stripe) {
+      await stripe.subscriptions.cancel(user.stripe_subscription_id).catch(() => {})
+    }
+    await pool.execute('UPDATE users SET is_pro = 0, stripe_subscription_id = NULL WHERE id = ?', [candidateId])
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ error: 'Revoke failed' }, 500)
   }
 })
 
@@ -1734,14 +1821,24 @@ app.get('/api/candidate/profile-views', async (c) => {
 
 // --- Pro membership checkout ---
 
-app.get('/api/payments/pro-checkout', async (c) => {
+// POST variant used by the dashboard button — returns { url } so the JWT stays in the
+// Authorization header rather than being exposed as a URL query parameter.
+app.post('/api/payments/pro-checkout-url', async (c) => {
   if (!process.env.STRIPE_SECRET_KEY || !stripe) return c.json({ error: 'Stripe not configured' }, 503)
   const authHeader = c.req.header('Authorization') || ''
-  const tokenParam = c.req.query('token') || ''
-  const token = authHeader.replace('Bearer ', '') || tokenParam
+  const token = authHeader.replace('Bearer ', '')
   if (!token) return c.json({ error: 'Unauthorized' }, 401)
   try {
     const { payload } = await jwtVerify(token, JWT_SECRET)
+    const userId = String(payload.id)
+
+    if (pool) {
+      const [rows] = await pool.execute('SELECT is_pro FROM users WHERE id = ?', [userId]) as any[]
+      if ((rows as any[])[0]?.is_pro) {
+        return c.json({ url: `${process.env.SITE_URL || 'https://salesroles.co'}/dashboard?pro=success` })
+      }
+    }
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -1754,9 +1851,53 @@ app.get('/api/payments/pro-checkout', async (c) => {
         quantity: 1,
       }],
       mode: 'subscription',
+      metadata: { userId },
+      subscription_data: { metadata: { userId } },
       success_url: `${process.env.SITE_URL || 'https://salesroles.co'}/dashboard?pro=success`,
       cancel_url: `${process.env.SITE_URL || 'https://salesroles.co'}/dashboard`,
-      metadata: { userId: String(payload.id) },
+    })
+    return c.json({ url: session.url })
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+})
+
+app.get('/api/payments/pro-checkout', async (c) => {
+  if (!process.env.STRIPE_SECRET_KEY || !stripe) return c.json({ error: 'Stripe not configured' }, 503)
+  const authHeader = c.req.header('Authorization') || ''
+  const tokenParam = c.req.query('token') || ''
+  const token = authHeader.replace('Bearer ', '') || tokenParam
+  if (!token) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(token, JWT_SECRET)
+    const userId = String(payload.id)
+
+    // Guard against double charging: if already Pro, redirect straight to dashboard
+    if (pool) {
+      const [rows] = await pool.execute('SELECT is_pro FROM users WHERE id = ?', [userId]) as any[]
+      if ((rows as any[])[0]?.is_pro) {
+        return c.redirect(`${process.env.SITE_URL || 'https://salesroles.co'}/dashboard?pro=success`)
+      }
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: { name: 'SalesRoles.co Pro Membership' },
+          unit_amount: 4900,
+          recurring: { interval: 'month' },
+        },
+        quantity: 1,
+      }],
+      mode: 'subscription',
+      // Pass userId on both the session and the subscription so the
+      // customer.subscription.deleted webhook can resolve the user.
+      metadata: { userId },
+      subscription_data: { metadata: { userId } },
+      success_url: `${process.env.SITE_URL || 'https://salesroles.co'}/dashboard?pro=success`,
+      cancel_url: `${process.env.SITE_URL || 'https://salesroles.co'}/dashboard`,
     })
     return c.redirect(session.url!)
   } catch {

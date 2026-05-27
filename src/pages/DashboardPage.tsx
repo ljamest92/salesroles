@@ -53,6 +53,8 @@ export function DashboardPage() {
   const [cvFilename, setCvFilename] = useState('')
   const [profileViews, setProfileViews] = useState<any[]>([])
   const [isPro, setIsPro] = useState(false)
+  const [proSubscription, setProSubscription] = useState<{ plan: string; nextBillingDate: string | null } | null>(null)
+  const [cancelingPro, setCancelingPro] = useState(false)
   const [profileName, setProfileName] = useState('')
   const [headline, setHeadline] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
@@ -377,14 +379,37 @@ export function DashboardPage() {
       .catch(() => {})
   }, [user, role, isPro])
 
+  // Fetch subscription billing details when Pro
+  useEffect(() => {
+    if (!isPro) return
+    const token = localStorage.getItem('salesroles_token')
+    fetch('/api/payments/subscription-status', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => {
+        if (data.active) setProSubscription({ plan: data.plan || '$49/month', nextBillingDate: data.nextBillingDate || null })
+      })
+      .catch(() => {})
+  }, [isPro])
+
   // Show toast from sessionStorage (e.g. redirect from candidate search gate)
   useEffect(() => {
     const msg = sessionStorage.getItem('dashboard_toast')
     if (msg) {
       sessionStorage.removeItem('dashboard_toast')
-      // Render as a transient banner — reuse existing toast state pattern
       setRedirectToast(msg)
       setTimeout(() => setRedirectToast(null), 4000)
+    }
+  }, [])
+
+  // Handle ?pro=success redirect from Stripe checkout
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('pro') === 'success') {
+      setIsPro(true)
+      setRedirectToast('Welcome to Pro! You can now see who viewed your profile.')
+      setTimeout(() => setRedirectToast(null), 6000)
+      // Clean the URL without a reload
+      window.history.replaceState({}, '', '/dashboard')
     }
   }, [])
 
@@ -1146,6 +1171,43 @@ export function DashboardPage() {
                 <TabsContent value="pro" className="mt-6">
                   {isPro ? (
                     <div className="space-y-4">
+                      {/* Subscription management card */}
+                      <div className="border border-emerald-500/20 bg-emerald-500/5 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                          <p className="text-xs font-black tracking-widest text-emerald-400/70 uppercase">Your Plan</p>
+                          <p className="text-sm font-bold text-white">{proSubscription?.plan ?? '$49/month'}</p>
+                          {proSubscription?.nextBillingDate ? (
+                            <p className="text-xs text-white/40">Next billing: {proSubscription.nextBillingDate}</p>
+                          ) : (
+                            <p className="text-xs text-white/30">Loading billing date…</p>
+                          )}
+                        </div>
+                        <button
+                          onClick={async () => {
+                            if (!window.confirm('Cancel your Pro subscription? You will lose access immediately.')) return
+                            setCancelingPro(true)
+                            try {
+                              const token = localStorage.getItem('salesroles_token') || ''
+                              const res = await fetch('/api/payments/cancel-subscription', {
+                                method: 'POST',
+                                headers: { Authorization: `Bearer ${token}` },
+                              })
+                              if (res.ok) {
+                                setIsPro(false)
+                                setProSubscription(null)
+                                setProfileViews([])
+                              }
+                            } finally {
+                              setCancelingPro(false)
+                            }
+                          }}
+                          disabled={cancelingPro}
+                          className="text-xs font-bold text-white/40 hover:text-red-400 border border-white/10 hover:border-red-400/30 px-3 py-1.5 rounded-lg transition-colors shrink-0 disabled:opacity-40"
+                        >
+                          {cancelingPro ? 'Cancelling…' : 'Cancel Subscription'}
+                        </button>
+                      </div>
+
                       <div className="flex items-center gap-2">
                         <Eye size={16} className="text-emerald-400" />
                         <h3 className="text-base font-black tracking-tight text-emerald-400">Who Viewed Your Profile</h3>
@@ -1199,12 +1261,20 @@ export function DashboardPage() {
                         <div className="absolute inset-0 flex flex-col items-center justify-center bg-card/70 gap-3">
                           <Star size={20} className="text-emerald-400" />
                           <p className="text-white/70 text-sm font-medium text-center px-4">Upgrade to Pro to see who's viewing your profile</p>
-                          <a
-                            href={`/api/payments/pro-checkout?token=${localStorage.getItem('salesroles_token') || ''}`}
+                          <button
+                            onClick={async () => {
+                              const token = localStorage.getItem('salesroles_token') || ''
+                              const res = await fetch('/api/payments/pro-checkout-url', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                              })
+                              const data = await res.json()
+                              if (data.url) window.location.href = data.url
+                            }}
                             className="text-xs bg-emerald-500 hover:bg-emerald-400 text-white font-bold px-4 py-2 rounded-lg transition-colors"
                           >
                             Upgrade to Pro — $49/month
-                          </a>
+                          </button>
                         </div>
                       </div>
                       {/* Benefits list */}

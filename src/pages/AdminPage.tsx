@@ -32,6 +32,7 @@ export function AdminPage() {
   const [blinded, setBlinded] = useState(false)
   const [deleteJobDialog, setDeleteJobDialog] = useState<{ open: boolean; jobId: string | null; password: string; loading: boolean; error: string }>({ open: false, jobId: null, password: '', loading: false, error: '' })
   const [deleteUserDialog, setDeleteUserDialog] = useState<{ open: boolean; userId: string | null; userName: string; password: string; loading: boolean; error: string }>({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })
+  const [revokeProDialog, setRevokeProDialog] = useState<{ open: boolean; userId: string | null; userName: string; password: string; loading: boolean; error: string }>({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })
 
   const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('admin_auth') === 'true'
 
@@ -253,6 +254,26 @@ export function AdminPage() {
       }
     } catch {
       setDeleteUserDialog(prev => ({ ...prev, loading: false, error: 'Failed to delete user.' }))
+    }
+  }
+
+  const confirmRevokePro = async () => {
+    if (!revokeProDialog.userId) return
+    setRevokeProDialog(prev => ({ ...prev, loading: true, error: '' }))
+    try {
+      const res = await fetch(`/api/admin/revoke-pro/${revokeProDialog.userId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: revokeProDialog.password }),
+      })
+      if (res.ok) {
+        setUsers(prev => prev.map(u => u.id === revokeProDialog.userId ? { ...u, is_pro: 0, stripe_subscription_id: null } : u))
+        setRevokeProDialog({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })
+      } else {
+        setRevokeProDialog(prev => ({ ...prev, loading: false, error: 'Incorrect password. Please try again.' }))
+      }
+    } catch {
+      setRevokeProDialog(prev => ({ ...prev, loading: false, error: 'Revoke failed. Please try again.' }))
     }
   }
 
@@ -573,7 +594,10 @@ export function AdminPage() {
                         {userSubTab === 'companies' && <td className="py-4 text-muted-foreground">{blinded ? 'Hidden' : (u.company_name || '—')}</td>}
                         <td className="py-4 text-muted-foreground">{new Date(u.created_at).toLocaleDateString('en-GB')}</td>
                         <td className="py-4">
-                          <div className="flex items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            {u.is_pro ? (
+                              <span className="text-[10px] font-black bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 px-2 py-0.5 rounded-full">PRO</span>
+                            ) : null}
                             <a
                               href={u.role === 'company'
                                 ? `/company/${(u.company_name || '').toLowerCase().replace(/[^a-z0-9]/g, '')}`
@@ -585,6 +609,16 @@ export function AdminPage() {
                                 <ExternalLink size={12} /> View Profile
                               </Button>
                             </a>
+                            {u.is_pro ? (
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-amber-400 font-bold gap-1.5 hover:bg-amber-400/10 text-[10px] h-8 px-3"
+                                onClick={() => setRevokeProDialog({ open: true, userId: String(u.id), userName: u.name, password: '', loading: false, error: '' })}
+                              >
+                                <ShieldAlert size={12} /> Revoke Pro
+                              </Button>
+                            ) : null}
                             <Button
                               size="sm"
                               variant="ghost"
@@ -727,6 +761,54 @@ export function AdminPage() {
                 disabled={deleteUserDialog.loading || !deleteUserDialog.password}
               >
                 {deleteUserDialog.loading ? 'Deleting...' : 'Delete User'}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Revoke Pro Confirmation Dialog */}
+      {revokeProDialog.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setRevokeProDialog(prev => ({ ...prev, open: false }))} />
+          <div className="relative bg-card border border-white/10 rounded-[24px] p-8 w-full max-w-md space-y-6 shadow-2xl">
+            <div className="space-y-2">
+              <div className="w-12 h-12 rounded-2xl bg-amber-400/10 border border-amber-400/20 flex items-center justify-center mb-4">
+                <ShieldAlert size={24} className="text-amber-400" />
+              </div>
+              <h2 className="text-xl font-black tracking-tight">Revoke Pro Access</h2>
+              <p className="text-muted-foreground text-sm font-medium">
+                This will cancel <strong>{revokeProDialog.userName}</strong>'s Stripe subscription immediately and remove their Pro access.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black text-muted-foreground tracking-widest">ADMIN PASSWORD</label>
+              <input
+                type="password"
+                value={revokeProDialog.password}
+                onChange={e => setRevokeProDialog(prev => ({ ...prev, password: e.target.value }))}
+                onKeyDown={e => e.key === 'Enter' && confirmRevokePro()}
+                placeholder="Enter admin password"
+                className="w-full bg-background border border-white/10 rounded-xl px-4 py-3 text-sm font-medium focus:outline-none focus:border-amber-400/50 transition-colors"
+                autoFocus
+              />
+              {revokeProDialog.error && <p className="text-destructive text-xs font-bold">{revokeProDialog.error}</p>}
+            </div>
+            <div className="flex gap-3">
+              <Button
+                variant="ghost"
+                className="flex-1 border border-white/10"
+                onClick={() => setRevokeProDialog({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })}
+                disabled={revokeProDialog.loading}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-amber-500 text-white hover:bg-amber-400 font-bold"
+                onClick={confirmRevokePro}
+                disabled={revokeProDialog.loading || !revokeProDialog.password}
+              >
+                {revokeProDialog.loading ? 'Revoking…' : 'Revoke Pro'}
               </Button>
             </div>
           </div>
