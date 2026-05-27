@@ -183,6 +183,9 @@ export function JobsPage() {
     if (sortBy === 'most_relevant') {
       return (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
     }
+    // Default 'latest': featured jobs float to the top, then most recent
+    const featuredDiff = (b.featured ? 1 : 0) - (a.featured ? 1 : 0)
+    if (featuredDiff !== 0) return featuredDiff
     return new Date(b.created_at || 0).getTime() - new Date(a.created_at || 0).getTime()
   })
 

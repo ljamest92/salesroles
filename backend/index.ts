@@ -263,11 +263,13 @@ app.post('/api/webhooks/stripe', async (c) => {
       await pool.execute('UPDATE users SET is_pro = 1 WHERE id = ?', [userId]).catch(() => {})
     }
     if (jobId && pool) {
+      const plan = session.metadata?.plan
+      const featuredVal = plan === 'featured' ? 1 : 0
       await pool.execute(
-        "UPDATE jobs SET status = 'pending', expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id = ?",
-        [jobId]
+        "UPDATE jobs SET status = 'pending', featured = ?, expires_at = DATE_ADD(NOW(), INTERVAL 30 DAY) WHERE id = ?",
+        [featuredVal, jobId]
       ).catch((err: any) => console.error('Failed to update job status:', err))
-      console.log(`Job ${jobId} moved to pending after payment — expires in 30 days`)
+      console.log(`Job ${jobId} moved to pending — plan: ${plan}, featured: ${featuredVal}`)
     }
   }
   return c.json({ received: true })
