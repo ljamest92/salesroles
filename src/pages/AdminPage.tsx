@@ -575,7 +575,9 @@ export function AdminPage() {
                         <td className="py-4">
                           <div className="flex items-center gap-2">
                             <a
-                              href={u.role === 'company' ? `/company/${u.id}` : `/candidates/${u.id}`}
+                              href={u.role === 'company'
+                                ? `/company/${(u.company_name || '').toLowerCase().replace(/[^a-z0-9]/g, '')}`
+                                : `/profile/${u.profile_slug || u.id}`}
                               target="_blank"
                               rel="noreferrer"
                             >
