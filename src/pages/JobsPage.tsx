@@ -439,7 +439,7 @@ export function JobsPage() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-2 text-right shrink-0">
+                        <div className="flex flex-row md:flex-col items-end justify-between md:justify-center gap-3 text-right shrink-0">
                           <div>
                             {(job.via_partner || job.is_partner) && (!job.ote || job.ote === 'Salary Not Disclosed') ? (
                               <span className="text-white/40 text-sm">Salary not disclosed</span>
@@ -453,6 +453,17 @@ export function JobsPage() {
                               </>
                             )}
                           </div>
+                          {(job.via_partner || job.is_partner || job.id.startsWith('adzuna-') || job.id.startsWith('remotive-')) && job.application_url && (
+                            <a
+                              href={job.application_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={e => e.stopPropagation()}
+                              className="text-xs font-black tracking-widest bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2.5 rounded-xl transition-colors whitespace-nowrap"
+                            >
+                              Apply →
+                            </a>
+                          )}
                         </div>
                       </div>
                     </Card>

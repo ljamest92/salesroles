@@ -59,7 +59,7 @@ export function JobDetailPage() {
               dbJob = {
                 ...data.job,
                 company: data.job.companyName || data.job.company,
-                is_partner: false
+                is_partner: ['adzuna', 'remotive'].includes(data.job.source || '')
               }
             }
           }
@@ -261,6 +261,8 @@ export function JobDetailPage() {
   }
 
   const applyUrl = job.application_url
+  const isExternal = !!(job.via_partner || job.is_partner)
+  const externalApplyUrl = (job as any).url || job.application_url || ''
 
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
@@ -400,13 +402,28 @@ export function JobDetailPage() {
 
             <div className="relative z-10 space-y-3">
               {/* Apply Now */}
-              <button
-                onClick={() => applied ? undefined : handleApplyClick()}
-                disabled={applied}
-                className={`w-full font-semibold py-3.5 rounded-xl transition-colors text-white text-sm ${applied ? 'bg-emerald-600 opacity-70 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-400 cursor-pointer'}`}
-              >
-                {applied ? '✓ Applied' : 'Apply Now'}
-              </button>
+              {isExternal ? (
+                externalApplyUrl ? (
+                  <a
+                    href={externalApplyUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="w-full font-semibold py-3.5 rounded-xl transition-colors text-white text-sm bg-emerald-500 hover:bg-emerald-400 block text-center"
+                  >
+                    Apply on {job.company}'s site →
+                  </a>
+                ) : (
+                  <span className="w-full text-center text-sm text-white/40 py-3.5 block">Apply via the company website</span>
+                )
+              ) : (
+                <button
+                  onClick={() => applied ? undefined : handleApplyClick()}
+                  disabled={applied}
+                  className={`w-full font-semibold py-3.5 rounded-xl transition-colors text-white text-sm ${applied ? 'bg-emerald-600 opacity-70 cursor-not-allowed' : 'bg-emerald-500 hover:bg-emerald-400 cursor-pointer'}`}
+                >
+                  {applied ? '✓ Applied' : 'Apply Now'}
+                </button>
+              )}
 
               {/* Save — 3 states */}
               {isSaving ? (
