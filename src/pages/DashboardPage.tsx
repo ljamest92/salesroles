@@ -556,6 +556,9 @@ export function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Live</span>
+                        {job.featured && (
+                          <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Featured</span>
+                        )}
                         <button
                           onClick={() => openEditModal(job)}
                           className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5 font-bold"
