@@ -39,6 +39,11 @@ export function JobsPage() {
     const params = new URLSearchParams(window.location.search)
     return params.get('location') || ''
   })
+  // Separate display state for the input so typing doesn't trigger filter re-renders on every keystroke
+  const [locationInput, setLocationInput] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('location') || ''
+  })
   const [workTypeFilters, setWorkTypeFilters] = useState<string[]>([])
   const [seniorityFilters, setSeniorityFilters] = useState<string[]>([])
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
@@ -132,14 +137,15 @@ export function JobsPage() {
       .catch(() => {})
   }, [user])
 
-  // Sync locationQuery → ?location= URL param with 300ms debounce
+  // Debounce locationInput → locationQuery (filter) + URL param, 300ms
   const locationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   useEffect(() => {
     if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current)
     locationDebounceRef.current = setTimeout(() => {
+      setLocationQuery(locationInput)
       const params = new URLSearchParams(window.location.search)
-      if (locationQuery) {
-        params.set('location', locationQuery)
+      if (locationInput) {
+        params.set('location', locationInput)
       } else {
         params.delete('location')
       }
@@ -149,13 +155,14 @@ export function JobsPage() {
       window.history.replaceState(null, '', newUrl)
     }, 300)
     return () => { if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current) }
-  }, [locationQuery])
+  }, [locationInput])
 
   const toggle = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
 
   const clearAll = () => {
     setSearchQuery('')
+    setLocationInput('')
     setLocationQuery('')
     setWorkTypeFilters([])
     setSeniorityFilters([])
@@ -365,14 +372,14 @@ export function JobsPage() {
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
                 <input
                   type="text"
-                  value={locationQuery}
-                  onChange={(e) => setLocationQuery(e.target.value)}
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
                   placeholder="City, country or region…"
                   className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
                 />
-                {locationQuery && (
+                {locationInput && (
                   <button
-                    onClick={() => setLocationQuery('')}
+                    onClick={() => { setLocationInput(''); setLocationQuery('') }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
                   >
                     ✕
@@ -389,7 +396,11 @@ export function JobsPage() {
                 ].map(({ label, value }) => (
                   <button
                     key={value}
-                    onClick={() => setLocationQuery(locationQuery === value ? '' : value)}
+                    onClick={() => {
+                      const next = locationQuery === value ? '' : value
+                      setLocationInput(next)
+                      setLocationQuery(next)
+                    }}
                     className={`text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full border transition-colors ${
                       locationQuery === value
                         ? 'bg-emerald-500 border-emerald-500 text-white'
@@ -454,7 +465,7 @@ export function JobsPage() {
                 <MapPin size={11} />
                 {locationQuery}
                 <button
-                  onClick={() => setLocationQuery('')}
+                  onClick={() => { setLocationInput(''); setLocationQuery('') }}
                   className="ml-1 hover:text-white transition-colors"
                   aria-label="Clear location filter"
                 >

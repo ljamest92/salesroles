@@ -34,7 +34,7 @@ const rootRoute = createRootRoute({
 })
 
 const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: HomePage })
-const jobsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/jobs', component: JobsPage })
+const jobsRoute = createRoute({ getParentRoute: () => rootRoute, path: '/jobs', component: JobsPage, scrollRestoration: false })
 const jobDetailRoute = createRoute({ getParentRoute: () => rootRoute, path: '/jobs/$slug', component: JobDetailPage })
 const postJobRoute = createRoute({ getParentRoute: () => rootRoute, path: '/post-job', component: PostJobPage })
 const pricingRoute = createRoute({ getParentRoute: () => rootRoute, path: '/pricing', component: PricingPage })
