@@ -203,7 +203,22 @@ const transporter = nodemailer.createTransport({
         pass: process.env.SMTP_PASS || '',
     },
 });
-async function sendEmail(to, subject, html) {
+function stripHtml(html) {
+    return html
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n\n')
+        .replace(/<\/li>/gi, '\n')
+        .replace(/<li>/gi, '• ')
+        .replace(/<hr[^>]*>/gi, '\n---\n')
+        .replace(/<[^>]+>/g, '')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&nbsp;/g, ' ')
+        .replace(/\n{3,}/g, '\n\n')
+        .trim();
+}
+async function sendEmail(to, subject, html, text, headers) {
     if (!process.env.SMTP_USER)
         return; // Skip if SMTP not configured
     try {
@@ -212,6 +227,8 @@ async function sendEmail(to, subject, html) {
             to,
             subject,
             html,
+            text: text || stripHtml(html),
+            ...(headers ? { headers } : {}),
         });
     }
     catch (err) {
@@ -290,10 +307,28 @@ app.post('/api/auth/register', async (c) => {
             .sign(JWT_SECRET);
         // Welcome email (fire and forget)
         if (role === 'company') {
-            sendEmail(email, 'Welcome to SalesRoles.co — Start Hiring Top Sales Talent', `<p>Hi ${name},</p><p>Welcome to SalesRoles.co. You are now set up to post sales roles with full compensation transparency.</p><p>Here is how to get started:</p><ul><li>Post your first job listing in minutes</li><li>Every listing shows base salary, OTE, and commission upfront</li><li>Attract serious candidates who already know the deal</li></ul><p><a href="https://salesroles.co/post-job">Post Your First Job</a></p><p>Questions? Reply to this email and we will get back to you within 1 business day.</p><p>The SalesRoles.co team</p>`);
+            sendEmail(email, 'Welcome to SalesRoles.co — Start Hiring Top Sales Talent', `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>Welcome to SalesRoles.co, ${name}!</h2>
+<p>You are now set up to post sales roles with full compensation transparency.</p>
+<p>Here is how to get started:</p>
+<ul>
+<li>Post your first job listing in minutes</li>
+<li>Every listing shows base salary, OTE, and commission upfront</li>
+<li>Attract serious candidates who already know the deal</li>
+</ul>
+<p><a href="https://salesroles.co/post-job">Post Your First Job</a></p>
+<p>Questions? Reply to this email and we will get back to you within 1 business day.</p>
+<p>The SalesRoles.co team</p>
+</body></html>`, `Welcome to SalesRoles.co, ${name}!\n\nYou are now set up to post sales roles with full compensation transparency.\n\nHere is how to get started:\n• Post your first job listing in minutes\n• Every listing shows base salary, OTE, and commission upfront\n• Attract serious candidates who already know the deal\n\nPost Your First Job: https://salesroles.co/post-job\n\nQuestions? Reply to this email and we will get back to you within 1 business day.\n\nThe SalesRoles.co team`);
         }
         else {
-            sendEmail(email, 'Welcome to SalesRoles.co', `<p>Hi ${name},</p><p>Welcome to SalesRoles.co. Every role. Full transparency.</p><p>Browse sales roles with base salary, OTE, and commission shown upfront. No more guessing.</p><p><a href="https://salesroles.co/jobs">Browse Jobs</a></p><p>The SalesRoles.co team</p>`);
+            sendEmail(email, 'Welcome to SalesRoles.co', `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>Welcome to SalesRoles.co, ${name}!</h2>
+<p>Every role. Full transparency.</p>
+<p>Browse sales roles with base salary, OTE, and commission shown upfront. No more guessing.</p>
+<p><a href="https://salesroles.co/jobs">Browse Jobs</a></p>
+<p>The SalesRoles.co team</p>
+</body></html>`, `Welcome to SalesRoles.co, ${name}!\n\nEvery role. Full transparency.\n\nBrowse sales roles with base salary, OTE, and commission shown upfront. No more guessing.\n\nBrowse Jobs: https://salesroles.co/jobs\n\nThe SalesRoles.co team`);
         }
         return c.json({ token, user: { id: userId, email, displayName: name, role: role || 'candidate' } });
     }
@@ -780,8 +815,23 @@ app.post('/api/subscribe', async (c) => {
         if (!email || !email.includes('@'))
             return c.json({ error: 'Invalid email' }, 400);
         await pool.execute('INSERT IGNORE INTO subscribers (email) VALUES (?)', [email]);
-        sendEmail(email, 'You are on the list. SalesRoles.co Weekly Job Alerts', `<p>Hi,</p><p>You are now subscribed to the SalesRoles.co weekly job alert. Every Monday morning you will get the latest sales roles with full compensation transparency direct to your inbox.</p><p>No spam. Unsubscribe anytime by replying to this email.</p><p>The SalesRoles.co team</p>`);
-        sendEmail('info@salesroles.co', 'New subscriber on SalesRoles.co', `<p>New subscriber: <strong>${email}</strong></p><p>Subscribed at: ${new Date().toISOString()}</p>`);
+        sendEmail(email, 'You are on the list. SalesRoles.co Weekly Job Alerts', `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>You're on the list.</h2>
+<p>Hi,</p>
+<p>You are now subscribed to the SalesRoles.co weekly job alert. Every Monday morning you will get the latest sales roles with full compensation transparency direct to your inbox.</p>
+<p>No spam. Just roles worth knowing about.</p>
+<p><a href="https://salesroles.co/jobs">Browse Jobs Now</a></p>
+<p>The SalesRoles.co team</p>
+<hr style="border:none;border-top:1px solid #eee;margin:24px 0;">
+<p style="font-size:12px;color:#888;">You are receiving this email because you subscribed at SalesRoles.co.<br><a href="mailto:info@salesroles.co?subject=unsubscribe" style="color:#888;">Unsubscribe from these emails</a></p>
+</body></html>`, `You're on the list.\n\nHi,\n\nYou are now subscribed to the SalesRoles.co weekly job alert. Every Monday morning you will get the latest sales roles with full compensation transparency direct to your inbox.\n\nNo spam. Just roles worth knowing about.\n\nBrowse Jobs: https://salesroles.co/jobs\n\nThe SalesRoles.co team\n\n---\nYou are receiving this email because you subscribed at SalesRoles.co.\nUnsubscribe: mailto:info@salesroles.co?subject=unsubscribe`, {
+            'List-Unsubscribe': '<mailto:info@salesroles.co?subject=unsubscribe>',
+            'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
+        });
+        sendEmail('info@salesroles.co', 'New subscriber on SalesRoles.co', `<html><head></head><body>
+<p>New subscriber: <strong>${email}</strong></p>
+<p>Subscribed at: ${new Date().toISOString()}</p>
+</body></html>`, `New subscriber: ${email}\nSubscribed at: ${new Date().toISOString()}`);
         return c.json({ ok: true });
     }
     catch {
@@ -1136,7 +1186,15 @@ app.post('/api/applications', async (c) => {
         const [jobRows] = await pool.execute('SELECT j.title, u.email as company_email, u.name as company_name FROM jobs j JOIN users u ON j.company_id = u.id WHERE j.id = ?', [jobId]);
         const jobInfo = jobRows[0];
         if (jobInfo?.company_email) {
-            sendEmail(jobInfo.company_email, `New application for ${jobInfo.title}`, `<p>Hi ${jobInfo.company_name},</p><p>New application for <strong>${jobInfo.title}</strong>.</p><p><strong>Applicant:</strong> ${userName} (${userEmail})</p>${coverLetter ? `<p><strong>Cover letter:</strong> ${coverLetter}</p>` : ''}<p><a href="https://salesroles.co/dashboard">View in dashboard</a></p><p>The SalesRoles.co team</p>`);
+            sendEmail(jobInfo.company_email, `New application for ${jobInfo.title}`, `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>New Application: ${jobInfo.title}</h2>
+<p>Hi ${jobInfo.company_name},</p>
+<p>You have received a new application for <strong>${jobInfo.title}</strong>.</p>
+<p><strong>Applicant:</strong> ${userName} (${userEmail})</p>
+${coverLetter ? `<p><strong>Cover letter:</strong></p><p>${coverLetter}</p>` : ''}
+<p><a href="https://salesroles.co/dashboard">View in dashboard</a></p>
+<p>The SalesRoles.co team</p>
+</body></html>`, `New Application: ${jobInfo.title}\n\nHi ${jobInfo.company_name},\n\nYou have received a new application for ${jobInfo.title}.\n\nApplicant: ${userName} (${userEmail})\n${coverLetter ? `\nCover letter:\n${coverLetter}\n` : ''}\nView in dashboard: https://salesroles.co/dashboard\n\nThe SalesRoles.co team`);
         }
         return c.json({ ok: true });
     }
@@ -1661,7 +1719,13 @@ app.get('/api/candidates/:id', async (c) => {
                     const viewerCompany = viewerInfo?.company_name || null;
                     await pool.execute('INSERT INTO profile_views (viewer_id, candidate_id, action, viewer_name, viewer_company) VALUES (?, ?, ?, ?, ?)', [viewerId, candidate.id, 'view', viewerName, viewerCompany]).catch(() => { });
                     if (candidate.is_pro && candidate.email) {
-                        sendEmail(candidate.email, 'Your profile was viewed on SalesRoles.co', `<p>Hi ${candidate.name},</p><p><strong>${viewerName || 'A company'}</strong> viewed your profile on SalesRoles.co.</p><p><a href="https://salesroles.co/dashboard">View your profile activity</a></p><p>The SalesRoles.co team</p>`).catch(() => { });
+                        sendEmail(candidate.email, 'Your profile was viewed on SalesRoles.co', `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>Your profile was viewed</h2>
+<p>Hi ${candidate.name},</p>
+<p><strong>${viewerName || 'A company'}</strong> viewed your profile on SalesRoles.co.</p>
+<p><a href="https://salesroles.co/dashboard">View your profile activity</a></p>
+<p>The SalesRoles.co team</p>
+</body></html>`, `Hi ${candidate.name},\n\n${viewerName || 'A company'} viewed your profile on SalesRoles.co.\n\nView your profile activity: https://salesroles.co/dashboard\n\nThe SalesRoles.co team`).catch(() => { });
                     }
                 }
             }
@@ -1849,12 +1913,14 @@ app.get('/api/auth/google/callback', async (c) => {
             const [newRows] = await pool.execute('SELECT * FROM users WHERE id = ?', [result.insertId]);
             dbUser = newRows[0];
             // Send welcome email to new Google OAuth users
-            sendEmail(googleUser.email, 'Welcome to SalesRoles.co — your career starts here', `<div style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;background:#0a0f1e;color:#fff;border-radius:16px;">
-          <h1 style="color:#10B981;font-size:28px;margin:0 0 8px;">Welcome, ${googleUser.name?.split(' ')[0] || 'there'}! 👋</h1>
-          <p style="color:#9ca3af;margin:0 0 24px;">You've joined the UK's most transparent sales job board. Let's get your profile set up so companies can find you.</p>
-          <a href="https://salesroles.co/dashboard/profile?mode=candidate" style="display:inline-block;background:#10B981;color:#fff;padding:14px 28px;border-radius:8px;font-weight:700;text-decoration:none;margin-bottom:24px;">Complete Your Profile →</a>
-          <p style="color:#6b7280;font-size:13px;">SalesRoles.co · Built for sales professionals</p>
-        </div>`).catch(() => { });
+            sendEmail(googleUser.email, 'Welcome to SalesRoles.co — your career starts here', `<html><head></head><body style="margin:0;padding:0;background:#f4f4f4;">
+<div style="font-family:sans-serif;max-width:560px;margin:32px auto;padding:32px;background:#0a0f1e;color:#fff;border-radius:16px;">
+  <h1 style="color:#10B981;font-size:28px;margin:0 0 8px;">Welcome, ${googleUser.name?.split(' ')[0] || 'there'}!</h1>
+  <p style="color:#9ca3af;margin:0 0 24px;">You've joined the UK's most transparent sales job board. Let's get your profile set up so companies can find you.</p>
+  <a href="https://salesroles.co/dashboard/profile?mode=candidate" style="display:inline-block;background:#10B981;color:#fff;padding:14px 28px;border-radius:8px;font-weight:700;text-decoration:none;margin-bottom:24px;">Complete Your Profile</a>
+  <p style="color:#6b7280;font-size:13px;margin:24px 0 0;">SalesRoles.co &middot; Built for sales professionals</p>
+</div>
+</body></html>`, `Welcome, ${googleUser.name?.split(' ')[0] || 'there'}!\n\nYou've joined the UK's most transparent sales job board. Let's get your profile set up so companies can find you.\n\nComplete Your Profile: https://salesroles.co/dashboard/profile?mode=candidate\n\nSalesRoles.co - Built for sales professionals`).catch(() => { });
         }
         const token = await new SignJWT({ id: dbUser.id.toString(), email: dbUser.email, role: dbUser.role })
             .setProtectedHeader({ alg: 'HS256' })
@@ -1965,9 +2031,13 @@ app.get('/api/test/profile-view-notification', async (c) => {
         let emailResult = 'skipped - candidate is not pro';
         if (candidate.is_pro && candidate.email) {
             try {
-                await sendEmail(candidate.email, 'Test: Your profile was viewed on SalesRoles.co', `<p>Hi ${candidate.name},</p>
-          <p>This is a test notification. <strong>${viewerName}</strong> viewed your profile.</p>
-          <p><a href="https://salesroles.co/dashboard">View your dashboard</a></p>`);
+                await sendEmail(candidate.email, 'Test: Your profile was viewed on SalesRoles.co', `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>Profile Viewed (Test)</h2>
+<p>Hi ${candidate.name},</p>
+<p>This is a test notification. <strong>${viewerName}</strong> viewed your profile.</p>
+<p><a href="https://salesroles.co/dashboard">View your dashboard</a></p>
+<p>The SalesRoles.co team</p>
+</body></html>`, `Hi ${candidate.name},\n\nThis is a test notification. ${viewerName} viewed your profile.\n\nView your dashboard: https://salesroles.co/dashboard\n\nThe SalesRoles.co team`);
                 emailResult = `email sent to ${candidate.email}`;
             }
             catch (err) {
