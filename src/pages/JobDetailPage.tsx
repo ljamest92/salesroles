@@ -291,7 +291,9 @@ export function JobDetailPage() {
               <div className="flex flex-wrap gap-3 md:gap-6 text-muted-foreground font-bold text-sm items-center">
                 <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
                 <span className="flex items-center gap-1.5"><MapPin size={16} className="text-emerald-400" /> {job.location}</span>
-                <span className="flex items-center gap-1.5"><Briefcase size={16} className="text-emerald-400" /> {job.sector}</span>
+                {job.sector && job.sector !== 'null' && (
+                  <span className="flex items-center gap-1.5"><Briefcase size={16} className="text-emerald-400" /> {job.sector}</span>
+                )}
               </div>
             </div>
 
@@ -469,10 +471,12 @@ export function JobDetailPage() {
                 </div>
                 <div>
                   <p className="font-bold text-lg">{job.company}</p>
-                  <p className="text-[10px] text-muted-foreground font-bold">{job.sector}</p>
+                  {job.sector && job.sector !== 'null' && (
+                    <p className="text-[10px] text-muted-foreground font-bold">{job.sector}</p>
+                  )}
                 </div>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">{job.company_description || `${job.company} is a leading company in the ${job.sector} sector, looking for top-tier talent to join their mission-driven team.`}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{job.company_description || (job.sector && job.sector !== 'null' ? `${job.company} is a leading company in the ${job.sector} sector, looking for top-tier talent to join their mission-driven team.` : `${job.company} is looking for top-tier sales talent to join their team.`)}</p>
               <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`}>
                 <button className="text-emerald-400 font-bold text-xs group/link flex items-center gap-1 hover:text-emerald-300 transition-colors">
                   View Full Profile <span className="inline-block transition-transform group-hover/link:translate-x-1 ml-1">→</span>
