@@ -162,14 +162,14 @@ export function CompanyProfilePage() {
             <p className="text-xl text-muted-foreground max-w-3xl leading-relaxed font-medium">
               {companyData.description}
             </p>
-            <div className="flex gap-4">
-              <Button onClick={handleFollow} className={`${isFollowed ? 'bg-secondary text-foreground' : 'bg-primary text-primary-foreground'} font-black px-10 h-14 cta-glow text-xs`}>
+            <div className="flex flex-wrap gap-3 w-full">
+              <Button onClick={handleFollow} className={`flex-1 min-w-0 ${isFollowed ? 'bg-secondary text-foreground' : 'bg-primary text-primary-foreground'} font-black px-10 h-14 cta-glow text-xs`}>
                 {isFollowed ? 'Following' : 'Follow Company'}
               </Button>
               {companyData.website && (
-                <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer">
-                  <Button variant="outline" className="font-black px-10 h-14 border-white/10 gap-2.5 text-xs hover:bg-white/5 transition-all">
-                    <ExternalLink size={16} /> Website
+                <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer" className="flex-1 min-w-0">
+                  <Button variant="outline" className="w-full font-black px-10 h-14 border-white/10 gap-2.5 text-xs hover:bg-white/5 transition-all min-w-0">
+                    <ExternalLink size={16} /><span className="truncate">Website</span>
                   </Button>
                 </a>
               )}
