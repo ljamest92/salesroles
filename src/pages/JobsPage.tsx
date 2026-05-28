@@ -34,7 +34,12 @@ export function JobsPage() {
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchTags, setSearchTags] = useState<string[]>(() => {
+    const params = new URLSearchParams(window.location.search)
+    const raw = params.get('search') || ''
+    return raw ? raw.split(',').map(t => t.trim()).filter(Boolean) : []
+  })
+  const [tagInput, setTagInput] = useState('')
   const [locationQuery, setLocationQuery] = useState(() => {
     const params = new URLSearchParams(window.location.search)
     return params.get('location') || ''
@@ -164,17 +169,57 @@ export function JobsPage() {
     return () => { if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current) }
   }, [locationInput])
 
+  // Sync searchTags → ?search= URL param
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (searchTags.length > 0) {
+      params.set('search', searchTags.join(','))
+    } else {
+      params.delete('search')
+    }
+    const newUrl = params.toString()
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname
+    const scrollY = window.scrollY
+    const origScrollTo = window.scrollTo.bind(window)
+    ;(window as any).scrollTo = () => {}
+    window.history.replaceState(null, '', newUrl)
+    requestAnimationFrame(() => {
+      ;(window as any).scrollTo = origScrollTo
+      window.scrollTo(0, scrollY)
+    })
+  }, [searchTags])
+
   const toggle = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
 
   const clearAll = () => {
-    setSearchQuery('')
+    setSearchTags([])
+    setTagInput('')
     setLocationInput('')
     setLocationQuery('')
     setWorkTypeFilters([])
     setSeniorityFilters([])
     setSectorFilters([])
     setSelectedOTERange('')
+  }
+
+  const addTag = (raw: string) => {
+    const val = raw.trim().replace(/,$/, '').trim()
+    if (!val) return
+    setSearchTags(prev => prev.includes(val) ? prev : [...prev, val])
+    setTagInput('')
+  }
+
+  const removeTag = (tag: string) => setSearchTags(prev => prev.filter(t => t !== tag))
+
+  const handleTagKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addTag(tagInput)
+    } else if (e.key === 'Backspace' && tagInput === '') {
+      setSearchTags(prev => prev.slice(0, -1))
+    }
   }
 
   const parseOTE = (ote: any): number => {
@@ -184,11 +229,11 @@ export function JobsPage() {
   }
 
   const filteredJobs = jobs.filter(job => {
-    const q = searchQuery.toLowerCase()
-    const matchesSearch = !q ||
-      (job.title ?? '').toLowerCase().includes(q) ||
-      (job.company ?? '').toLowerCase().includes(q) ||
-      (job.sector ?? '').toLowerCase().includes(q)
+    const matchesSearch = searchTags.length === 0 || searchTags.some(tag => {
+      const t = tag.toLowerCase()
+      return (job.title ?? '').toLowerCase().includes(t) ||
+        (job.company ?? '').toLowerCase().includes(t)
+    })
     const matchesLocation = !locationQuery ||
       (job.location ?? '').toLowerCase().includes(locationQuery.toLowerCase())
     const matchesWorkType = workTypeFilters.length === 0 || workTypeFilters.includes(job.job_type)
@@ -234,7 +279,7 @@ export function JobsPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchQuery, locationQuery, workTypeFilters, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
+  }, [searchTags, locationQuery, workTypeFilters, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
 
   useEffect(() => {
     if (!userPaginatedRef.current) return
@@ -441,14 +486,23 @@ export function JobsPage() {
         {/* Main Jobs List */}
         <div className="flex-1 space-y-10 min-w-0">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-xl shadow-xl">
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+            <div className="relative flex-1 w-full flex items-center flex-wrap gap-2 pl-12 pr-4 py-3 min-h-[60px]">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground shrink-0" size={18} />
+              {searchTags.map(tag => (
+                <span key={tag} className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[11px] font-black tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap">
+                  <Search size={10} />
+                  {tag}
+                  <button onClick={() => removeTag(tag)} className="ml-1 hover:text-white transition-colors" aria-label={`Remove ${tag}`}>✕</button>
+                </span>
+              ))}
               <input
                 type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search by title, company..."
-                className="w-full bg-transparent border-none rounded-xl pl-14 pr-4 py-5 text-sm focus:outline-none transition-all font-medium"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                onBlur={() => { if (tagInput.trim()) addTag(tagInput) }}
+                placeholder={searchTags.length === 0 ? 'Search by title, company…' : 'Add another…'}
+                className="flex-1 min-w-[120px] bg-transparent border-none py-2 text-sm focus:outline-none transition-all font-medium"
               />
             </div>
 <div className="flex items-center gap-3 pr-4">
@@ -470,13 +524,7 @@ export function JobsPage() {
               <span className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[11px] font-black tracking-widest px-3 py-1.5 rounded-full">
                 <MapPin size={11} />
                 {locationQuery}
-                <button
-                  onClick={() => { setLocationInput(''); setLocationQuery('') }}
-                  className="ml-1 hover:text-white transition-colors"
-                  aria-label="Clear location filter"
-                >
-                  ✕
-                </button>
+                <button onClick={() => { setLocationInput(''); setLocationQuery('') }} className="ml-1 hover:text-white transition-colors" aria-label="Clear location filter">✕</button>
               </span>
             </div>
           )}
