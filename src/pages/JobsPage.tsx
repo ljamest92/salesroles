@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link } from '@tanstack/react-router'
 import {
@@ -35,7 +35,10 @@ export function JobsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [locationQuery, setLocationQuery] = useState('')
+  const [locationQuery, setLocationQuery] = useState(() => {
+    const params = new URLSearchParams(window.location.search)
+    return params.get('location') || ''
+  })
   const [workTypeFilters, setWorkTypeFilters] = useState<string[]>([])
   const [seniorityFilters, setSeniorityFilters] = useState<string[]>([])
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
@@ -129,6 +132,25 @@ export function JobsPage() {
       .catch(() => {})
   }, [user])
 
+  // Sync locationQuery → ?location= URL param with 300ms debounce
+  const locationDebounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  useEffect(() => {
+    if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current)
+    locationDebounceRef.current = setTimeout(() => {
+      const params = new URLSearchParams(window.location.search)
+      if (locationQuery) {
+        params.set('location', locationQuery)
+      } else {
+        params.delete('location')
+      }
+      const newUrl = params.toString()
+        ? `${window.location.pathname}?${params.toString()}`
+        : window.location.pathname
+      window.history.replaceState(null, '', newUrl)
+    }, 300)
+    return () => { if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current) }
+  }, [locationQuery])
+
   const toggle = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
 
@@ -202,7 +224,7 @@ export function JobsPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentPage])
 
-  const activeFilterCount = workTypeFilters.length + seniorityFilters.length + sectorFilters.length
+  const activeFilterCount = workTypeFilters.length + seniorityFilters.length + sectorFilters.length + (locationQuery ? 1 : 0)
 
   const totalPages = Math.ceil(sortedJobs.length / JOBS_PER_PAGE)
   const paginatedJobs = sortedJobs.slice(
@@ -333,6 +355,49 @@ export function JobsPage() {
             </div>
 
             <div className="space-y-3">
+              <label className="text-xs font-bold tracking-wider text-muted-foreground">Location</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                <input
+                  type="text"
+                  value={locationQuery}
+                  onChange={(e) => setLocationQuery(e.target.value)}
+                  placeholder="City, country or region…"
+                  className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                />
+                {locationQuery && (
+                  <button
+                    onClick={() => setLocationQuery('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  { label: 'Remote', value: 'Remote' },
+                  { label: 'Australia', value: 'Australia' },
+                  { label: 'United Kingdom', value: 'UK' },
+                  { label: 'United States', value: 'US' },
+                  { label: 'Europe', value: 'Europe' },
+                ].map(({ label, value }) => (
+                  <button
+                    key={value}
+                    onClick={() => setLocationQuery(locationQuery === value ? '' : value)}
+                    className={`text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full border transition-colors ${
+                      locationQuery === value
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : 'border-white/20 text-muted-foreground hover:border-emerald-500/50 hover:text-emerald-400'
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-3">
               <label className="text-xs font-bold tracking-wider text-muted-foreground">OTE Range</label>
               <Select value={selectedOTERange || '__all__'} onValueChange={v => setSelectedOTERange(v === '__all__' ? '' : v)}>
                 <SelectTrigger className="w-full bg-secondary border-border">
@@ -364,7 +429,7 @@ export function JobsPage() {
                 className="w-full bg-transparent border-none rounded-xl pl-14 pr-4 py-5 text-sm focus:outline-none transition-all font-medium"
               />
             </div>
-            <div className="relative flex-1 w-full border-l border-white/5 pl-2 hidden md:block">
+            <div className="relative flex-1 w-full border-l border-white/5 pl-2">
               <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
               <input
                 type="text"
@@ -387,6 +452,22 @@ export function JobsPage() {
               </Select>
             </div>
           </div>
+
+          {locationQuery && (
+            <div className="flex flex-wrap gap-2 -mt-4">
+              <span className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[11px] font-black tracking-widest px-3 py-1.5 rounded-full">
+                <MapPin size={11} />
+                {locationQuery}
+                <button
+                  onClick={() => setLocationQuery('')}
+                  className="ml-1 hover:text-white transition-colors"
+                  aria-label="Clear location filter"
+                >
+                  ✕
+                </button>
+              </span>
+            </div>
+          )}
 
           {!isLoading && sortedJobs.length > 0 && (
             <p className="text-white/40 text-sm mb-4">
