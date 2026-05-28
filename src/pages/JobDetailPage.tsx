@@ -4,7 +4,7 @@ import { Container, Card, Badge, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Briefcase, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight, Bookmark, BookmarkCheck, BookmarkX, XCircle, Loader2 } from 'lucide-react'
 import { fetchPartnerJobs, type Job } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
-import { formatSalary } from '../utils/formatSalary'
+import { formatSalary, getCurrency } from '../utils/formatSalary'
 import { getDomain } from '../utils/getDomain'
 import { useAuth } from '../hooks/useAuth'
 
@@ -347,7 +347,7 @@ export function JobDetailPage() {
               </div>
               <div className="space-y-1">
                 <p className="text-xs font-bold text-muted-foreground">Currency</p>
-                <p className="text-xl md:text-2xl font-black">{job.currency}</p>
+                <p className="text-xl md:text-2xl font-black">{getCurrency(job.base_salary || job.salary || job.salary_min || '', job.location || job.country || '')}</p>
               </div>
             </div>
           )}

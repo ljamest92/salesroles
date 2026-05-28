@@ -22,6 +22,30 @@ export function formatSalary(value: number | string | null | undefined): string 
   return `$${Math.round(num)}k`
 }
 
+export function getCurrency(salary: string | number, location?: string): string {
+  const s = String(salary);
+  if (s.includes('£')) return 'GBP';
+  if (s.includes('€')) return 'EUR';
+  if (s.includes('A$') || s.includes('AU$')) return 'AUD';
+  if (s.includes('NZ$')) return 'NZD';
+  if (s.includes('CA$') || s.includes('CAD')) return 'CAD';
+  if (s.includes('S$') || s.includes('SGD')) return 'SGD';
+  if (s.includes('¥')) return 'JPY';
+  if (s.includes('₹')) return 'INR';
+  if (s.includes('R$')) return 'BRL';
+  if (s.includes('$')) return 'USD';
+
+  const loc = (location || '').toLowerCase();
+  if (loc.includes('uk') || loc.includes('united kingdom') || loc.includes('london') || loc.includes('england') || loc.includes('scotland') || loc.includes('wales')) return 'GBP';
+  if (loc.includes('australia') || loc.includes(' au') || loc.includes('sydney') || loc.includes('melbourne') || loc.includes('brisbane')) return 'AUD';
+  if (loc.includes('canada') || loc.includes('toronto') || loc.includes('vancouver')) return 'CAD';
+  if (loc.includes('europe') || loc.includes('germany') || loc.includes('france') || loc.includes('netherlands') || loc.includes('spain') || loc.includes('italy')) return 'EUR';
+  if (loc.includes('new zealand') || loc.includes('auckland')) return 'NZD';
+  if (loc.includes('singapore')) return 'SGD';
+
+  return 'USD';
+}
+
 /**
  * Formats a base + OTE pair for display.
  */
