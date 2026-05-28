@@ -178,9 +178,18 @@ export function RemoteSalesJobsPage() {
       if (!range) return true
       return ote >= range[0] && ote <= range[1]
     })()
-    const matchesLocation = locationTags.length === 0 || locationTags.some(tag =>
-      (job.location ?? '').toLowerCase().includes(tag.toLowerCase())
-    )
+    const REGION_KEYWORDS: Record<string, string[]> = {
+      'Americas': ['usa', 'united states', 'canada', 'mexico', 'brazil', 'new york', 'san francisco', 'austin', 'chicago', 'los angeles', 'seattle', 'boston', 'toronto', 'vancouver', 'latin america', 'south america', 'north america', 'americas'],
+      'Europe': ['uk', 'united kingdom', 'england', 'london', 'germany', 'berlin', 'france', 'paris', 'netherlands', 'amsterdam', 'spain', 'madrid', 'ireland', 'dublin', 'sweden', 'stockholm', 'europe', 'european'],
+      'Asia-Pacific': ['australia', 'sydney', 'melbourne', 'new zealand', 'singapore', 'japan', 'tokyo', 'india', 'bangalore', 'hong kong', 'apac', 'asia', 'pacific'],
+      'Global': ['global', 'worldwide', 'anywhere', 'international', 'remote'],
+    }
+    const loc = (job.location ?? '').toLowerCase()
+    const matchesLocation = locationTags.length === 0 || locationTags.some(tag => {
+      const keywords = REGION_KEYWORDS[tag]
+      if (keywords) return keywords.some(kw => loc.includes(kw))
+      return loc.includes(tag.toLowerCase())
+    })
     return matchesSearch && matchesSeniority && matchesSector && matchesOTE && matchesLocation
   })
 
