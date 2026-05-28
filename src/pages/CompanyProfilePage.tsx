@@ -162,15 +162,16 @@ export function CompanyProfilePage() {
             <p className="text-xl text-muted-foreground max-w-3xl leading-relaxed font-medium">
               {companyData.description}
             </p>
-            <div className="flex flex-row gap-3 w-full items-center">
-              <Button onClick={handleFollow} className={`flex-1 ${isFollowed ? 'bg-secondary text-foreground' : 'bg-primary text-primary-foreground'} font-black px-10 h-14 cta-glow text-xs`}>
+            <div className="flex gap-3 w-full max-w-full overflow-hidden">
+              <button onClick={handleFollow} className={`flex-1 ${isFollowed ? 'bg-secondary text-foreground' : 'bg-primary text-primary-foreground cta-glow'} font-black py-3 px-4 rounded-lg text-xs`}>
                 {isFollowed ? 'Following' : 'Follow Company'}
-              </Button>
+              </button>
               {companyData.website && (
-                <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer" className="shrink-0">
-                  <Button variant="outline" className="font-black px-10 h-14 border-white/10 gap-2.5 text-xs hover:bg-white/5 transition-all">
-                    <ExternalLink size={16} /> Website
-                  </Button>
+                <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer" className="flex-1">
+                  <button className="w-full border border-white/20 hover:border-white/40 text-white font-black py-3 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
+                    <ExternalLink className="w-4 h-4 shrink-0" />
+                    Website
+                  </button>
                 </a>
               )}
             </div>
