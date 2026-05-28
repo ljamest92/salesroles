@@ -469,7 +469,7 @@ export function HomePage() {
                       </div>
                       <div>
                         <h3 className="font-black group-hover:text-primary transition-colors text-base md:text-xl tracking-tight leading-tight line-clamp-2">{company.name}</h3>
-                        <p className="text-[10px] text-muted-foreground font-black tracking-[0.1em] mt-4 opacity-50">{company.count} Active Roles</p>
+                        <p className="text-[10px] text-muted-foreground font-black tracking-[0.1em] mt-4 opacity-50">{Math.min(company.count, 15)} Active Roles</p>
                       </div>
                     </div>
                   </Link>

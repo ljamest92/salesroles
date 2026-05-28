@@ -86,7 +86,15 @@ export function RemoteSalesJobsPage() {
           (j.location || '').toLowerCase().includes('remote')
         )
 
-        setJobs(remoteJobs as Job[])
+        const PER_COMPANY_CAP = 15
+        const companyCount = new Map<string, number>()
+        const capped = remoteJobs.filter((job: any) => {
+          const name = job.company || ''
+          const n = (companyCount.get(name) || 0) + 1
+          companyCount.set(name, n)
+          return n <= PER_COMPANY_CAP
+        })
+        setJobs(capped as Job[])
         setIsLoading(false)
       } catch {
         setIsLoading(false)
