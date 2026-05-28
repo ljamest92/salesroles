@@ -152,7 +152,14 @@ export function JobsPage() {
       const newUrl = params.toString()
         ? `${window.location.pathname}?${params.toString()}`
         : window.location.pathname
+      const scrollY = window.scrollY
+      const origScrollTo = window.scrollTo.bind(window)
+      ;(window as any).scrollTo = () => {}
       window.history.replaceState(null, '', newUrl)
+      requestAnimationFrame(() => {
+        ;(window as any).scrollTo = origScrollTo
+        window.scrollTo(0, scrollY)
+      })
     }, 300)
     return () => { if (locationDebounceRef.current) clearTimeout(locationDebounceRef.current) }
   }, [locationInput])
