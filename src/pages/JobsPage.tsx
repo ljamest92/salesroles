@@ -433,6 +433,23 @@ export function JobsPage() {
             </div>
 
             <div className="space-y-3">
+              <label className="text-xs font-bold tracking-wider text-muted-foreground">OTE Range</label>
+              <Select value={selectedOTERange || '__all__'} onValueChange={v => setSelectedOTERange(v === '__all__' ? '' : v)}>
+                <SelectTrigger className="w-full bg-secondary border-border">
+                  <SelectValue placeholder="All OTE Ranges" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__all__">All OTE Ranges</SelectItem>
+                  <SelectItem value="$50k – $100k">$50k – $100k</SelectItem>
+                  <SelectItem value="$100k – $150k">$100k – $150k</SelectItem>
+                  <SelectItem value="$150k – $200k">$150k – $200k</SelectItem>
+                  <SelectItem value="$200k – $300k">$200k – $300k</SelectItem>
+                  <SelectItem value="$300k+">$300k+</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
               <label className="text-xs font-bold tracking-wider text-muted-foreground">Location</label>
               <div className="relative">
                 <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
@@ -477,23 +494,6 @@ export function JobsPage() {
                   </button>
                 ))}
               </div>
-            </div>
-
-            <div className="space-y-3">
-              <label className="text-xs font-bold tracking-wider text-muted-foreground">OTE Range</label>
-              <Select value={selectedOTERange || '__all__'} onValueChange={v => setSelectedOTERange(v === '__all__' ? '' : v)}>
-                <SelectTrigger className="w-full bg-secondary border-border">
-                  <SelectValue placeholder="All OTE Ranges" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__all__">All OTE Ranges</SelectItem>
-                  <SelectItem value="$50k – $100k">$50k – $100k</SelectItem>
-                  <SelectItem value="$100k – $150k">$100k – $150k</SelectItem>
-                  <SelectItem value="$150k – $200k">$150k – $200k</SelectItem>
-                  <SelectItem value="$200k – $300k">$200k – $300k</SelectItem>
-                  <SelectItem value="$300k+">$300k+</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </aside>
