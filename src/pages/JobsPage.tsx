@@ -465,7 +465,7 @@ export function JobsPage() {
                   <button
                     key={value}
                     onClick={() => {
-                      if (!locationTags.includes(value)) addLocationTag(value)
+                      locationTags.includes(value) ? removeLocationTag(value) : addLocationTag(value)
                     }}
                     className={`text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full border transition-colors ${
                       locationTags.includes(value)
