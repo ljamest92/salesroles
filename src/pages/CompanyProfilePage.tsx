@@ -162,14 +162,21 @@ export function CompanyProfilePage() {
             <p className="text-xl text-muted-foreground max-w-3xl leading-relaxed font-medium">
               {companyData.description}
             </p>
-            <div className="flex gap-3 w-full max-w-full overflow-hidden">
-              <button onClick={handleFollow} className={`flex-1 ${isFollowed ? 'bg-secondary text-foreground' : 'bg-primary text-primary-foreground cta-glow'} font-black py-3 px-4 rounded-lg text-xs`}>
+            <div className="flex gap-3">
+              <button
+                onClick={handleFollow}
+                className={`px-6 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+                  isFollowed
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/40'
+                    : 'bg-emerald-500 hover:bg-emerald-600 text-white'
+                }`}
+              >
                 {isFollowed ? 'Following' : 'Follow Company'}
               </button>
               {companyData.website && (
-                <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer" className="flex-1">
-                  <button className="w-full border border-white/20 hover:border-white/40 text-white font-black py-3 px-4 rounded-lg text-xs flex items-center justify-center gap-2">
-                    <ExternalLink className="w-4 h-4 shrink-0" />
+                <a href={getWebsiteUrl(companyData.website)} target="_blank" rel="noopener noreferrer">
+                  <button className="px-6 py-2.5 rounded-lg text-sm font-medium border border-white/20 hover:border-white/40 text-white transition-colors flex items-center gap-2">
+                    <ExternalLink className="w-4 h-4" />
                     Website
                   </button>
                 </a>
