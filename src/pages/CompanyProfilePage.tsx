@@ -50,7 +50,14 @@ export function CompanyProfilePage() {
         const companyJobs = allJobs.filter(
           j => j.company.toLowerCase().replace(/[^a-z0-9]/g, '') === id.toLowerCase()
         )
-        setJobs(companyJobs)
+        const uniqueJobs = companyJobs.filter((job, index, self) =>
+          index === self.findIndex(j =>
+            j.id === job.id ||
+            (j.url && job.url && j.url === job.url) ||
+            j.title === job.title
+          )
+        )
+        setJobs(uniqueJobs)
 
         // Try DB for a company record; use seed job data as fallback
         let companyInfo: any = null
