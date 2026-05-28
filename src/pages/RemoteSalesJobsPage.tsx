@@ -23,8 +23,18 @@ const JOBS_PER_PAGE = 10
 export function RemoteSalesJobsPage() {
   const [isLoading, setIsLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
-  const [searchTags, setSearchTags] = useState<string[]>([])
+  const [searchTags, setSearchTags] = useState<string[]>(() => {
+    const params = new URLSearchParams(window.location.search)
+    const raw = params.get('search') || ''
+    return raw ? raw.split(',').map(t => t.trim()).filter(Boolean) : []
+  })
   const [tagInput, setTagInput] = useState('')
+  const [locationTags, setLocationTags] = useState<string[]>(() => {
+    const params = new URLSearchParams(window.location.search)
+    const raw = params.get('location') || ''
+    return raw ? raw.split(',').map(t => t.trim()).filter(Boolean) : []
+  })
+  const [locationInput, setLocationInput] = useState('')
   const [seniorityFilters, setSeniorityFilters] = useState<string[]>([])
   const [sectorFilters, setSectorFilters] = useState<string[]>([])
   const [sortBy, setSortBy] = useState('latest')
@@ -91,6 +101,8 @@ export function RemoteSalesJobsPage() {
   const clearAll = () => {
     setSearchTags([])
     setTagInput('')
+    setLocationTags([])
+    setLocationInput('')
     setSeniorityFilters([])
     setSectorFilters([])
     setSelectedOTERange('')
@@ -111,6 +123,24 @@ export function RemoteSalesJobsPage() {
       addTag(tagInput)
     } else if (e.key === 'Backspace' && tagInput === '') {
       setSearchTags(prev => prev.slice(0, -1))
+    }
+  }
+
+  const addLocationTag = (raw: string) => {
+    const val = raw.trim().replace(/,$/, '').trim()
+    if (!val) return
+    setLocationTags(prev => prev.includes(val) ? prev : [...prev, val])
+    setLocationInput('')
+  }
+
+  const removeLocationTag = (tag: string) => setLocationTags(prev => prev.filter(t => t !== tag))
+
+  const handleLocationKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault()
+      addLocationTag(locationInput)
+    } else if (e.key === 'Backspace' && locationInput === '') {
+      setLocationTags(prev => prev.slice(0, -1))
     }
   }
 
@@ -140,7 +170,10 @@ export function RemoteSalesJobsPage() {
       if (!range) return true
       return ote >= range[0] && ote <= range[1]
     })()
-    return matchesSearch && matchesSeniority && matchesSector && matchesOTE
+    const matchesLocation = locationTags.length === 0 || locationTags.some(tag =>
+      (job.location ?? '').toLowerCase().includes(tag.toLowerCase())
+    )
+    return matchesSearch && matchesSeniority && matchesSector && matchesOTE && matchesLocation
   })
 
   const sorted = [...filtered].sort((a, b) => {
@@ -155,13 +188,47 @@ export function RemoteSalesJobsPage() {
 
   useEffect(() => {
     setCurrentPage(1)
-  }, [searchTags, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
+  }, [searchTags, locationTags, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentPage])
 
-  const activeFilterCount = seniorityFilters.length + sectorFilters.length + (selectedOTERange ? 1 : 0)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (searchTags.length > 0) { params.set('search', searchTags.join(',')) }
+    else { params.delete('search') }
+    const newUrl = params.toString()
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname
+    const scrollY = window.scrollY
+    const origScrollTo = window.scrollTo.bind(window)
+    ;(window as any).scrollTo = () => {}
+    window.history.replaceState(null, '', newUrl)
+    requestAnimationFrame(() => {
+      ;(window as any).scrollTo = origScrollTo
+      window.scrollTo(0, scrollY)
+    })
+  }, [searchTags])
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (locationTags.length > 0) { params.set('location', locationTags.join(',')) }
+    else { params.delete('location') }
+    const newUrl = params.toString()
+      ? `${window.location.pathname}?${params.toString()}`
+      : window.location.pathname
+    const scrollY = window.scrollY
+    const origScrollTo = window.scrollTo.bind(window)
+    ;(window as any).scrollTo = () => {}
+    window.history.replaceState(null, '', newUrl)
+    requestAnimationFrame(() => {
+      ;(window as any).scrollTo = origScrollTo
+      window.scrollTo(0, scrollY)
+    })
+  }, [locationTags])
+
+  const activeFilterCount = seniorityFilters.length + sectorFilters.length + (selectedOTERange ? 1 : 0) + locationTags.length
 
   const remoteCount = jobs.filter(j =>
     (j as any).work_type === 'Remote' || (j as any).work_type === 'remote' || (j as any).remote === true
@@ -296,29 +363,62 @@ export function RemoteSalesJobsPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            <div className="space-y-3">
+              <label className="text-xs font-bold tracking-wider text-muted-foreground">Location / Timezone</label>
+              <div className="relative">
+                <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={14} />
+                <input
+                  type="text"
+                  value={locationInput}
+                  onChange={(e) => setLocationInput(e.target.value)}
+                  onKeyDown={handleLocationKeyDown}
+                  onBlur={() => { if (locationInput.trim()) addLocationTag(locationInput) }}
+                  placeholder="Country or timezone…"
+                  className="w-full bg-secondary border border-border rounded-lg pl-8 pr-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-primary transition-all"
+                />
+                {locationInput && (
+                  <button
+                    onClick={() => setLocationInput('')}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors text-xs"
+                  >✕</button>
+                )}
+              </div>
+              <div className="flex flex-wrap gap-2 pt-1">
+                {[
+                  { label: 'Americas', value: 'Americas' },
+                  { label: 'Europe', value: 'Europe' },
+                  { label: 'Asia-Pacific', value: 'Asia-Pacific' },
+                  { label: 'Global', value: 'Global' },
+                ].map(({ label, value }) => (
+                  <button
+                    key={value}
+                    onClick={() => { if (!locationTags.includes(value)) addLocationTag(value) }}
+                    className={`text-[10px] font-black tracking-widest px-2.5 py-1 rounded-full border transition-colors ${
+                      locationTags.includes(value)
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : 'border-white/20 text-muted-foreground hover:border-emerald-500/50 hover:text-emerald-400'
+                    }`}
+                  >{label}</button>
+                ))}
+              </div>
+            </div>
           </div>
         </aside>
 
         {/* Job list */}
         <div className="flex-1 space-y-10">
           <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-card/30 p-2 rounded-3xl border border-white/5 backdrop-blur-xl shadow-xl">
-            <div className="relative flex-1 w-full flex items-center flex-wrap gap-2 pl-12 pr-4 py-3 min-h-[60px]">
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground shrink-0" size={18} />
-              {searchTags.map(tag => (
-                <span key={tag} className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[11px] font-black tracking-widest px-3 py-1.5 rounded-full whitespace-nowrap">
-                  <Search size={10} />
-                  {tag}
-                  <button onClick={() => removeTag(tag)} className="ml-1 hover:text-white transition-colors" aria-label={`Remove ${tag}`}>✕</button>
-                </span>
-              ))}
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
               <input
                 type="text"
                 value={tagInput}
                 onChange={(e) => setTagInput(e.target.value)}
                 onKeyDown={handleTagKeyDown}
                 onBlur={() => { if (tagInput.trim()) addTag(tagInput) }}
-                placeholder={searchTags.length === 0 ? 'Search by title, company…' : 'Add another…'}
-                className="flex-1 min-w-[120px] bg-transparent border-none py-2 text-sm focus:outline-none transition-all font-medium"
+                placeholder="Search by title, company…"
+                className="w-full bg-transparent border-none pl-14 pr-4 py-5 text-sm focus:outline-none transition-all font-medium"
               />
             </div>
             <div className="flex items-center gap-3 pr-4">
@@ -334,6 +434,25 @@ export function RemoteSalesJobsPage() {
               </Select>
             </div>
           </div>
+
+          {(searchTags.length > 0 || locationTags.length > 0) && (
+            <div className="flex flex-wrap gap-2 -mt-4">
+              {searchTags.map(tag => (
+                <span key={tag} className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[11px] font-black tracking-widest px-3 py-1.5 rounded-full">
+                  <Search size={11} />
+                  {tag}
+                  <button onClick={() => removeTag(tag)} className="ml-1 hover:text-white transition-colors" aria-label={`Remove ${tag}`}>✕</button>
+                </span>
+              ))}
+              {locationTags.map(tag => (
+                <span key={tag} className="flex items-center gap-1.5 bg-emerald-500/15 border border-emerald-500/40 text-emerald-400 text-[11px] font-black tracking-widest px-3 py-1.5 rounded-full">
+                  <MapPin size={11} />
+                  {tag}
+                  <button onClick={() => removeLocationTag(tag)} className="ml-1 hover:text-white transition-colors" aria-label={`Remove ${tag}`}>✕</button>
+                </span>
+              ))}
+            </div>
+          )}
 
           {!isLoading && sorted.length > 0 && (
             <p className="text-white/40 text-sm mb-4">
