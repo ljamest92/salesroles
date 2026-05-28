@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil, Trash2 } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil, Trash2, ChevronRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 const Separator = UISeparator as any
@@ -1244,8 +1244,9 @@ export function DashboardPage() {
                         profileViews.map((v: any, i: number) => {
                           const displayName = v.viewer_name || v.viewer_company || 'A company'
                           const initial = displayName.charAt(0).toUpperCase()
-                          return (
-                            <Card key={i} className="p-4 border border-white/5 bg-card/30 rounded-xl">
+                          const companySlug = (v.viewer_company || v.viewer_name || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+                          const card = (
+                            <Card key={i} className={`p-4 border border-white/5 bg-card/30 rounded-xl${companySlug ? ' hover:border-white/20 transition-colors cursor-pointer' : ''}`}>
                               <div className="flex justify-between items-center">
                                 <div className="flex items-center gap-3">
                                   <div className="w-9 h-9 rounded-xl bg-[#0f1629] border border-white/10 flex items-center justify-center shrink-0 text-sm font-black text-emerald-400">
@@ -1256,10 +1257,16 @@ export function DashboardPage() {
                                     <p className="text-xs text-white/40 mt-0.5">{v.action === 'cv_download' ? 'Downloaded your CV' : 'Viewed your profile'}</p>
                                   </div>
                                 </div>
-                                <p className="text-xs text-white/30 shrink-0">{new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className="text-xs text-white/30 shrink-0">{new Date(v.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                                  {companySlug && <ChevronRight className="w-4 h-4 text-white/30 shrink-0" />}
+                                </div>
                               </div>
                             </Card>
                           )
+                          return companySlug
+                            ? <Link key={i} to={`/company/${companySlug}`}>{card}</Link>
+                            : card
                         })
                       )}
                     </div>
