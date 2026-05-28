@@ -429,17 +429,7 @@ export function JobsPage() {
                 className="w-full bg-transparent border-none rounded-xl pl-14 pr-4 py-5 text-sm focus:outline-none transition-all font-medium"
               />
             </div>
-            <div className="relative flex-1 w-full border-l border-white/5 pl-2">
-              <MapPin className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
-              <input
-                type="text"
-                value={locationQuery}
-                onChange={(e) => setLocationQuery(e.target.value)}
-                placeholder="City or Remote..."
-                className="w-full bg-transparent border-none rounded-xl pl-14 pr-4 py-5 text-sm focus:outline-none transition-all font-medium"
-              />
-            </div>
-            <div className="flex items-center gap-3 pr-4">
+<div className="flex items-center gap-3 pr-4">
               <Select value={sortBy} onValueChange={setSortBy}>
                 <SelectTrigger className="w-full sm:w-40 bg-secondary/50 border-white/5 h-11 text-[11px] font-black tracking-widest rounded-xl">
                   <SelectValue />
