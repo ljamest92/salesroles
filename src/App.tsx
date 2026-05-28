@@ -138,7 +138,7 @@ const routeTree = rootRoute.addChildren([
   usaJobsRoute
 ])
 
-const router = createRouter({ routeTree } as any)
+const router = createRouter({ routeTree, scrollRestoration: false } as any)
 
 declare module '@tanstack/react-router' {
   interface Register {
