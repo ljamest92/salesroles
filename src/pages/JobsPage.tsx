@@ -216,11 +216,16 @@ export function JobsPage() {
     toast.success('Link copied', { description: 'The job URL is now in your clipboard.' })
   }
 
+  // Track whether the page change came from a pagination click (should scroll) or a filter reset (should not scroll)
+  const paginationScrollRef = useRef(false)
+
   useEffect(() => {
+    paginationScrollRef.current = false
     setCurrentPage(1)
   }, [searchQuery, locationQuery, workTypeFilters, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
 
   useEffect(() => {
+    if (!paginationScrollRef.current) return
     window.scrollTo({ top: 0, behavior: 'smooth' })
   }, [currentPage])
 
@@ -563,7 +568,7 @@ export function JobsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                onClick={() => { paginationScrollRef.current = true; setCurrentPage(p => Math.max(1, p - 1)) }}
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
@@ -577,7 +582,7 @@ export function JobsPage() {
                       <span className="text-white/30 px-2">...</span>
                     )}
                     <button
-                      onClick={() => setCurrentPage(page)}
+                      onClick={() => { paginationScrollRef.current = true; setCurrentPage(page) }}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === page
                           ? 'bg-emerald-500 text-white'
@@ -590,7 +595,7 @@ export function JobsPage() {
                 ))
               }
               <button
-                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => { paginationScrollRef.current = true; setCurrentPage(p => Math.min(totalPages, p + 1)) }}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
