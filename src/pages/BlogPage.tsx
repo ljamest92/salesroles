@@ -7,6 +7,7 @@ import { blogPosts } from '../data/blogPosts'
 
 export function BlogPage() {
   const [activeCategory, setActiveCategory] = useState('All')
+  const [searchQuery, setSearchQuery] = useState('')
   const [subEmail, setSubEmail] = useState('')
   const [subSuccess, setSubSuccess] = useState(false)
   const [subError, setSubError] = useState('')
@@ -44,7 +45,12 @@ export function BlogPage() {
     'Interview Tips': <UserCheck className="text-primary" size={16} />,
   }
 
-  const filteredPosts = activeCategory === 'All' ? blogPosts : blogPosts.filter(p => p.category === activeCategory)
+  const filteredPosts = blogPosts.filter(p => {
+    const matchesCategory = activeCategory === 'All' || p.category === activeCategory
+    const q = searchQuery.toLowerCase()
+    const matchesSearch = !q || p.title.toLowerCase().includes(q) || p.excerpt.toLowerCase().includes(q) || p.category.toLowerCase().includes(q)
+    return matchesCategory && matchesSearch
+  })
 
   return (
     <div className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-24 page-transition">
@@ -59,9 +65,11 @@ export function BlogPage() {
           </div>
           <div className="relative w-full md:w-96 group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={20} />
-            <input 
-              type="text" 
-              placeholder="Search the archive..." 
+            <input
+              type="text"
+              placeholder="Search the archive..."
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
               className="w-full bg-card border border-white/5 rounded-2xl pl-12 pr-4 py-5 text-sm focus:outline-none focus:border-primary/50 transition-all font-medium shadow-2xl"
             />
           </div>
@@ -80,8 +88,10 @@ export function BlogPage() {
         </div>
       </Container>
 
-      <Container className="grid md:grid-cols-2 lg:grid-cols-3 gap-10">
-        {filteredPosts.map((post, i) => (
+      <Container className={filteredPosts.length === 0 ? '' : 'grid md:grid-cols-2 lg:grid-cols-3 gap-10'}>
+        {filteredPosts.length === 0 ? (
+          <p className="text-muted-foreground font-medium text-center py-16">No posts found.</p>
+        ) : filteredPosts.map((post, i) => (
           <motion.div
             key={post.title}
             initial={{ opacity: 0, y: 20 }}
@@ -118,7 +128,7 @@ export function BlogPage() {
             </Link>
           </motion.div>
         ))}
-      </Container>
+        </Container>
 
       <Container>
         <Card className="p-16 border border-primary/20 bg-primary/5 rounded-[48px] flex flex-col md:flex-row items-center justify-between gap-12 relative overflow-hidden group shadow-2xl">
