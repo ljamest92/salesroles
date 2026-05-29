@@ -152,7 +152,7 @@ export function HomePage() {
           const existing = seedMap.get(j.company)
           const slug = j.company.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
           const knownDomain = KNOWN_DOMAINS[slug] || KNOWN_DOMAINS[j.company.toLowerCase()] || null
-          const domain = j.domain || knownDomain
+          const domain = j.domain || knownDomain || `${slug}.com`
           if (existing) {
             seedMap.set(j.company, { count: existing.count + 1, domain: existing.domain || domain })
           } else {
