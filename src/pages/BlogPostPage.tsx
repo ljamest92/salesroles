@@ -6,7 +6,10 @@ import { blogPosts } from '../data/blogPosts'
 
 const categoryIcons: Record<string, React.ReactNode> = {
   'Salary Guides': <TrendingUp size={14} />,
+  'Salary Insights': <TrendingUp size={14} />,
   'Career Advice': <UserCheck size={14} />,
+  'Hiring Advice': <UserCheck size={14} />,
+  'Comp Transparency': <TrendingUp size={14} />,
   'Industry News': <BookOpen size={14} />,
   'Interview Tips': <UserCheck size={14} />,
 }
@@ -14,6 +17,13 @@ const categoryIcons: Record<string, React.ReactNode> = {
 function renderContent(raw: string) {
   const blocks = raw.trim().split(/\n\n+/)
   return blocks.map((block, i) => {
+    if (block.startsWith('### ')) {
+      return (
+        <h3 key={i} className="text-lg md:text-xl font-black tracking-tight mt-8 mb-2 text-white">
+          {block.slice(4)}
+        </h3>
+      )
+    }
     if (block.startsWith('## ')) {
       return (
         <h2 key={i} className="text-xl md:text-2xl font-black tracking-tight mt-12 mb-3 text-white">

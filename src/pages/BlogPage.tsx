@@ -32,11 +32,14 @@ export function BlogPage() {
       setSubError('Something went wrong. Try again.')
     }
   }
-  const categories = ['All', 'Salary Guides', 'Career Advice', 'Industry News', 'Interview Tips']
+  const categories = ['All', 'Salary Guides', 'Salary Insights', 'Career Advice', 'Hiring Advice', 'Comp Transparency', 'Industry News', 'Interview Tips']
 
   const categoryIcons: Record<string, React.ReactNode> = {
     'Salary Guides': <TrendingUp className="text-primary" size={16} />,
+    'Salary Insights': <TrendingUp className="text-primary" size={16} />,
     'Career Advice': <UserCheck className="text-primary" size={16} />,
+    'Hiring Advice': <UserCheck className="text-primary" size={16} />,
+    'Comp Transparency': <TrendingUp className="text-primary" size={16} />,
     'Industry News': <BookOpen className="text-primary" size={16} />,
     'Interview Tips': <UserCheck className="text-primary" size={16} />,
   }
