@@ -89,31 +89,33 @@ export function BlogPage() {
             viewport={{ once: true }}
             transition={{ delay: i * 0.1 }}
           >
-            <Card className="job-card-hover border border-white/5 overflow-hidden group rounded-[32px] h-full flex flex-col bg-card/30 backdrop-blur-sm">
-              <div className="aspect-[16/10] bg-secondary flex items-center justify-center text-muted-foreground relative overflow-hidden">
-                <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-50" />
-                <BookOpen size={48} className="relative z-10 opacity-20 group-hover:scale-110 transition-transform duration-700" />
-              </div>
-              <div className="p-10 space-y-6 flex-1 flex flex-col">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
-                    {categoryIcons[post.category] ?? <BookOpen size={16} className="text-primary" />}
-                  </div>
-                  <span className="text-[10px] font-black tracking-[0.2em] text-primary">{post.category}</span>
+            <Link to={`/blog/${post.slug}`} className="block h-full cursor-pointer">
+              <Card className="job-card-hover border border-white/5 overflow-hidden group rounded-[32px] h-full flex flex-col bg-card/30 backdrop-blur-sm">
+                <div className="aspect-[16/10] bg-secondary flex items-center justify-center text-muted-foreground relative overflow-hidden">
+                  <div className="absolute inset-0 bg-gradient-to-tr from-primary/10 to-transparent opacity-50" />
+                  <BookOpen size={48} className="relative z-10 opacity-20 group-hover:scale-110 transition-transform duration-700" />
                 </div>
-                <h3 className="text-2xl font-black tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2">{post.title}</h3>
-                <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 font-medium">{post.excerpt}</p>
-                <div className="pt-8 mt-auto flex items-center justify-between border-t border-white/5">
-                  <div className="flex items-center gap-4 text-[10px] font-black tracking-widest text-muted-foreground/60">
-                    <span className="flex items-center gap-1.5"><Calendar size={12} /> {post.date}</span>
-                    <span className="flex items-center gap-1.5"><Clock size={12} /> {post.readTime}</span>
+                <div className="p-10 space-y-6 flex-1 flex flex-col">
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center text-primary">
+                      {categoryIcons[post.category] ?? <BookOpen size={16} className="text-primary" />}
+                    </div>
+                    <span className="text-[10px] font-black tracking-[0.2em] text-primary">{post.category}</span>
                   </div>
-                  <Link to={`/blog/${post.slug}`} className="text-primary font-black text-[10px] tracking-widest flex items-center gap-2 group/link">
-                    Read Post <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
-                  </Link>
+                  <h3 className="text-2xl font-black tracking-tight leading-tight group-hover:text-primary transition-colors line-clamp-2">{post.title}</h3>
+                  <p className="text-muted-foreground text-sm leading-relaxed line-clamp-3 font-medium">{post.excerpt}</p>
+                  <div className="pt-8 mt-auto flex items-center justify-between border-t border-white/5">
+                    <div className="flex items-center gap-4 text-[10px] font-black tracking-widest text-muted-foreground/60">
+                      <span className="flex items-center gap-1.5"><Calendar size={12} /> {post.date}</span>
+                      <span className="flex items-center gap-1.5"><Clock size={12} /> {post.readTime}</span>
+                    </div>
+                    <span className="text-primary font-black text-[10px] tracking-widest flex items-center gap-2 group/link">
+                      Read Post <ArrowRight size={14} className="group-hover/link:translate-x-1 transition-transform" />
+                    </span>
+                  </div>
                 </div>
-              </div>
-            </Card>
+              </Card>
+            </Link>
           </motion.div>
         ))}
       </Container>
