@@ -1,4 +1,4 @@
-export interface BlogPost {
+﻿export interface BlogPost {
   slug: string
   title: string
   category: string
@@ -24,7 +24,7 @@ export const blogPosts: BlogPost[] = [
 
 Entry level AEs in the US are typically earning a base of $55k to $75k with OTE of $100k to $130k. Mid-market AEs command $80k to $110k base with OTE of $160k to $200k. Enterprise AEs sit at $120k to $160k base with OTE ranging from $240k to $350k and above.
 
-In the UK, entry AEs earn £35k to £50k base with OTE of £65k to £90k. Senior and enterprise AEs reach £80k to £120k base with OTE pushing £160k to £220k.
+In the UK, entry AEs earn Â£35k to Â£50k base with OTE of Â£65k to Â£90k. Senior and enterprise AEs reach Â£80k to Â£120k base with OTE pushing Â£160k to Â£220k.
 
 Australian AEs typically earn AUD $80k to $120k base at the mid level with OTE of AUD $150k to $200k.
 
@@ -32,15 +32,15 @@ Australian AEs typically earn AUD $80k to $120k base at the mid level with OTE o
 
 SDRs in the US earn $45k to $65k base with OTE of $70k to $90k. The role is heavily variable market to market. San Francisco and New York command a premium of 15 to 20 percent over national averages.
 
-UK SDRs earn £28k to £40k base with OTE of £45k to £60k. Australian SDRs earn AUD $55k to $75k base.
+UK SDRs earn Â£28k to Â£40k base with OTE of Â£45k to Â£60k. Australian SDRs earn AUD $55k to $75k base.
 
 ## Business Development Manager (BDM)
 
-BDMs sit between SDR and AE in most organisations. US BDMs earn $70k to $95k base with OTE of $130k to $180k. UK equivalents earn £50k to £75k base with OTE of £90k to £130k.
+BDMs sit between SDR and AE in most organisations. US BDMs earn $70k to $95k base with OTE of $130k to $180k. UK equivalents earn Â£50k to Â£75k base with OTE of Â£90k to Â£130k.
 
 ## Sales Manager
 
-First line sales managers in the US earn $100k to $140k base with OTE of $160k to $220k. UK sales managers earn £65k to £95k base with OTE of £110k to £160k.
+First line sales managers in the US earn $100k to $140k base with OTE of $160k to $220k. UK sales managers earn Â£65k to Â£95k base with OTE of Â£110k to Â£160k.
 
 ## VP of Sales
 
@@ -269,7 +269,7 @@ Geography adds a significant premium. San Francisco and New York AEs earn 20 to 
 
 The UK AE market has seen consistent growth over the past three years as US SaaS companies expanded European GTM operations out of London.
 
-Entry-level AEs earn a base of £35k to £50k with OTE of £65k to £90k. Mid-market AEs earn a base of £55k to £80k with OTE of £100k to £150k. Enterprise AEs earn a base of £85k to £120k with OTE of £160k to £220k.
+Entry-level AEs earn a base of Â£35k to Â£50k with OTE of Â£65k to Â£90k. Mid-market AEs earn a base of Â£55k to Â£80k with OTE of Â£100k to Â£150k. Enterprise AEs earn a base of Â£85k to Â£120k with OTE of Â£160k to Â£220k.
 
 London commands a premium of 15 to 20 percent over Manchester, Edinburgh, and other UK cities. Remote-first UK roles have moved toward London-adjacent comp in the last two years as competition for talent intensified.
 
@@ -422,7 +422,7 @@ SDR stands for Sales Development Representative. The role is almost always focus
 
 In most organisations, SDR is the entry point into a sales career. The expectation is high activity volume: cold calls, cold emails, LinkedIn outreach. The success metric is booked meetings that convert to pipeline.
 
-US SDRs earn a base of $45k to $65k with OTE of $70k to $90k. UK SDRs earn £28k to £42k base with OTE of £45k to £65k. Australian SDRs earn AUD $55k to $75k base with OTE of AUD $85k to $110k.
+US SDRs earn a base of $45k to $65k with OTE of $70k to $90k. UK SDRs earn Â£28k to Â£42k base with OTE of Â£45k to Â£65k. Australian SDRs earn AUD $55k to $75k base with OTE of AUD $85k to $110k.
 
 ## What a BDR Actually Is
 
@@ -432,7 +432,7 @@ The distinction matters at companies where BDR is used to describe a more senior
 
 If you see a BDR role, read the job description carefully. If the responsibilities are booking meetings and passing to AEs, it is an SDR by another name. If the role involves managing accounts or running multi-stakeholder outreach campaigns, it may sit higher in the seniority structure.
 
-BDR comp where it is differentiated from SDR: US $55k to $75k base with OTE $90k to $120k. UK £35k to £50k base with OTE £60k to £85k.
+BDR comp where it is differentiated from SDR: US $55k to $75k base with OTE $90k to $120k. UK Â£35k to Â£50k base with OTE Â£60k to Â£85k.
 
 ## What a BDM Actually Is
 
@@ -440,7 +440,7 @@ BDM stands for Business Development Manager. This is where the title diverges si
 
 Think of BDM as the equivalent of an Account Executive. The difference is often that BDM skews toward smaller deal sizes, SMB segments, or channel and partnership relationships. Some companies use BDM for what others call AE. Some use it for a hybrid role that combines prospecting and closing.
 
-The comp reflects the closing responsibility. US BDMs earn $70k to $100k base with OTE of $130k to $200k depending on deal size and market. UK BDMs earn £50k to £75k base with OTE of £90k to £140k. Australian BDMs earn AUD $90k to $130k base with OTE of AUD $170k to $250k.
+The comp reflects the closing responsibility. US BDMs earn $70k to $100k base with OTE of $130k to $200k depending on deal size and market. UK BDMs earn Â£50k to Â£75k base with OTE of Â£90k to Â£140k. Australian BDMs earn AUD $90k to $130k base with OTE of AUD $170k to $250k.
 
 ## How to Decode Any Sales Title Before You Apply
 
@@ -634,5 +634,426 @@ The strongest negotiating position is demonstrating your track record. If you ha
 Also ask specifically whether the company pays on location-adjusted scales or national pay bands. Some companies have a single pay band for all US remote employees. Others adjust by city tier. Knowing which framework applies changes the negotiation.
 
 Find fully remote and hybrid sales roles with full comp transparency at SalesRoles.co. Every listing shows base, OTE, and commission structure before you apply.`,
+  },
+  {
+    slug: 'is-ote-real',
+    title: 'Is OTE Real? What the Data Says About Who Actually Hits Quota',
+    category: 'Comp Transparency',
+    date: 'May 13, 2026',
+    readTime: '7 min',
+    author: 'SalesRoles Team',
+    seoKeyword: 'is OTE real',
+    excerpt: 'OTE looks great on a job post. Whether it is real depends on quota attainment data most companies do not share. Here is what the numbers actually say.',
+    content: `Is OTE real? It is the question every sales professional should ask before accepting an offer, and most do not ask it directly enough. On-target earnings is a projection. It tells you what you will earn if you hit 100 percent of quota. What it does not tell you is whether hitting 100 percent is realistic.
+
+The answer varies dramatically by company, role, and year. But the aggregate data paints a clear picture.
+
+## The Quota Attainment Numbers
+
+According to RepVue data from 2026, only 41.2 percent of software sales reps hit quota. That means across the industry, fewer than half the people with an OTE listed in their contract actually earn it.
+
+This is not a fringe result. It has been consistent across multiple years and multiple data sources. Quota attainment across SaaS sales teams averages in the low to mid forties as a percentage. The median SDR earns OTE of around $85,000. The median SMB Account Executive earns $130,000 OTE. The median Mid-Market AE earns $175,000 OTE. These are the on-target numbers. The actual earned compensation is lower for most people in these roles.
+
+## Why Quota Attainment Is So Low
+
+There are three primary reasons quota attainment across the industry sits below 50 percent.
+
+Quotas are set to maximise company revenue targets, not individual rep earnings. Finance sets a number, sales leadership accepts it, and the team is handed a target that was never designed to be achievable for the majority.
+
+Product-market fit and pipeline quality vary enormously. An AE carrying a $1.5m quota with weak inbound pipeline and a product in a competitive market is in a structurally different position to an AE carrying the same number with strong inbound and a clear category leader.
+
+Ramp periods are often inadequate. A new AE hired in January who has not closed their first deal until March is measured on a full annual quota that assumes a full year of productive selling.
+
+## The OTE Lie Is Not Always Intentional
+
+Most companies listing OTE in a job post are not trying to deceive candidates. They genuinely believe the number is achievable. But they are measuring against the best performers on the team, or against a historical period when quota was set lower or the market was stronger.
+
+The problem is asymmetric information. The hiring team knows the attainment data. The candidate does not. Unless the candidate asks directly, that data never comes up.
+
+## What Is OTE Real For, Then?
+
+OTE is a useful ceiling. It tells you the maximum you can earn at 100 percent quota attainment. It is also a useful benchmark for comparing roles. An SDR role at $90k OTE is paying above the $85k median. A Mid-Market AE role at $150k OTE is paying below the $175k median.
+
+What OTE does not tell you is your expected earnings at that specific company with that specific quota. For that, you need attainment data.
+
+## The Questions to Ask Before You Trust an OTE
+
+Before accepting any role where OTE is the primary draw, ask these specific questions.
+
+What percentage of the team hit quota last year? Ask for the number, not an approximation. If the answer is below 60 percent, your OTE is aspirational.
+
+What was the average attainment across the team? Even if 60 percent hit quota, if average attainment is 78 percent, your expected earnings are meaningfully lower than OTE.
+
+How has quota changed year over year? Quota that increases 20 to 30 percent annually erodes attainment even when the business is growing. Ask what quota looked like three years ago versus today.
+
+Has the commission plan changed in the past two years? Mid-year commission plan changes are one of the most common complaints from sales reps. If a company has changed the plan without notice, ask why and when.
+
+## What Good Attainment Data Looks Like
+
+A healthy sales team runs 65 to 75 percent quota attainment. Below 50 percent signals a structural problem, whether that is quota setting, product, market, or process. Above 80 percent often means quota was set too conservatively.
+
+Companies that are proud of their attainment data publish it. If a job post states that 71 percent of the team hit quota last year, that is a signal worth weighing. If the post is silent on attainment, ask the question in round one.
+
+At SalesRoles.co, every listing shows base, OTE, and commission structure. Browse roles with full comp listed and ask the right questions before you sign.`,
+  },
+  {
+    slug: 'pay-transparency-laws-2026',
+    title: 'Pay Transparency Laws in 2026: What Sales Candidates Need to Know',
+    category: 'Comp Transparency',
+    date: 'May 16, 2026',
+    readTime: '6 min',
+    author: 'SalesRoles Team',
+    seoKeyword: 'pay transparency laws 2026',
+    excerpt: 'Pay transparency laws in 2026 now cover 16 US states plus DC, with California expanding requirements in January. Here is what sales candidates can demand.',
+    content: `Pay transparency laws in 2026 now require employers in a significant and growing number of jurisdictions to publish compensation ranges on job postings. If you are a sales candidate in any of the affected markets, these laws have changed what you are entitled to know before you apply.
+
+Understanding where the laws apply, what they require, and how to use them in a job search gives you a practical advantage in every compensation conversation.
+
+## Where Pay Transparency Laws Apply in the US
+
+As of 2026, 16 US states plus Washington D.C. have active pay transparency laws requiring employers to include salary or compensation information on job postings. These include California, Colorado, New York, Washington, Illinois, Minnesota, and others.
+
+The specifics vary by jurisdiction. Some require a salary range. Some require the range to be included only on request. Some apply only to companies above a certain headcount threshold.
+
+California expanded its requirements from January 2026, now requiring employers to publish the actual expected compensation range for a role, not broad placeholder ranges. If a company posts a range of $50,000 to $350,000 for a single role in California, that is no longer compliant. The range must reflect what the company is genuinely prepared to pay for the specific position.
+
+Colorado was the first state to require pay ranges on postings and its enforcement has sharpened over time. New York City requires ranges on all postings for roles that could be performed in the city, which captures a significant number of remote roles where candidates are based in the five boroughs.
+
+## What This Means for Sales Candidates
+
+If you are applying to a role in a jurisdiction with active pay transparency laws, the company is legally required to provide a compensation range. If the posting does not include one, the company is out of compliance. You are entitled to ask for it and in many jurisdictions the company is required to provide it.
+
+In practice, this changes the power dynamic in comp conversations. You no longer need to guess or wait until offer stage. The law gives you a legitimate reason to ask for the number upfront, and the company has less cover for withholding it.
+
+For OTE-based roles in sales, the application of these laws gets slightly more complex. Most laws refer to salary or wage ranges, which technically covers base salary. OTE is a projection, not a guaranteed salary. However, increasingly, regulators and employers interpret the spirit of these laws as requiring disclosure of total expected compensation, not just base.
+
+## How to Use the Laws in Practice
+
+If you are in California, Colorado, New York, Washington, or another covered state, and a role you are applying to does not list comp, email the recruiter before you invest time in the process. Ask for the base salary range and OTE for the role before proceeding. Most recruiters at compliant companies will respond with the information immediately.
+
+If the recruiter resists or refuses, that tells you something about how the company operates. Companies that are reluctant to share legally required information during the hiring process are unlikely to be more transparent once you join.
+
+## Remote Roles and Jurisdiction
+
+Remote role listings create a specific complication. If a company posts a role that is fully remote and open to candidates in any state, they may be subject to the laws of every jurisdiction where candidates could apply from. Many companies operating in good faith simply apply pay transparency standards to all their listings to avoid complexity.
+
+For candidates, this means that a role listed as fully remote from a company headquartered in a non-transparent state may still be required to show comp if they are actively recruiting in covered jurisdictions.
+
+## Beyond the US
+
+Australia has introduced pay transparency reporting requirements for larger employers, with the Workplace Gender Equality Agency requiring companies above certain thresholds to report on gender pay gaps publicly. The EU Pay Transparency Directive requires member states to implement pay transparency measures by June 2026, giving employees the right to request information about pay levels and requiring employers to report pay data by gender.
+
+For sales candidates in the UK, Australia, and EU markets, the legislative direction is clear. Pay transparency is expanding. Companies that are ahead of it already publish comp. Companies that are not will be required to catch up.
+
+## What to Do With This Information
+
+If you are in a covered jurisdiction, use the law as a baseline. You are entitled to know the range. Ask for it early. If you are outside a covered jurisdiction, use the existence of these laws as context in the conversation.
+
+At SalesRoles.co, full comp transparency is required on every listing. Base, OTE, and commission structure are shown before you apply. Browse roles where the numbers are always upfront.`,
+  },
+  {
+    slug: 'questions-to-ask-before-accepting-sales-offer',
+    title: '10 Questions to Ask About Comp Before You Accept a Sales Offer',
+    category: 'Career Advice',
+    date: 'May 19, 2026',
+    readTime: '8 min',
+    author: 'SalesRoles Team',
+    seoKeyword: 'questions to ask before accepting a sales offer',
+    excerpt: '10 specific questions to ask about comp before you accept a sales offer. Get the full picture on OTE, quota, accelerators, clawbacks, and payment timing.',
+    content: `The questions to ask before accepting a sales offer are not the ones most candidates ask. Most candidates ask about the role, the team, the product, and the culture. Fewer ask the specific questions that determine whether the compensation package is what it appears to be.
+
+An offer letter with a strong OTE can mask a commission plan with a clawback clause that wipes your first quarter earnings, a quota that 70 percent of the team missed last year, or accelerators that only kick in at 150 percent of target. Here are the 10 questions that expose the reality behind the number.
+
+## 1. What percentage of the team hit quota last year?
+
+This is the most important question and the one most candidates skip. If the answer is below 60 percent, your OTE is a ceiling, not an expectation. If the answer is below 40 percent, the role has a structural problem.
+
+Ask for the specific number. Approximations are not useful. Get the actual figure.
+
+## 2. What was the average quota attainment across the team?
+
+This is different from the percentage who hit quota. You can have 65 percent of a team hit quota but average attainment of 82 percent, which means a material portion of the team is close but not quite there. Or you can have 65 percent hit quota with average attainment of 104 percent, which means the team is healthy and the quota is set fairly.
+
+## 3. How is quota set and how often does it change?
+
+Top-down quota from finance is different from bottoms-up quota built with input from the sales team. Ask who sets the number and what the process looks like. Also ask whether quota has changed mid-year in the past. A company that moves the goalposts mid-cycle is a serious red flag.
+
+## 4. What does the ramp period look like?
+
+A fair ramp is 30 to 50 percent of full quota in month one, 50 to 75 percent in month two, and 100 percent from month three. Ask specifically what commission looks like during ramp. Some companies pay full commission percentage on ramped quota. Others apply a lower commission rate during ramp. The difference can be several thousand dollars in your first quarter.
+
+## 5. What is the commission rate at 100 percent, 110 percent, and 125 percent of quota?
+
+Understanding the accelerator structure tells you the actual upside of the role. A role with a 10 percent commission rate that accelerates to 14 percent at 110 percent and 18 percent at 125 percent is materially better than one that stays flat across all attainment levels.
+
+Run the maths. At 120 percent of a $1.5m quota with a flat 10 percent commission rate, you earn $180,000 variable. With a 14 percent accelerator above 100 percent, you earn $210,000. That difference is what accelerators are worth.
+
+## 6. What is the clawback policy?
+
+Ask exactly under what circumstances you lose commission after a deal closes. A three to six month clawback on customer cancellations is standard and acceptable. A twelve month clawback is punitive. A clawback that applies regardless of the reason for cancellation, including product failures, transfers business risk onto the rep unfairly.
+
+Get this in writing before you accept. Verbal reassurances do not hold.
+
+## 7. When does commission get paid?
+
+Commission payment timing varies significantly. Some companies pay the month after a deal closes. Others pay on a 45 or 60 day lag. Some pay only after the customer has paid their first invoice, which can push the lag to 90 days or more on net-60 payment terms.
+
+On a large enterprise deal, a 90-day payment lag means your commission does not hit until several months after close. On a high volume of large deals, this cash flow timing matters.
+
+## 8. What does the sales cycle look like and how is it trending?
+
+A 90-day average sales cycle is very different from a 6-month average cycle in terms of how quickly you can build commission and demonstrate results. Also ask whether the cycle has been getting longer or shorter. A lengthening cycle often signals increased competition or a product that is harder to sell.
+
+## 9. Is there a draw against commission and is it recoverable or guaranteed?
+
+Some companies offer a draw during ramp, which is a guaranteed floor payment that is either recovered against future commissions or not. A recoverable draw means you owe the money back if your commission does not exceed it. A non-recoverable draw is essentially guaranteed income during ramp. Know which one you are being offered.
+
+## 10. Can I see the full commission plan document?
+
+This is the single most clarifying request you can make. Any company with a functioning sales operation has a written commission plan. If they cannot or will not share it before you accept, that is a significant red flag.
+
+The document will answer most of the questions above. It will also surface terms you did not think to ask about. Read it carefully before you sign.
+
+Find roles with full comp transparency at SalesRoles.co. Base, OTE, and commission structure are listed on every role so you start every conversation with the numbers already on the table.`,
+  },
+  {
+    slug: 'what-a-good-commission-structure-looks-like',
+    title: 'What a Good Commission Structure Actually Looks Like in 2026',
+    category: 'Salary Insights',
+    date: 'May 21, 2026',
+    readTime: '7 min',
+    author: 'SalesRoles Team',
+    seoKeyword: 'good commission structure 2026',
+    excerpt: 'A good commission structure in 2026 has fair pay mix, attainable quota, real accelerators, and no punitive clawbacks. Here is what that looks like in practice.',
+    content: `A good commission structure in 2026 does three things. It rewards reps who perform well. It is transparent about what earning looks like at different attainment levels. And it does not create situations where a rep can do everything right and still lose money.
+
+Most commission plans fail at least one of these tests. Understanding what a well-designed plan looks like helps you evaluate offers more accurately and negotiate from a position of knowledge.
+
+## Pay Mix: The Starting Point
+
+Pay mix refers to the split between base salary and variable commission in your total OTE. The standard pay mix for an Account Executive role in SaaS is 50/50. A $180,000 OTE AE role should have approximately $90,000 base and $90,000 variable.
+
+Roles with higher variability, such as enterprise sales or named account hunting, sometimes run 40/60 or even 30/70. Roles with more inbound pipeline or customer success components tend toward 60/40 or 70/30.
+
+A good pay mix gives you enough base to cover your personal financial commitments while providing meaningful upside through variable. A plan that pays $50,000 base and $180,000 OTE is asking you to take on significant personal financial risk. Unless the quota attainment data is excellent, that risk is not worth it.
+
+## Quota: The Foundation of OTE Reality
+
+A standard AE quota in SaaS is approximately 5 times OTE. A $180,000 OTE AE should carry a quota of around $900,000 to $1,000,000 ARR. This ratio has been consistent across the industry and is a useful benchmark for sense-checking whether a quota is reasonable.
+
+If a company is offering $180,000 OTE with a $2,500,000 quota, the 5x ratio is broken. Either the product has an extremely high average deal size that makes the quota more achievable than it appears, or the quota is set aggressively and attainment will be low.
+
+Ask what the average deal size is and how many deals you would need to close to hit quota. If the maths requires 40 closed deals per year at $25,000 average deal size, ask how many deals the average rep closed last year.
+
+## Commission Rate and How It Compounds
+
+The commission rate is the percentage of closed revenue you earn. For new ARR in SaaS mid-market roles, the typical range is 8 to 15 percent. Lower rates are more common at companies with very high deal volumes. Higher rates are more common at earlier-stage companies and outbound-heavy roles.
+
+The rate that matters most is not the flat rate at 100 percent quota. It is the rate at 120 percent and 130 percent. That is where the significant additional income from a good commission plan comes from.
+
+A strong accelerator structure looks like this: 10 percent on closed ARR up to 100 percent of quota, 13 percent from 100 to 125 percent, 16 percent above 125 percent. At 130 percent of a $1,000,000 quota, a rep earns $148,000 variable. At a flat 10 percent, the same attainment produces $130,000. The accelerator is worth $18,000 at that attainment level.
+
+A weak accelerator kicks in only at 125 or 150 percent of quota and increases the rate by only 2 to 3 percentage points. It sounds like an upside feature but produces minimal additional income in practice.
+
+## Clawback: Where Plans Break Down
+
+A well-designed clawback policy is clear, limited in scope, and tied to cancellations within a reasonable window. Three to six months is standard for annual SaaS contracts.
+
+A poorly designed clawback applies for twelve months, applies regardless of the reason for cancellation, or means a rep can close a significant deal and lose the commission months later when the customer churns for reasons entirely outside the rep's control.
+
+Ask for the clawback policy in writing. Ask specifically whether it applies to cancellations caused by product issues or company decisions unrelated to the sale.
+
+## What Good Looks Like End to End
+
+A well-structured commission plan for a mid-market AE in 2026 looks something like this. Base of $85,000 to $95,000. OTE of $170,000 to $190,000, representing a 50/50 pay mix. Quota of $900,000 to $1,000,000 ARR, approximately 5x OTE. Commission rate of 10 percent on new ARR up to quota, with accelerators of 13 percent from 100 to 125 percent and 16 percent above that. Ninety-day ramp at 50 percent quota in month one, 75 percent in month two, and full quota from month three. Clawback limited to customer cancellations within the first three months of the contract, excluding cancellations caused by product or company issues. Commission paid the month following close.
+
+This structure gives the rep a liveable base, meaningful upside, fair acceleration, and a clawback policy that does not punish good selling.
+
+## How to Evaluate What You Are Being Offered
+
+Compare the plan you are being offered against these benchmarks. Is the pay mix within range for the role type? Is the quota at or below 5x OTE? Are the accelerators meaningful, and do they kick in at or before 110 percent of quota? Is the clawback limited to a reasonable window and scope?
+
+If the plan fails more than one of these tests, it is worth negotiating or asking why the structure differs from standard.
+
+Find roles with commission structures you can evaluate upfront at SalesRoles.co. Full comp details are required on every listing.`,
+  },
+  {
+    slug: 'why-companies-that-show-comp-hire-faster',
+    title: 'Why Companies That Show Comp Hire Faster',
+    category: 'Hiring Advice',
+    date: 'May 23, 2026',
+    readTime: '6 min',
+    author: 'SalesRoles Team',
+    seoKeyword: 'companies that show comp hire faster',
+    excerpt: 'Companies that show comp hire faster and better. 70% report more applicants, 66% say candidate quality improved. Here is why transparency closes roles quicker.',
+    content: `Companies that show comp hire faster. This is not a theory. According to SHRM data, 70 percent of organisations that publish pay ranges report receiving more applicants, and 66 percent say candidate quality improved after they started posting compensation openly.
+
+The causal logic is straightforward. Candidates who see the number and apply are already pre-qualified on salary. The candidates who apply without a number are going to find out at offer stage. The better ones walk away when they do.
+
+## Why Hidden Comp Slows the Whole Process
+
+A typical enterprise sales hiring process runs four to six rounds over three to five weeks. At the end of that process, the hiring team makes an offer. If the candidate was expecting $200,000 OTE based on vague signals from the recruiter and the offer comes in at $160,000, the process collapses. The team starts over.
+
+That collapse happens because the information existed on day one and was not shared. The company spent five weeks finding out what could have been resolved in five minutes.
+
+Multiply that by two or three rounds of this per open headcount over the year, and the cost of hidden comp to hiring velocity is significant. Extended time-to-fill is not a recruiting problem. It is an information problem.
+
+## More Applicants, Better Candidates
+
+The SHRM data on application volume is often counterintuitive to hiring teams that worry about being flooded with unqualified applicants if they post the number. The evidence does not support that concern.
+
+When candidates see a specific comp range, they self-select. The ones whose requirements are above the range do not apply. The ones whose requirements are below the range do not apply. The ones whose requirements fit the range apply. Volume stays manageable. Quality improves.
+
+The alternative is a listing with no comp that attracts everyone who is interested in a sales role at the company, regardless of whether the pay matches their needs. Recruiters spend more time screening for basic salary alignment. Hiring managers see more candidates who are not right. The process takes longer.
+
+## The Signal That Comp Transparency Sends
+
+Publishing compensation is not just operationally useful. It is a signal about how the company operates.
+
+Sales professionals, more than almost any other function, evaluate employers on directness. They are used to working in environments where performance and reward are quantified. A company that hides comp during the hiring process is behaving inconsistently with what it asks of its sales team every day.
+
+The best candidates notice this. A top-performing AE who has been approached by four companies this month is going to prioritise the ones that show the number. Not because they are mercenary, but because they have seen enough hiring processes to know that companies straight about comp are usually straighter about everything else.
+
+## Time-to-Fill by Transparency Status
+
+Anecdotally and in reported data from recruiting teams that have switched from hidden to transparent comp, time-to-fill for sales roles drops materially. Offer acceptance rates improve. Late-stage drop-off falls. The sourcing team spends less time managing candidates who were never going to accept.
+
+A recruiting team that runs a 90-day average time-to-fill on AE roles can often get that to 55 to 65 days by posting full comp from the first day a role goes live. The difference is not process improvement. It is information.
+
+## The Equity Concern Is Real But Solvable
+
+The most common internal objection to posting comp is that existing employees might see it and feel underpaid relative to new hires. This is a legitimate concern and it happens.
+
+But it is a compensation equity problem, not a transparency problem. If your existing team is underpaid relative to the market, you have a retention risk that exists whether or not you post salary ranges publicly. Publishing the comp forces the issue into the open where it can be addressed.
+
+The companies that have worked through this problem find that fixing comp equity and publishing ranges improves internal retention as well as external hiring.
+
+## What to Do If You Are Hiring Now
+
+If you have a live sales role that does not show comp, add the base range, OTE, and commission structure today. Track application volume and quality over the next three to four weeks. The data will be clear.
+
+Post your next sales role on SalesRoles.co, where full comp transparency is required. Every listing shows base, OTE, and commission structure, and every candidate who applies has already seen the number.`,
+  },
+  {
+    slug: 'difference-between-base-ote-commission',
+    title: 'The Real Difference Between Base, OTE, and Commission',
+    category: 'Career Advice',
+    date: 'May 26, 2026',
+    readTime: '6 min',
+    author: 'SalesRoles Team',
+    seoKeyword: 'difference between base OTE and commission',
+    excerpt: 'Base, OTE, and commission are three different things. Understanding the real difference between base, OTE, and commission is essential before evaluating any sales offer.',
+    content: `Understanding the difference between base, OTE, and commission is the starting point for evaluating any sales offer. These three terms appear together in almost every sales job post and offer letter, but they describe different things and carry different levels of certainty.
+
+Getting this wrong costs money. Here is exactly what each one means and how they interact.
+
+## Base Salary: The Guaranteed Floor
+
+Base salary is the fixed amount you are paid regardless of whether you close a single deal. It is your guaranteed annual income, paid monthly or bi-weekly, and it does not fluctuate based on performance.
+
+In most SaaS and technology sales roles, base salary represents 40 to 60 percent of total OTE. An AE with $90,000 base and $180,000 OTE has a 50/50 pay mix. This split reflects that the role is expected to be roughly half guaranteed income and half performance-based income.
+
+Base salary is what you can budget against. It is what you use to calculate whether you can cover rent, mortgage, or other fixed obligations. The variable portion of your comp should be treated as upside, not a baseline expectation, until you have a clear picture of quota attainment at the company.
+
+## OTE: A Projection, Not a Guarantee
+
+OTE stands for on-target earnings. It is the total compensation you earn when you hit exactly 100 percent of your quota. OTE equals base plus variable commission at full quota attainment.
+
+OTE is a projection, not a guaranteed number. Whether you actually earn it depends on whether you hit quota, and whether the quota is designed to be hit.
+
+According to RepVue data from 2026, only 41.2 percent of software sales reps hit quota across the industry. That means for the majority of reps carrying an OTE, the number on the offer letter is a ceiling they do not reach.
+
+This is why OTE is only meaningful in context. An $180,000 OTE at a company where 70 percent of the team hit quota last year is a very different offer to an $180,000 OTE at a company where 35 percent hit quota. The number looks the same. The expected earnings are not.
+
+## Commission: The Mechanics Behind the Variable
+
+Commission is the mechanism that converts your sales results into variable income. It is typically expressed as a percentage of revenue you close. The commission rate, applied to your closed deals, is what adds up to the variable portion of your OTE.
+
+For a mid-market SaaS AE with a $900,000 annual quota and $90,000 variable OTE, the implied commission rate is 10 percent. Close $900,000 in new ARR and you earn $90,000 in commission, which combines with your $90,000 base to produce your $180,000 OTE.
+
+Commission plans vary significantly in structure. Some are linear, paying the same rate at every level of attainment. Some have accelerators that pay a higher rate above quota. Some have a floor that pays nothing below a certain percentage of quota attainment.
+
+The accelerator structure is where the real upside of a commission plan lives. A rep who closes at 130 percent of quota on a plan with strong accelerators can earn 150 to 160 percent of their variable OTE. A rep on a flat plan at 130 percent earns 130 percent of their variable. The difference is material.
+
+## How the Three Work Together
+
+Here is a concrete example. An AE role offers $85,000 base with $170,000 OTE and 10 percent commission on new ARR. Quota is $850,000.
+
+At 100 percent quota: base $85,000 plus $85,000 variable equals $170,000 OTE.
+
+At 80 percent quota: base $85,000 plus $68,000 variable equals $153,000 total earnings.
+
+At 130 percent quota with a flat commission rate: base $85,000 plus $110,500 variable equals $195,500 total earnings.
+
+At 130 percent quota with an accelerator of 14 percent above 100 percent: base $85,000 plus $85,000 at 10 percent to quota plus $25,500 at 14 percent above quota equals approximately $200,500 total.
+
+The accelerator in this example is worth around $5,000 at 130 percent attainment. On a more generous plan, the difference at that level can be $15,000 to $20,000.
+
+## What to Look For in an Offer
+
+When you receive an offer, analyse all three components separately. Is the base salary liveable as a standalone number without any variable? Is the OTE backed by quota attainment data that suggests it is achievable? Is the commission structure linear or does it have meaningful accelerators?
+
+Also ask how the variable is calculated. Is it on new ARR only, or on total contract value? Is there a floor attainment level below which you earn no commission? What happens to commission on multi-year deals or expansion revenue?
+
+The answers to these questions determine whether the OTE on the cover page of the offer letter reflects your realistic annual earnings.
+
+Find roles at SalesRoles.co where base, OTE, and commission structure are all listed before you apply. Every listing shows the full picture so you are never evaluating an offer blind.`,
+  },
+  {
+    slug: 'sales-comp-transparency-australia-uk-usa',
+    title: 'Australia, UK, USA: How Sales Comp Transparency Laws Compare',
+    category: 'Comp Transparency',
+    date: 'May 29, 2026',
+    readTime: '7 min',
+    author: 'SalesRoles Team',
+    seoKeyword: 'sales comp transparency laws Australia UK USA',
+    excerpt: 'Sales comp transparency laws vary across Australia, the UK, and the USA. Here is what each market requires and what it means for candidates in 2026.',
+    content: `Sales comp transparency laws across Australia, the UK, and the USA are all moving in the same direction but at different speeds and with different scope. If you are a sales professional operating across any of these markets, understanding what is legally required and what you can demand as a candidate gives you a practical advantage.
+
+## The United States: State-Led, Expanding Fast
+
+The US has no federal pay transparency law as of 2026. Regulation has come from the states, and the coverage is now significant. Sixteen US states plus Washington D.C. have active pay transparency laws requiring employers to include salary or compensation ranges on job postings.
+
+The most impactful recent change is California's expansion from January 2026. California, already one of the stricter states on pay disclosure, now requires employers to publish the actual expected compensation range for a role. Broad placeholder ranges that span $50,000 to $200,000 for a single position are no longer compliant. The range must reflect what the company genuinely intends to pay.
+
+Colorado was the first state to require ranges on postings and has been enforcing for several years. New York City's law captures a significant number of remote roles because it applies to any role where a candidate could perform the work from within the five boroughs.
+
+Washington state applies its requirement broadly, and Illinois added meaningful disclosure requirements in 2024. For companies hiring at scale across the US, applying pay transparency standards nationally is simpler than tracking compliance state by state.
+
+For sales candidates in covered states, you are legally entitled to a compensation range before you apply. If the posting does not include one, ask for it. A company that refuses to provide legally required compensation information before the first interview is telling you something.
+
+## The United Kingdom: Soft Obligation, Growing Pressure
+
+The UK does not currently have a mandatory pay transparency law requiring salary ranges on job postings. What exists is a gender pay gap reporting obligation for employers with 250 or more employees, which requires annual public disclosure of gender pay gap data.
+
+This does not directly require pay ranges on job postings, but the reporting obligation has created downstream pressure. Companies that publicly report gender pay gap data are more likely to have structured compensation frameworks, which makes publishing ranges easier. The data is already collected internally.
+
+The direction of UK policy is toward greater transparency. Industry advocates and recruitment bodies have pushed for mandatory salary range disclosure on job postings. A growing number of UK employers include salary ranges voluntarily.
+
+For sales candidates in the UK, asking directly for OTE and base salary ranges before investing time in any process is entirely reasonable. Most recruiters at serious companies will provide the information without resistance.
+
+## Australia: Transparency in Practice, Legislation in Motion
+
+Australia has taken a different approach. The Workplace Gender Equality Agency requires companies with 100 or more employees to submit annual pay data, and from 2023 the WGEA began publishing gender pay gap data for large employers publicly. This created significant public and media attention on pay practices at named companies.
+
+Separately, pay secrecy clauses in employment contracts became unenforceable in 2023. Employees now have an explicit right to discuss their pay with colleagues, which changes the internal information environment significantly.
+
+Australia does not have a law requiring salary ranges on job postings as of 2026, but the combination of WGEA public reporting, the removal of pay secrecy protections, and growing candidate expectations has pushed many Australian employers toward voluntary disclosure.
+
+The Australian sales market, particularly in Sydney and Melbourne, has seen a significant increase in job postings that include base and OTE ranges over the past two years. This is driven partly by the competitive market for sales talent and partly by US-headquartered companies bringing their global comp transparency standards to their Australian operations.
+
+## What the Differences Mean for Candidates
+
+If you are a sales candidate in the US and based in a covered state, you have legal standing to request compensation information and companies have legal obligations to provide it. Use this as a baseline. Ask early in the process.
+
+If you are in the UK or Australia, you do not have the same legal standing but you have a growing market norm on your side. The majority of serious employers in both markets are moving toward transparency. Asking for OTE and base ranges before committing to a process is entirely reasonable and increasingly expected.
+
+Across all three markets, the trajectory is clear. The gap between the most and least transparent employers is still significant, but it is closing. Companies that are ahead of this trend attract better candidates and close offers faster.
+
+## The Practical Test for Any Market
+
+Regardless of jurisdiction, the test is the same. Before you invest time in a hiring process, ask for the base salary range and OTE. If the company provides the information promptly and specifically, you are dealing with a team that operates with transparency. If they resist, deflect, or provide a range so wide it is meaningless, factor that into your decision about whether to continue.
+
+Browse sales roles with full comp transparency across Australia, the UK, and the USA at SalesRoles.co. Every listing shows base, OTE, and commission structure before you apply.`,
   },
 ]
