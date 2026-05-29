@@ -366,38 +366,28 @@ export function JobDetailPage() {
             <div className="space-y-6">
               <h2 className="text-2xl font-black tracking-tighter">Compensation & Benefits</h2>
               <Card className="p-8 border-emerald-500/20 bg-emerald-500/5 space-y-6">
-                <div className="grid md:grid-cols-2 gap-8">
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-foreground">Compensation Details</h4>
-                    <ul className="space-y-3">
+                <div className="space-y-4">
+                  <h4 className="font-bold text-foreground">Compensation Details</h4>
+                  <ul className="space-y-3">
+                    <li className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Base Salary</span>
+                      <span className="font-bold">{formatSalary(job.base_salary)}</span>
+                    </li>
+                    <li className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">On-Target Earnings (OTE)</span>
+                      <span className="font-bold text-emerald-400">{formatSalary(job.ote)}</span>
+                    </li>
+                    <li className="flex justify-between items-center text-sm">
+                      <span className="text-muted-foreground">Commission Structure</span>
+                      <span className="font-bold">{job.commission_structure}</span>
+                    </li>
+                    {job.quota && (
                       <li className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Base Salary</span>
-                        <span className="font-bold">{formatSalary(job.base_salary)}</span>
+                        <span className="text-muted-foreground">Quota</span>
+                        <span className="font-bold">{job.quota}</span>
                       </li>
-                      <li className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">On-Target Earnings (OTE)</span>
-                        <span className="font-bold text-emerald-400">{formatSalary(job.ote)}</span>
-                      </li>
-                      <li className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Commission Structure</span>
-                        <span className="font-bold">{job.commission_structure}</span>
-                      </li>
-                      {job.quota && (
-                        <li className="flex justify-between items-center text-sm">
-                          <span className="text-muted-foreground">Quota</span>
-                          <span className="font-bold">{job.quota}</span>
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-foreground">Perks & Benefits</h4>
-                    <div className="flex flex-wrap gap-2">
-                      {(job.perks || ['Health Insurance', '401k Match', 'Unlimited PTO', 'Remote Stipend', 'Parental Leave']).map(perk => (
-                        <Badge key={perk} variant="secondary" className="bg-secondary/50 text-foreground">{perk}</Badge>
-                      ))}
-                    </div>
-                  </div>
+                    )}
+                  </ul>
                 </div>
               </Card>
             </div>
