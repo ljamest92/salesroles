@@ -3,7 +3,7 @@ import { Helmet } from 'react-helmet-async'
 import { Link } from '@tanstack/react-router'
 import { Button, Card, Badge, Container } from '@blinkdotnew/ui'
 import { Briefcase, DollarSign, TrendingUp, Quote, Star, MapPin } from 'lucide-react'
-import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
+import { type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { motion } from 'framer-motion'
 import { getDomain } from '../utils/getDomain'
@@ -75,35 +75,54 @@ export function HomePage() {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const pJobs = await fetchPartnerJobs()
-        let dbJobs: Job[] = []
-        try {
-          const res = await fetch('/api/jobs?status=live')
-          if (res.ok) {
-            const data = await res.json()
-            dbJobs = (data.jobs || []).map((j: any) => ({
-              ...j,
-              company: j.companyName || j.company,
-              is_partner: false
-            }))
-          }
-        } catch {}
+        // Fetch the same sources as the Find Jobs page so the stats bar always matches
+        const [localRes, externalRes] = await Promise.all([
+          fetch('/api/jobs'),
+          fetch('/api/jobs/external'),
+        ])
 
-        const mappedDbJobs: Job[] = dbJobs.map((job: any) => ({
-          ...job,
-          company: job.companyName || job.company,
-          is_partner: false
+        const localData = localRes.ok ? await localRes.json() : { jobs: [] }
+        const externalData = externalRes.ok ? await externalRes.json() : []
+
+        const localJobs: Job[] = (localData.jobs || localData || []).map((j: any) => ({
+          ...j,
+          company: j.companyName || j.company || '',
+          is_partner: false,
         }))
 
-        const allJobs = [...mappedDbJobs, ...pJobs]
-        setPartnerJobs(allJobs.slice(0, 5))
+        const externalJobs: Job[] = (Array.isArray(externalData) ? externalData : []).map((j: any) => ({
+          ...j,
+          company: j.company_name || j.company || '',
+          job_type: j.work_type || j.job_type || 'Remote',
+          application_url: j.apply_url || j.application_url || '',
+          commission_structure: j.commission_structure || '',
+          currency: j.currency || 'USD',
+          contact_email: '',
+          status: 'live',
+          featured: false,
+          sector: j.sector || 'Sales',
+          seniority: j.seniority || 'Mid-Level',
+          base_salary: j.base_salary || 'Salary Not Disclosed',
+          ote: j.ote || 'Salary Not Disclosed',
+          is_partner: true,
+        }))
+
+        // Deduplicate by ID — same logic as JobsPage
+        const seen = new Set<string>()
+        const unique = [...localJobs, ...externalJobs].filter((job: any) => {
+          if (seen.has(job.id)) return false
+          seen.add(job.id)
+          return true
+        })
+
+        setPartnerJobs(unique.slice(0, 5))
 
         const statsCompanyMap = new Map<string, number>()
-        allJobs.forEach(j => {
+        unique.forEach(j => {
           statsCompanyMap.set(j.company, (statsCompanyMap.get(j.company) || 0) + 1)
         })
 
-        const totalOte = allJobs.reduce((sum, job) => {
+        const totalOte = unique.reduce((sum, job) => {
           const oteStr = String(job.ote || '')
           if (!oteStr || oteStr === 'Salary Not Disclosed') return sum
           const match = oteStr.match(/(\d[\d,]*)\s*k/i)
@@ -119,17 +138,17 @@ export function HomePage() {
           }
           return sum
         }, 0)
-        console.log(`[HomePage] Live roles fetched: ${allJobs.length}`)
+        console.log(`[HomePage] Live roles fetched: ${unique.length}`)
 
         setStats({
-          liveRoles: allJobs.length,
+          liveRoles: unique.length,
           companies: statsCompanyMap.size,
-          avgOteNum: allJobs.length > 0 ? Math.round(totalOte / allJobs.length) : 0
+          avgOteNum: unique.length > 0 ? Math.round(totalOte / unique.length) : 0
         })
 
         // Build top companies from live jobs; use KNOWN_DOMAINS to get correct logo domains
         const seedMap = new Map<string, { count: number; domain: string | null }>()
-        allJobs.forEach(j => {
+        unique.forEach(j => {
           const existing = seedMap.get(j.company)
           const slug = j.company.toLowerCase().replace(/[^\w\s]/gi, '').trim().split(/\s+/)[0]
           const knownDomain = KNOWN_DOMAINS[slug] || KNOWN_DOMAINS[j.company.toLowerCase()] || null
