@@ -65,6 +65,12 @@ export function CandidateSearchPage() {
   const [pages, setPages] = useState(0)
   const [loading, setLoading] = useState(true)
   const [showFilters, setShowFilters] = useState(false)
+  const [industryTags, setIndustryTags] = useState<string[]>([])
+  const [roleTags, setRoleTags] = useState<string[]>([])
+  const industryTagsRef = useRef<string[]>([])
+  const roleTagsRef = useRef<string[]>([])
+  industryTagsRef.current = industryTags
+  roleTagsRef.current = roleTags
   const searchTimer = useRef<any>(null)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
@@ -81,11 +87,11 @@ export function CandidateSearchPage() {
     setAccessChecked(true)
   }, [user, authLoading, navigate])
 
-  const fetchCandidates = useCallback(async (f: typeof filters, p: number) => {
+  const fetchCandidates = useCallback(async (f: typeof filters, p: number, industries: string[] = [], roles: string[] = []) => {
     setLoading(true)
     const params = new URLSearchParams()
     if (f.search) params.set('search', f.search)
-    if (f.target_role) params.set('target_role', f.target_role)
+    if (roles.length) params.set('target_role', roles.join(','))
     if (f.years_experience) {
       const range = EXPERIENCE_OPTIONS.find(o => o.label === f.years_experience)
       if (range) {
@@ -94,7 +100,7 @@ export function CandidateSearchPage() {
       }
     }
     if (f.availability) params.set('availability', f.availability)
-    if (f.industry) params.set('industry', f.industry)
+    if (industries.length) params.set('industry', industries.join(','))
     if (f.deal_size) params.set('deal_size', f.deal_size)
     if (f.methodology) params.set('methodology', f.methodology)
     if (f.location) params.set('location', f.location)
@@ -123,23 +129,26 @@ export function CandidateSearchPage() {
     setPage(1)
     if (key === 'search') {
       clearTimeout(searchTimer.current)
-      searchTimer.current = setTimeout(() => fetchCandidates(next, 1), 350)
+      searchTimer.current = setTimeout(() => fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current), 350)
     } else {
-      fetchCandidates(next, 1)
+      fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current)
     }
   }
 
   const clearFilters = () => {
     setFilters({ ...defaultFilters })
+    setIndustryTags([])
+    setRoleTags([])
     setPage(1)
-    fetchCandidates({ ...defaultFilters }, 1)
+    fetchCandidates({ ...defaultFilters }, 1, [], [])
   }
 
   useEffect(() => {
-    fetchCandidates(filters, page)
+    fetchCandidates(filters, page, industryTagsRef.current, roleTagsRef.current)
   }, [page]) // eslint-disable-line
 
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => k !== 'sort_by' && v !== '').length
+    + (industryTags.length > 0 ? 1 : 0) + (roleTags.length > 0 ? 1 : 0)
 
   const safeList = (v: string | null | undefined): string[] => {
     if (!v) return []
@@ -171,9 +180,32 @@ export function CandidateSearchPage() {
       {/* Role */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-black tracking-widest text-white/40">ROLE</label>
-        <select value={filters.target_role} onChange={e => updateFilter('target_role', e.target.value)} className={selCls}>
-          <option value="">All Roles</option>
-          {TARGET_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
+        {roleTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1">
+            {roleTags.map(tag => (
+              <span key={tag} className="flex items-center gap-1 text-xs border border-emerald-500/50 text-emerald-400 px-2 py-0.5 rounded-full">
+                {tag}
+                <button onClick={() => { const next = roleTags.filter(t => t !== tag); setRoleTags(next); setPage(1); fetchCandidates(filters, 1, industryTags, next) }}>
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <select
+          value=""
+          onChange={e => {
+            const val = e.target.value
+            if (!val || roleTags.includes(val)) return
+            const next = [...roleTags, val]
+            setRoleTags(next)
+            setPage(1)
+            fetchCandidates(filters, 1, industryTags, next)
+          }}
+          className={selCls}
+        >
+          <option value="">Add role...</option>
+          {TARGET_ROLES.filter(r => !roleTags.includes(r)).map(r => <option key={r} value={r}>{r}</option>)}
         </select>
       </div>
 
@@ -198,9 +230,32 @@ export function CandidateSearchPage() {
       {/* Industry */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-black tracking-widest text-white/40">INDUSTRY</label>
-        <select value={filters.industry} onChange={e => updateFilter('industry', e.target.value)} className={selCls}>
-          <option value="">Any</option>
-          {INDUSTRY_OPTIONS.map(o => <option key={o} value={o}>{o}</option>)}
+        {industryTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1">
+            {industryTags.map(tag => (
+              <span key={tag} className="flex items-center gap-1 text-xs border border-emerald-500/50 text-emerald-400 px-2 py-0.5 rounded-full">
+                {tag}
+                <button onClick={() => { const next = industryTags.filter(t => t !== tag); setIndustryTags(next); setPage(1); fetchCandidates(filters, 1, next, roleTags) }}>
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <select
+          value=""
+          onChange={e => {
+            const val = e.target.value
+            if (!val || industryTags.includes(val)) return
+            const next = [...industryTags, val]
+            setIndustryTags(next)
+            setPage(1)
+            fetchCandidates(filters, 1, next, roleTags)
+          }}
+          className={selCls}
+        >
+          <option value="">Add industry...</option>
+          {INDUSTRY_OPTIONS.filter(o => !industryTags.includes(o)).map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       </div>
 
