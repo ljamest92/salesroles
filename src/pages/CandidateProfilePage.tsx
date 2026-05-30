@@ -243,16 +243,16 @@ export function CandidateProfilePage() {
                 <p className="text-[10px] font-bold tracking-widest text-white/40">YRS EXP</p>
               </div>
             )}
-            {profile.target_salary && (
-              <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
-                <p className="text-xl font-black text-emerald-400 truncate">{profile.target_salary}</p>
-                <p className="text-[10px] font-bold tracking-widest text-white/40">TARGET OTE</p>
-              </div>
-            )}
             {profile.current_ote && (
               <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
                 <p className="text-xl font-black text-white/80 truncate">{profile.current_ote}</p>
                 <p className="text-[10px] font-bold tracking-widest text-white/40">CURRENT OTE</p>
+              </div>
+            )}
+            {profile.target_salary && (
+              <div className="bg-white/5 rounded-xl p-4 text-center space-y-1">
+                <p className="text-xl font-black text-emerald-400 truncate">{profile.target_salary}</p>
+                <p className="text-[10px] font-bold tracking-widest text-white/40">TARGET OTE</p>
               </div>
             )}
             {profile.total_revenue && (
