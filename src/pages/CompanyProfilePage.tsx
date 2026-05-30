@@ -213,18 +213,18 @@ export function CompanyProfilePage() {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.1 }}
                 >
-                  <Card className="job-card-hover p-8 border border-white/5 group flex flex-col md:flex-row justify-between gap-6 rounded-[32px]">
-                    <div className="space-y-1">
-                      <h3 className="text-2xl font-black tracking-tight group-hover:text-primary transition-colors">{job.title}</h3>
-                      <div className="flex flex-wrap gap-6 text-muted-foreground font-bold text-sm">
-                        <span>{job.location}</span>
-                        <span className="text-primary">{job.ote} Ote</span>
+                  <Link to={`/jobs/${job.id}`} className="block">
+                    <Card className="job-card-hover p-8 border border-white/5 group flex flex-col md:flex-row justify-between gap-6 rounded-[32px] cursor-pointer">
+                      <div className="space-y-1">
+                        <h3 className="text-2xl font-black tracking-tight group-hover:text-primary transition-colors">{job.title}</h3>
+                        <div className="flex flex-wrap gap-6 text-muted-foreground font-bold text-sm">
+                          <span>{job.location}</span>
+                          <span className="text-primary">{job.ote}</span>
+                        </div>
                       </div>
-                    </div>
-                    <Link to={`/jobs/${job.id}`}>
                       <Button variant="outline" className="font-bold tracking-widest border-white/10 group-hover:border-primary/50">Details</Button>
-                    </Link>
-                  </Card>
+                    </Card>
+                  </Link>
                 </motion.div>
               ))
             ) : (
