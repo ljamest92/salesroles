@@ -651,21 +651,6 @@ export function DashboardPage() {
                           Posted {new Date(job.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                           {job.expires_at && ` · Expires ${new Date(job.expires_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
                         </p>
-                        <div className="flex items-center gap-4 pt-1">
-                          <div className="flex items-center gap-1.5">
-                            <Users size={12} className="text-white/30" />
-                            <span className="text-xs text-white/50 font-medium">All: <span className="font-bold text-white/70">{Number(job.app_total) || 0}</span></span>
-                          </div>
-                          <div className="flex items-center gap-1.5">
-                            {Number(job.app_new) > 0
-                              ? <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                              : <span className="w-1.5 h-1.5 rounded-full bg-white/20" />
-                            }
-                            <span className={`text-xs font-medium ${Number(job.app_new) > 0 ? 'text-emerald-400 font-bold' : 'text-white/30'}`}>
-                              New: {Number(job.app_new) || 0}
-                            </span>
-                          </div>
-                        </div>
                       </div>
                       <div className="flex items-center gap-2 shrink-0">
                         <span className="text-xs bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-full font-bold">Live</span>
