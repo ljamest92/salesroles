@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link } from '@tanstack/react-router'
 import {
@@ -55,6 +55,7 @@ export function JobsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedOTERange, setSelectedOTERange] = useState('')
   const [currentPage, setCurrentPage] = useState(1)
+  const listingsTopRef = useRef<HTMLDivElement>(null)
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
 
   useEffect(() => {
@@ -545,7 +546,7 @@ useEffect(() => {
             </p>
           )}
 
-          <div className="grid gap-6">
+          <div ref={listingsTopRef} className="grid gap-6 scroll-mt-24">
             {isLoading ? (
               Array(6).fill(0).map((_, i) => (
                 <Card key={i} className="p-10 border border-white/5 bg-card/30 animate-pulse h-48 rounded-3xl" />
@@ -643,7 +644,7 @@ useEffect(() => {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setTimeout(() => window.scrollTo(0, 0), 0) }}
+                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' }), 100) }}
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
@@ -657,7 +658,7 @@ useEffect(() => {
                       <span className="text-white/30 px-2">...</span>
                     )}
                     <button
-                      onClick={() => { setCurrentPage(page); setTimeout(() => window.scrollTo(0, 0), 0) }}
+                      onClick={() => { setCurrentPage(page); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' }), 100) }}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === page
                           ? 'bg-emerald-500 text-white'
@@ -670,7 +671,7 @@ useEffect(() => {
                 ))
               }
               <button
-                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); setTimeout(() => window.scrollTo(0, 0), 0) }}
+                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' }), 100) }}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
