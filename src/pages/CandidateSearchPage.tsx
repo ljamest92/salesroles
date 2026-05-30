@@ -53,6 +53,27 @@ const defaultFilters = {
 const selCls = "w-full bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none"
 const inpCls = "w-full bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
 
+function LocationTagInput({ onAdd }: { onAdd: (val: string) => void }) {
+  const [value, setValue] = useState('')
+  return (
+    <input
+      type="text"
+      placeholder="Type a city or country, press Enter..."
+      value={value}
+      onChange={e => setValue(e.target.value)}
+      onKeyDown={e => {
+        if (e.key !== 'Enter') return
+        e.preventDefault()
+        const val = value.trim()
+        if (!val) return
+        onAdd(val)
+        setValue('')
+      }}
+      className={inpCls}
+    />
+  )
+}
+
 export function CandidateSearchPage() {
   const navigate = useNavigate()
   const { user, isLoading: authLoading } = useAuth()
@@ -67,7 +88,6 @@ export function CandidateSearchPage() {
   const [industryTags, setIndustryTags] = useState<string[]>([])
   const [roleTags, setRoleTags] = useState<string[]>([])
   const [locationTags, setLocationTags] = useState<string[]>([])
-  const [locationInput, setLocationInput] = useState('')
   const industryTagsRef = useRef<string[]>([])
   const roleTagsRef = useRef<string[]>([])
   const locationTagsRef = useRef<string[]>([])
@@ -148,7 +168,6 @@ export function CandidateSearchPage() {
     setIndustryTags([])
     setRoleTags([])
     setLocationTags([])
-    setLocationInput('')
     setPage(1)
     fetchCandidates({ ...defaultFilters }, 1, [], [], [])
   }
@@ -304,23 +323,14 @@ export function CandidateSearchPage() {
             ))}
           </div>
         )}
-        <input
-          type="text"
-          placeholder="Type a city or country, press Enter..."
-          value={locationInput}
-          onChange={e => setLocationInput(e.target.value)}
-          onKeyDown={e => {
-            if (e.key !== 'Enter') return
-            e.preventDefault()
-            const val = locationInput.trim()
-            if (!val || locationTags.includes(val)) return
+        <LocationTagInput
+          onAdd={val => {
+            if (locationTags.includes(val)) return
             const next = [...locationTags, val]
             setLocationTags(next)
-            setLocationInput('')
             setPage(1)
             fetchCandidates(filters, 1, industryTags, roleTags, next)
           }}
-          className={inpCls}
         />
       </div>
     </div>
