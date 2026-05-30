@@ -221,14 +221,13 @@ export function HomePage() {
             className="space-y-6 md:space-y-8"
           >
             <Badge variant="outline" className="px-6 py-2 text-primary border-primary/20 bg-primary/5 tracking-tight text-[10px] font-black shadow-[0_0_20px_rgba(16,185,129,0.1)]">
-              Premium Job Board for Sales Professionals
+              The Sales Job Board
             </Badge>
             <h1 className="text-4xl sm:text-7xl md:text-[100px] font-black tracking-tighter leading-[0.95] max-w-5xl mx-auto">
-              We Only Do <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Sales.</span><br />
-              With Full <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Transparency.</span>
+              Sales Jobs That Show What They <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Pay.</span>
             </h1>
             <p className="text-lg md:text-3xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed opacity-80">
-              Every listing shows compensation upfront. No hidden salaries, no surprises at offer stage.
+              Every role shows salary upfront. No guessing, no lowball offers, no surprises at offer stage.
             </p>
           </motion.div>
 
