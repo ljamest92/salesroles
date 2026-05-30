@@ -13,7 +13,7 @@ function sanitizeDescription(html: string): string {
 }
 
 export function JobDetailPage() {
-  const { slug } = useParams({ from: '/jobs/$slug' })
+  const { slug } = useParams({ from: '/marketing/jobs/$slug' })
   const { user } = useAuth()
   const navigate = useNavigate()
   const [job, setJob] = useState<Job | null>(null)

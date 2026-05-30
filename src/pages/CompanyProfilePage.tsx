@@ -17,7 +17,7 @@ function saveFollowed(list: string[]) {
 }
 
 export function CompanyProfilePage() {
-  const { id } = useParams({ from: '/company/$id' })
+  const { id } = useParams({ from: '/marketing/company/$id' })
   const { user } = useAuth()
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)

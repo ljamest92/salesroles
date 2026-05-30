@@ -35,7 +35,7 @@ function resolveJobDomain(job: any): string {
 }
 
 export function JobsPage() {
-  const { page: urlPage } = useSearch({ from: '/jobs' })
+  const { page: urlPage } = useSearch({ from: '/marketing/jobs' })
   const navigate = useNavigate()
   const isFirstRender = useRef(true)
   const { user } = useAuth()

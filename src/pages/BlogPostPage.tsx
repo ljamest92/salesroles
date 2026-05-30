@@ -41,7 +41,7 @@ function renderContent(raw: string) {
 
 export function BlogPostPage() {
   useEffect(() => { window.scrollTo(0, 0) }, [])
-  const { slug } = useParams({ from: '/blog/$slug' })
+  const { slug } = useParams({ from: '/marketing/blog/$slug' })
   const post = blogPosts.find(p => p.slug === slug)
 
   if (!post) {
