@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Link, useParams, useNavigate } from '@tanstack/react-router'
 import { Container, Card, Badge, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Briefcase, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight, Bookmark, BookmarkCheck, BookmarkX, XCircle, Loader2 } from 'lucide-react'
@@ -289,8 +290,24 @@ export function JobDetailPage() {
     return raw && !LOGO_BLOCKLIST.has(raw) ? raw : ''
   })()
 
+  const jobMetaTitle = `${job.title} at ${job.company} | SalesRoles.co`
+  const jobMetaDescription = `${job.title} at ${job.company} — ${job.location}. Salary shown upfront. No hidden comp. Apply on SalesRoles.co.`
+
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
+      <Helmet>
+        <title>{jobMetaTitle}</title>
+        <meta name="description" content={jobMetaDescription} />
+        <meta property="og:title" content={jobMetaTitle} />
+        <meta property="og:description" content={jobMetaDescription} />
+        <meta property="og:url" content={`https://salesroles.co/jobs/${job.id}`} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://salesroles.co/logo.svg" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={jobMetaTitle} />
+        <meta name="twitter:description" content={jobMetaDescription} />
+        <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
+      </Helmet>
       {/* Breadcrumbs */}
       <nav className="flex items-center gap-2 text-sm text-muted-foreground">
         <Link to="/" className="hover:text-primary transition-colors font-medium">Home</Link>

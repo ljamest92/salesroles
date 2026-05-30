@@ -198,16 +198,16 @@ export function HomePage() {
   return (
     <div className="flex flex-col page-transition overflow-x-hidden">
       <Helmet>
-        <title>SalesRoles.co | Sales Jobs With Full Comp Transparency</title>
-        <meta name="description" content="The only job board built for sales professionals. Every listing shows salary upfront. No hidden comp. No surprises at offer stage." />
-        <meta property="og:title" content="SalesRoles.co | Sales Jobs With Full Comp Transparency" />
-        <meta property="og:description" content="The only job board built for sales professionals. Every listing shows salary upfront. No hidden comp. No surprises at offer stage." />
+        <title>SalesRoles.co | Sales Jobs That Show What They Pay</title>
+        <meta name="description" content="The only job board for sales professionals where every listing shows salary upfront. No hidden comp, no surprises. Find your next role today." />
+        <meta property="og:title" content="SalesRoles.co | Sales Jobs That Show What They Pay" />
+        <meta property="og:description" content="The only job board for sales professionals where every listing shows salary upfront. No hidden comp, no surprises. Find your next role today." />
         <meta property="og:url" content="https://salesroles.co" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://salesroles.co/logo.svg" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="SalesRoles.co | Sales Jobs With Full Comp Transparency" />
-        <meta name="twitter:description" content="The only job board built for sales professionals. Every listing shows salary upfront. No hidden comp. No surprises at offer stage." />
+        <meta name="twitter:title" content="SalesRoles.co | Sales Jobs That Show What They Pay" />
+        <meta name="twitter:description" content="The only job board for sales professionals where every listing shows salary upfront. No hidden comp, no surprises. Find your next role today." />
         <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
       </Helmet>
       {/* Hero Section */}

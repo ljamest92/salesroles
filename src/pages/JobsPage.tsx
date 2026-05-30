@@ -281,16 +281,16 @@ export function JobsPage() {
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-16 animate-fade-in overflow-x-hidden">
       <Helmet>
-        <title>Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co</title>
-        <meta name="description" content="Search 100+ sales jobs where every listing shows salary upfront. Filter by role, location, and seniority. No hidden comp, no surprises at offer stage." />
-        <meta property="og:title" content="Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co" />
-        <meta property="og:description" content="Search 100+ sales jobs where every listing shows salary upfront. Filter by role, location, and seniority. No hidden comp, no surprises at offer stage." />
+        <title>Sales Jobs With Salary | SalesRoles.co</title>
+        <meta name="description" content="Browse sales jobs where every listing shows what it pays. Account Executives, SDRs, BDRs, Sales Managers and more. No hidden comp." />
+        <meta property="og:title" content="Sales Jobs With Salary | SalesRoles.co" />
+        <meta property="og:description" content="Browse sales jobs where every listing shows what it pays. Account Executives, SDRs, BDRs, Sales Managers and more. No hidden comp." />
         <meta property="og:url" content="https://salesroles.co/jobs" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://salesroles.co/logo.svg" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co" />
-        <meta name="twitter:description" content="Search 100+ sales jobs where every listing shows salary upfront. Filter by role, location, and seniority. No hidden comp, no surprises at offer stage." />
+        <meta name="twitter:title" content="Sales Jobs With Salary | SalesRoles.co" />
+        <meta name="twitter:description" content="Browse sales jobs where every listing shows what it pays. Account Executives, SDRs, BDRs, Sales Managers and more. No hidden comp." />
         <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
       </Helmet>
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">

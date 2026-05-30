@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react'
+import { Helmet } from 'react-helmet-async'
 import { Container, Card, Badge } from '@blinkdotnew/ui'
 import { Link } from '@tanstack/react-router'
 import { MapPin, Building2, ArrowRight } from 'lucide-react'
@@ -31,8 +32,23 @@ export function SEOLandingPage({ title, description, keyword }: SEOLandingPagePr
     })
   }, [keyword])
 
+  const metaTitle = `${title} | SalesRoles.co`
+  const metaDescription = `${description} Every role shows compensation before you apply. No hidden comp, no surprises.`
+
   return (
     <div className="pt-20 pb-12 md:py-32 space-y-32 page-transition">
+      <Helmet>
+        <title>{metaTitle}</title>
+        <meta name="description" content={metaDescription} />
+        <meta property="og:title" content={metaTitle} />
+        <meta property="og:description" content={metaDescription} />
+        <meta property="og:type" content="website" />
+        <meta property="og:image" content="https://salesroles.co/logo.svg" />
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content={metaTitle} />
+        <meta name="twitter:description" content={metaDescription} />
+        <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
+      </Helmet>
       <Container className="text-center space-y-10 animate-fade-in">
         <div className="space-y-6">
           <Badge variant="outline" className="px-6 py-2 text-primary border-primary/20 bg-primary/5 text-[10px] font-black">Curated Listings</Badge>

@@ -243,16 +243,16 @@ export function RemoteSalesJobsPage() {
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
       <Helmet>
-        <title>Remote Sales Jobs | Full Comp Transparency | SalesRoles.co</title>
-        <meta name="description" content="Find remote sales jobs worldwide with base salary, OTE, and commission shown upfront. Account Executive, SDR, BDR, and sales management roles. Work from anywhere and know your comp before you apply." />
-        <meta property="og:title" content="Remote Sales Jobs | Full Comp Transparency | SalesRoles.co" />
-        <meta property="og:description" content="Find remote sales jobs worldwide with base salary, OTE, and commission shown upfront. Account Executive, SDR, BDR, and sales management roles. Work from anywhere and know your comp before you apply." />
+        <title>Remote Sales Jobs With Salary | SalesRoles.co</title>
+        <meta name="description" content="Find remote sales jobs worldwide where every listing shows salary upfront. AE, SDR, BDR, and sales management roles. No hidden comp, no surprises." />
+        <meta property="og:title" content="Remote Sales Jobs With Salary | SalesRoles.co" />
+        <meta property="og:description" content="Find remote sales jobs worldwide where every listing shows salary upfront. AE, SDR, BDR, and sales management roles. No hidden comp, no surprises." />
         <meta property="og:url" content="https://salesroles.co/remote-sales-jobs" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://salesroles.co/logo.svg" />
         <meta name="twitter:card" content="summary" />
-        <meta name="twitter:title" content="Remote Sales Jobs | Full Comp Transparency | SalesRoles.co" />
-        <meta name="twitter:description" content="Find remote sales jobs worldwide with base salary, OTE, and commission shown upfront. Account Executive, SDR, BDR, and sales management roles. Work from anywhere and know your comp before you apply." />
+        <meta name="twitter:title" content="Remote Sales Jobs With Salary | SalesRoles.co" />
+        <meta name="twitter:description" content="Find remote sales jobs worldwide where every listing shows salary upfront. AE, SDR, BDR, and sales management roles. No hidden comp, no surprises." />
         <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
       </Helmet>
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">
