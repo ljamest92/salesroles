@@ -47,7 +47,6 @@ const defaultFilters = {
   industry: '',
   deal_size: '',
   methodology: '',
-  location: '',
   sort_by: 'relevance',
 }
 
@@ -67,10 +66,14 @@ export function CandidateSearchPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [industryTags, setIndustryTags] = useState<string[]>([])
   const [roleTags, setRoleTags] = useState<string[]>([])
+  const [locationTags, setLocationTags] = useState<string[]>([])
+  const [locationInput, setLocationInput] = useState('')
   const industryTagsRef = useRef<string[]>([])
   const roleTagsRef = useRef<string[]>([])
+  const locationTagsRef = useRef<string[]>([])
   industryTagsRef.current = industryTags
   roleTagsRef.current = roleTags
+  locationTagsRef.current = locationTags
   const searchTimer = useRef<any>(null)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
@@ -79,7 +82,6 @@ export function CandidateSearchPage() {
   useEffect(() => {
     if (authLoading) return
     if (!user || (user as any).role !== 'company') {
-      // Store toast message in sessionStorage so dashboard can display it
       sessionStorage.setItem('dashboard_toast', 'This area is for hiring companies only.')
       navigate({ to: '/dashboard', search: { mode: 'candidate' } as any })
       return
@@ -87,7 +89,13 @@ export function CandidateSearchPage() {
     setAccessChecked(true)
   }, [user, authLoading, navigate])
 
-  const fetchCandidates = useCallback(async (f: typeof filters, p: number, industries: string[] = [], roles: string[] = []) => {
+  const fetchCandidates = useCallback(async (
+    f: typeof filters,
+    p: number,
+    industries: string[] = [],
+    roles: string[] = [],
+    locations: string[] = [],
+  ) => {
     setLoading(true)
     const params = new URLSearchParams()
     if (f.search) params.set('search', f.search)
@@ -103,7 +111,7 @@ export function CandidateSearchPage() {
     if (industries.length) params.set('industry', industries.join(','))
     if (f.deal_size) params.set('deal_size', f.deal_size)
     if (f.methodology) params.set('methodology', f.methodology)
-    if (f.location) params.set('location', f.location)
+    if (locations.length) params.set('location', locations.join(','))
     params.set('sort_by', f.sort_by)
     params.set('page', String(p))
     try {
@@ -129,9 +137,9 @@ export function CandidateSearchPage() {
     setPage(1)
     if (key === 'search') {
       clearTimeout(searchTimer.current)
-      searchTimer.current = setTimeout(() => fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current), 350)
+      searchTimer.current = setTimeout(() => fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current, locationTagsRef.current), 350)
     } else {
-      fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current)
+      fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current, locationTagsRef.current)
     }
   }
 
@@ -139,16 +147,20 @@ export function CandidateSearchPage() {
     setFilters({ ...defaultFilters })
     setIndustryTags([])
     setRoleTags([])
+    setLocationTags([])
+    setLocationInput('')
     setPage(1)
-    fetchCandidates({ ...defaultFilters }, 1, [], [])
+    fetchCandidates({ ...defaultFilters }, 1, [], [], [])
   }
 
   useEffect(() => {
-    fetchCandidates(filters, page, industryTagsRef.current, roleTagsRef.current)
+    fetchCandidates(filters, page, industryTagsRef.current, roleTagsRef.current, locationTagsRef.current)
   }, [page]) // eslint-disable-line
 
   const activeFilterCount = Object.entries(filters).filter(([k, v]) => k !== 'sort_by' && v !== '').length
-    + (industryTags.length > 0 ? 1 : 0) + (roleTags.length > 0 ? 1 : 0)
+    + (industryTags.length > 0 ? 1 : 0)
+    + (roleTags.length > 0 ? 1 : 0)
+    + (locationTags.length > 0 ? 1 : 0)
 
   const safeList = (v: string | null | undefined): string[] => {
     if (!v) return []
@@ -185,7 +197,7 @@ export function CandidateSearchPage() {
             {roleTags.map(tag => (
               <span key={tag} className="flex items-center gap-1 text-xs border border-emerald-500/50 text-emerald-400 px-2 py-0.5 rounded-full">
                 {tag}
-                <button onClick={() => { const next = roleTags.filter(t => t !== tag); setRoleTags(next); setPage(1); fetchCandidates(filters, 1, industryTags, next) }}>
+                <button onClick={() => { const next = roleTags.filter(t => t !== tag); setRoleTags(next); setPage(1); fetchCandidates(filters, 1, industryTags, next, locationTagsRef.current) }}>
                   <X size={10} />
                 </button>
               </span>
@@ -200,7 +212,7 @@ export function CandidateSearchPage() {
             const next = [...roleTags, val]
             setRoleTags(next)
             setPage(1)
-            fetchCandidates(filters, 1, industryTags, next)
+            fetchCandidates(filters, 1, industryTags, next, locationTagsRef.current)
           }}
           className={selCls}
         >
@@ -235,7 +247,7 @@ export function CandidateSearchPage() {
             {industryTags.map(tag => (
               <span key={tag} className="flex items-center gap-1 text-xs border border-emerald-500/50 text-emerald-400 px-2 py-0.5 rounded-full">
                 {tag}
-                <button onClick={() => { const next = industryTags.filter(t => t !== tag); setIndustryTags(next); setPage(1); fetchCandidates(filters, 1, next, roleTags) }}>
+                <button onClick={() => { const next = industryTags.filter(t => t !== tag); setIndustryTags(next); setPage(1); fetchCandidates(filters, 1, next, roleTags, locationTagsRef.current) }}>
                   <X size={10} />
                 </button>
               </span>
@@ -250,7 +262,7 @@ export function CandidateSearchPage() {
             const next = [...industryTags, val]
             setIndustryTags(next)
             setPage(1)
-            fetchCandidates(filters, 1, next, roleTags)
+            fetchCandidates(filters, 1, next, roleTags, locationTagsRef.current)
           }}
           className={selCls}
         >
@@ -280,8 +292,36 @@ export function CandidateSearchPage() {
       {/* Location */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-black tracking-widest text-white/40">LOCATION</label>
-        <input type="text" placeholder="City or country..." value={filters.location}
-          onChange={e => updateFilter('location', e.target.value)} className={inpCls} />
+        {locationTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mb-1">
+            {locationTags.map(tag => (
+              <span key={tag} className="flex items-center gap-1 text-xs border border-emerald-500/50 text-emerald-400 px-2 py-0.5 rounded-full">
+                {tag}
+                <button onClick={() => { const next = locationTags.filter(t => t !== tag); setLocationTags(next); setPage(1); fetchCandidates(filters, 1, industryTags, roleTags, next) }}>
+                  <X size={10} />
+                </button>
+              </span>
+            ))}
+          </div>
+        )}
+        <input
+          type="text"
+          placeholder="Type a city or country, press Enter..."
+          value={locationInput}
+          onChange={e => setLocationInput(e.target.value)}
+          onKeyDown={e => {
+            if (e.key !== 'Enter') return
+            e.preventDefault()
+            const val = locationInput.trim()
+            if (!val || locationTags.includes(val)) return
+            const next = [...locationTags, val]
+            setLocationTags(next)
+            setLocationInput('')
+            setPage(1)
+            fetchCandidates(filters, 1, industryTags, roleTags, next)
+          }}
+          className={inpCls}
+        />
       </div>
     </div>
   )

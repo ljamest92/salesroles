@@ -1717,7 +1717,15 @@ app.get('/api/candidates', async (c) => {
     }
     if (dealSize) { where += ` AND u.deal_sizes LIKE ?`; params.push(`%${dealSize}%`) }
     if (methodology) { where += ` AND u.sales_methodology LIKE ?`; params.push(`%${methodology}%`) }
-    if (location) { where += ` AND u.location LIKE ?`; params.push(`%${location}%`) }
+    if (location) {
+      const locationList = location.split(',').map((s: string) => s.trim()).filter(Boolean)
+      if (locationList.length === 1) {
+        where += ` AND u.location LIKE ?`; params.push(`%${locationList[0]}%`)
+      } else if (locationList.length > 1) {
+        where += ` AND (${locationList.map(() => `u.location LIKE ?`).join(' OR ')})`
+        locationList.forEach((l: string) => params.push(`%${l}%`))
+      }
+    }
 
     let orderBy: string
     switch (sortBy) {

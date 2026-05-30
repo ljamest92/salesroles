@@ -1658,8 +1658,15 @@ app.get('/api/candidates', async (c) => {
             params.push(`%${methodology}%`);
         }
         if (location) {
-            where += ` AND u.location LIKE ?`;
-            params.push(`%${location}%`);
+            const locationList = location.split(',').map((s) => s.trim()).filter(Boolean);
+            if (locationList.length === 1) {
+                where += ` AND u.location LIKE ?`;
+                params.push(`%${locationList[0]}%`);
+            }
+            else if (locationList.length > 1) {
+                where += ` AND (${locationList.map(() => `u.location LIKE ?`).join(' OR ')})`;
+                locationList.forEach((l) => params.push(`%${l}%`));
+            }
         }
         let orderBy;
         switch (sortBy) {
