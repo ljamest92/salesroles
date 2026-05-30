@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
-import { Link } from '@tanstack/react-router'
+import { Link, useSearch, useNavigate } from '@tanstack/react-router'
 import {
   Button,
   Container,
@@ -30,7 +30,25 @@ const SelectItem = UISelectItem as any
 
 const JOBS_PER_PAGE = 10
 
+const LOGO_BLOCKLIST = new Set(['adzuna.com', 'adzuna.com.au', 'remotive.com', 'linkedin.com', 'indeed.com'])
+
+function getDomainFromUrl(url: string): string | null {
+  try { return new URL(url).hostname.replace('www.', '') } catch { return null }
+}
+
+function resolveJobDomain(job: any): string {
+  const d1 = getDomain(job.company_website || '')
+  if (d1 && d1.includes('.') && !LOGO_BLOCKLIST.has(d1)) return d1
+  const d2 = typeof job.domain === 'string' ? job.domain : ''
+  if (d2 && d2.includes('.') && !LOGO_BLOCKLIST.has(d2)) return d2
+  const raw = getDomainFromUrl((job as any).redirect_url || job.application_url || '')
+  return (raw && raw.includes('.') && !LOGO_BLOCKLIST.has(raw)) ? raw : ''
+}
+
 export function JobsPage() {
+  const { page: urlPage } = useSearch({ from: '/jobs' })
+  const navigate = useNavigate()
+  const isFirstRender = useRef(true)
   const { user } = useAuth()
   const [isLoading, setIsLoading] = useState(true)
   const [jobs, setJobs] = useState<Job[]>([])
@@ -55,6 +73,7 @@ export function JobsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedOTERange, setSelectedOTERange] = useState('')
   const [currentPage, setCurrentPage] = useState(() => {
+    if (urlPage && urlPage > 1) return urlPage
     const saved = sessionStorage.getItem('jobsPage')
     console.log('[JobsPage] mount - sessionStorage jobsPage:', saved, '| location.search:', window.location.search)
     return saved ? parseInt(saved, 10) : 1
@@ -154,9 +173,10 @@ export function JobsPage() {
 
 
   const handlePageChange = (page: number) => {
-    console.log('[JobsPage] handlePageChange:', page, '- saving to sessionStorage')
+    console.log('[JobsPage] handlePageChange:', page, '- saving to sessionStorage + URL')
     sessionStorage.setItem('jobsPage', String(page))
     setCurrentPage(page)
+    navigate({ search: (prev: any) => ({ ...prev, page: page > 1 ? page : undefined }), replace: true } as any)
     setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
   }
 
@@ -265,8 +285,14 @@ export function JobsPage() {
   }
 
   useEffect(() => {
+    if (isFirstRender.current) {
+      isFirstRender.current = false
+      return
+    }
     sessionStorage.removeItem('jobsPage')
     setCurrentPage(1)
+    navigate({ search: (prev: any) => ({ ...prev, page: undefined }), replace: true } as any)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTags, locationTags, workTypeFilters, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
 
 
@@ -547,7 +573,7 @@ export function JobsPage() {
                       <div className="flex flex-col md:flex-row justify-between gap-6 md:gap-10 min-w-0">
                         <div className="flex gap-4 sm:gap-6 md:gap-8 min-w-0">
                           <div className="w-14 h-14 sm:w-16 sm:h-16 md:w-20 md:h-20 rounded-3xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-xl transition-all group-hover:scale-105 duration-500 overflow-hidden relative">
-                            <CompanyLogo domain={job.domain || getDomain(job.company_website || '')} name={job.company} uploadedLogoUrl={job.company_logo_url} />
+                            <CompanyLogo domain={resolveJobDomain(job)} name={job.company} uploadedLogoUrl={job.company_logo_url} />
                           </div>
                           <div className="space-y-2 min-w-0">
                             <div className="flex flex-wrap items-center gap-3">

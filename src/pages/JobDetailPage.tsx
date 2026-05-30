@@ -285,9 +285,14 @@ export function JobDetailPage() {
 
   const companyDomain = (() => {
     const canonical = getDomain(job.company_website || job.domain, job.company)
-    if (canonical) return canonical
+    if (canonical && canonical.includes('.')) {
+      console.log('[JobDetailPage] companyDomain (canonical):', canonical)
+      return canonical
+    }
     const raw = getDomainFromUrl((job as any).redirect_url || (job as any).company_url || '')
-    return raw && !LOGO_BLOCKLIST.has(raw) ? raw : ''
+    const result = raw && !LOGO_BLOCKLIST.has(raw) ? raw : ''
+    console.log('[JobDetailPage] companyDomain:', result || '(none)', '| tried canonical:', canonical || '(empty)', '| company_website:', job.company_website, '| domain:', job.domain)
+    return result
   })()
 
   const jobMetaTitle = `${job.title} at ${job.company} | SalesRoles.co`
