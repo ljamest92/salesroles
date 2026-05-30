@@ -53,6 +53,31 @@ const defaultFilters = {
 const selCls = "w-full bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm focus:outline-none focus:border-emerald-500/50 appearance-none"
 const inpCls = "w-full bg-[#0f1629] border border-white/10 rounded-lg px-3 py-2.5 text-white text-sm placeholder-white/30 focus:outline-none focus:border-emerald-500/50"
 
+function SearchInput({ onSearch, clearCount }: { onSearch: (val: string) => void; clearCount: number }) {
+  const [value, setValue] = useState('')
+  const timerRef = useRef<any>(null)
+  const onSearchRef = useRef(onSearch)
+  onSearchRef.current = onSearch
+  useEffect(() => { setValue('') }, [clearCount])
+  return (
+    <div className="relative">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
+      <input
+        type="text"
+        placeholder="Name, headline, skills..."
+        value={value}
+        onChange={e => {
+          const val = e.target.value
+          setValue(val)
+          clearTimeout(timerRef.current)
+          timerRef.current = setTimeout(() => onSearchRef.current(val), 300)
+        }}
+        className={inpCls + ' pl-9'}
+      />
+    </div>
+  )
+}
+
 function LocationTagInput({ onAdd }: { onAdd: (val: string) => void }) {
   const [value, setValue] = useState('')
   return (
@@ -88,13 +113,13 @@ export function CandidateSearchPage() {
   const [industryTags, setIndustryTags] = useState<string[]>([])
   const [roleTags, setRoleTags] = useState<string[]>([])
   const [locationTags, setLocationTags] = useState<string[]>([])
+  const [clearCount, setClearCount] = useState(0)
   const industryTagsRef = useRef<string[]>([])
   const roleTagsRef = useRef<string[]>([])
   const locationTagsRef = useRef<string[]>([])
   industryTagsRef.current = industryTags
   roleTagsRef.current = roleTags
   locationTagsRef.current = locationTags
-  const searchTimer = useRef<any>(null)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -150,17 +175,11 @@ export function CandidateSearchPage() {
     }
   }, [])
 
-  // Debounce search, instant for other filters
   const updateFilter = (key: string, value: string) => {
     const next = { ...filters, [key]: value }
     setFilters(next)
     setPage(1)
-    if (key === 'search') {
-      clearTimeout(searchTimer.current)
-      searchTimer.current = setTimeout(() => fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current, locationTagsRef.current), 350)
-    } else {
-      fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current, locationTagsRef.current)
-    }
+    fetchCandidates(next, 1, industryTagsRef.current, roleTagsRef.current, locationTagsRef.current)
   }
 
   const clearFilters = () => {
@@ -168,6 +187,7 @@ export function CandidateSearchPage() {
     setIndustryTags([])
     setRoleTags([])
     setLocationTags([])
+    setClearCount(c => c + 1)
     setPage(1)
     fetchCandidates({ ...defaultFilters }, 1, [], [], [])
   }
@@ -200,12 +220,7 @@ export function CandidateSearchPage() {
       {/* Search */}
       <div className="space-y-1.5">
         <label className="text-[10px] font-black tracking-widest text-white/40">SEARCH</label>
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-white/30" />
-          <input type="text" placeholder="Name, headline, skills..." value={filters.search}
-            onChange={e => updateFilter('search', e.target.value)}
-            className={inpCls + ' pl-9'} />
-        </div>
+        <SearchInput onSearch={val => updateFilter('search', val)} clearCount={clearCount} />
       </div>
 
       {/* Role */}
@@ -359,7 +374,7 @@ export function CandidateSearchPage() {
         {/* Filter sidebar — desktop */}
         <aside className="hidden lg:block w-64 shrink-0">
           <div className="sticky top-8 bg-[#0a0f1e] border border-white/10 rounded-2xl p-5">
-            <FilterSidebar />
+            {FilterSidebar()}
           </div>
         </aside>
 
@@ -398,7 +413,7 @@ export function CandidateSearchPage() {
           {/* Mobile filters drawer */}
           {showFilters && (
             <div className="lg:hidden bg-card/50 border border-white/10 rounded-2xl p-5">
-              <FilterSidebar />
+              {FilterSidebar()}
             </div>
           )}
 

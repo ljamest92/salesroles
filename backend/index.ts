@@ -112,6 +112,7 @@ try {
   pool.execute(`ALTER TABLE users ADD COLUMN deal_sizes TEXT`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN sales_methodology TEXT`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN current_role VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN profile_slug VARCHAR(100)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_name VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_size VARCHAR(50)`).catch(() => {})
@@ -1587,7 +1588,7 @@ app.put('/api/candidate/profile', async (c) => {
         current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
         phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
         target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
-        sales_methodology=?, current_ote=?${providedAvatar ? ', avatar_url=?' : ''}
+        sales_methodology=?, current_ote=?, current_role=?${providedAvatar ? ', avatar_url=?' : ''}
        WHERE id=?`,
       [
         data.headline || null,
@@ -1612,6 +1613,7 @@ app.put('/api/candidate/profile', async (c) => {
         JSON.stringify(data.deal_sizes || []),
         JSON.stringify(data.sales_methodology || []),
         data.current_ote || null,
+        data.current_role || null,
         ...(providedAvatar ? [providedAvatar] : []),
         userId,
       ]
@@ -1633,7 +1635,7 @@ app.get('/api/candidate/me', async (c) => {
       `SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed,
               current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro,
               phone, linkedin_url, target_role, years_experience, skills, target_salary, availability,
-              achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug
+              achievements, industries, deal_sizes, sales_methodology, current_ote, current_role, profile_slug
        FROM users WHERE id = ?`,
       [userId]
     ) as any[]

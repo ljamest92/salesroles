@@ -92,6 +92,7 @@ export function ProfileEditPage() {
   // Sales career
   const [targetRoles, setTargetRoles] = useState<string[]>([])
   const [yearsExperience, setYearsExperience] = useState('')
+  const [currentRole, setCurrentRole] = useState('')
   const [currentOte, setCurrentOte] = useState('')
   const [targetSalary, setTargetSalary] = useState('')
   const [availability, setAvailability] = useState('')
@@ -132,6 +133,7 @@ export function ProfileEditPage() {
         setLinkedinUrl(data.linkedin_url || '')
         try { setTargetRoles(JSON.parse(data.target_role || '[]')) } catch { setTargetRoles(data.target_role ? [data.target_role] : []) }
         setYearsExperience(data.years_experience != null ? String(data.years_experience) : '')
+        setCurrentRole(data.current_role || '')
         setCurrentOte(data.current_ote || '')
         setTargetSalary(data.target_salary || '')
         setAvailability(data.availability || '')
@@ -204,7 +206,7 @@ export function ProfileEditPage() {
         body: JSON.stringify({
           headline, location, phone, linkedin_url: linkedinUrl,
           target_role: JSON.stringify(targetRoles), years_experience: yearsExperience ? parseInt(yearsExperience) : null,
-          current_ote: currentOte, target_salary: targetSalary, availability,
+          current_role: currentRole, current_ote: currentOte, target_salary: targetSalary, availability,
           industries, deal_sizes: dealSizes, sales_methodology: salesMethodology, skills,
           bio, achievements, is_public: isPublic,
           years_in_sales: yearsInSales ? parseInt(yearsInSales) : null,
@@ -289,6 +291,9 @@ export function ProfileEditPage() {
           <h2 className="text-sm font-black tracking-widest text-muted-foreground">SALES CAREER</h2>
 
           <div className="grid md:grid-cols-2 gap-4">
+            <Field label="Current Role">
+              <input value={currentRole} onChange={e => setCurrentRole(e.target.value)} placeholder="e.g. Account Executive" className={inputCls} />
+            </Field>
             <Field label="Years of Sales Experience">
               <input type="number" min="0" max="40" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)} placeholder="e.g. 5" className={inputCls} />
             </Field>
