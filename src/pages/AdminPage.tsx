@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   Button,
@@ -33,6 +33,11 @@ export function AdminPage() {
   const [deleteJobDialog, setDeleteJobDialog] = useState<{ open: boolean; jobId: string | null; password: string; loading: boolean; error: string }>({ open: false, jobId: null, password: '', loading: false, error: '' })
   const [deleteUserDialog, setDeleteUserDialog] = useState<{ open: boolean; userId: string | null; userName: string; password: string; loading: boolean; error: string }>({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })
   const [revokeProDialog, setRevokeProDialog] = useState<{ open: boolean; userId: string | null; userName: string; password: string; loading: boolean; error: string }>({ open: false, userId: null, userName: '', password: '', loading: false, error: '' })
+
+  const [liveJobsSearch, setLiveJobsSearch] = useState('')
+  const [liveJobsFilter, setLiveJobsFilter] = useState<'all' | 'featured' | 'standard'>('all')
+  const [liveJobsPage, setLiveJobsPage] = useState(1)
+  const liveJobsListRef = useRef<HTMLDivElement>(null)
 
   const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('admin_auth') === 'true'
 
@@ -312,6 +317,22 @@ export function AdminPage() {
     }
   }
 
+  const JOBS_PER_PAGE = 25
+  const liveJobsSearchLower = liveJobsSearch.toLowerCase()
+  const filteredLiveJobs = liveJobs.filter(job => {
+    const matchesSearch = !liveJobsSearch ||
+      (job.title || '').toLowerCase().includes(liveJobsSearchLower) ||
+      (job.company_name || '').toLowerCase().includes(liveJobsSearchLower)
+    const matchesType = liveJobsFilter === 'all' ||
+      (liveJobsFilter === 'featured' ? !!job.featured : !job.featured)
+    return matchesSearch && matchesType
+  })
+  const liveJobsTotalPages = Math.max(1, Math.ceil(filteredLiveJobs.length / JOBS_PER_PAGE))
+  const paginatedLiveJobs = filteredLiveJobs.slice(
+    (liveJobsPage - 1) * JOBS_PER_PAGE,
+    liveJobsPage * JOBS_PER_PAGE
+  )
+
   if (!isAuth) return null
 
   return (
@@ -520,47 +541,125 @@ export function AdminPage() {
       )}
 
       {activeTab === 'jobs' && (
-        <div className="space-y-4">
-          {liveJobs.length === 0 ? (
+        <div className="space-y-4" ref={liveJobsListRef}>
+          {/* Search and filter bar */}
+          <div className="flex flex-col sm:flex-row gap-3">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={liveJobsSearch}
+                onChange={e => { setLiveJobsSearch(e.target.value); setLiveJobsPage(1) }}
+                placeholder="Search by job title or company..."
+                className="w-full bg-background border border-white/10 rounded-xl px-4 py-2.5 text-sm font-medium focus:outline-none focus:border-primary/50 transition-colors pr-10"
+              />
+              {liveJobsSearch && (
+                <button
+                  onClick={() => { setLiveJobsSearch(''); setLiveJobsPage(1) }}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <X size={14} />
+                </button>
+              )}
+            </div>
+            <div className="flex gap-1 bg-card/50 border border-white/5 p-1 rounded-xl shrink-0">
+              {(['all', 'featured', 'standard'] as const).map(f => (
+                <button
+                  key={f}
+                  onClick={() => { setLiveJobsFilter(f); setLiveJobsPage(1) }}
+                  className={`px-4 py-2 rounded-lg font-black text-[10px] capitalize transition-all ${liveJobsFilter === f ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground hover:bg-white/5'}`}
+                >
+                  {f === 'all' ? 'All' : f === 'featured' ? 'Featured' : 'Standard'}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Result count */}
+          <p className="text-xs text-muted-foreground font-medium">
+            {liveJobsSearch
+              ? `${filteredLiveJobs.length} result${filteredLiveJobs.length !== 1 ? 's' : ''} for "${liveJobsSearch}"`
+              : `${filteredLiveJobs.length} job${filteredLiveJobs.length !== 1 ? 's' : ''}`
+            }
+          </p>
+
+          {/* Job list */}
+          {filteredLiveJobs.length === 0 ? (
             <Card className="p-16 text-center border-dashed border-white/10">
-              <p className="text-muted-foreground font-medium">No live listings found.</p>
+              <p className="text-muted-foreground font-medium">No listings found.</p>
             </Card>
           ) : (
-            liveJobs.map((job: any) => (
-              <Card key={job.id} className="p-6 border border-white/5 bg-card/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-primary/20 transition-all">
-                <div className="flex items-center gap-4">
-                  <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center border border-white/5 overflow-hidden shrink-0">
-                    <CompanyLogo domain={getDomain(job.company_website, job.company_name || 'company')} name={job.company_name || 'Company'} size="sm" />
+            <>
+              {paginatedLiveJobs.map((job: any) => (
+                <Card key={job.id} className="p-6 border border-white/5 bg-card/30 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-primary/20 transition-all">
+                  <div className="flex items-center gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-secondary flex items-center justify-center border border-white/5 overflow-hidden shrink-0">
+                      <CompanyLogo domain={getDomain(job.company_website, job.company_name || 'company')} name={job.company_name || 'Company'} size="sm" />
+                    </div>
+                    <div>
+                      <p className="font-black text-sm">{job.title}</p>
+                      <p className="text-xs text-muted-foreground">{job.company_name} &bull; {job.location}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-black text-sm">{job.title}</p>
-                    <p className="text-xs text-muted-foreground">{job.company_name} &bull; {job.location}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {job.featured && (
-                    <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Featured</Badge>
-                  )}
-                  <a
-                    href={`/jobs/${job.id}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    <Button size="sm" variant="ghost" className="font-bold gap-2 text-xs">
-                      <ExternalLink size={14} /> View
+                  <div className="flex items-center gap-3">
+                    {job.featured && (
+                      <Badge variant="outline" className="bg-emerald-500/10 text-emerald-400 border-emerald-500/20 text-[10px]">Featured</Badge>
+                    )}
+                    <a
+                      href={`/jobs/${job.id}`}
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      <Button size="sm" variant="ghost" className="font-bold gap-2 text-xs">
+                        <ExternalLink size={14} /> View
+                      </Button>
+                    </a>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive font-bold gap-2 hover:bg-destructive/10 text-xs"
+                      onClick={() => handleRemoveJob(job.id)}
+                    >
+                      <Trash2 size={14} /> Remove
                     </Button>
-                  </a>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    className="text-destructive font-bold gap-2 hover:bg-destructive/10 text-xs"
-                    onClick={() => handleRemoveJob(job.id)}
-                  >
-                    <Trash2 size={14} /> Remove
-                  </Button>
+                  </div>
+                </Card>
+              ))}
+
+              {/* Pagination */}
+              {liveJobsTotalPages > 1 && (
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-xs text-muted-foreground font-medium">
+                    Page {liveJobsPage} of {liveJobsTotalPages}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setLiveJobsPage(p => p - 1)
+                        liveJobsListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }}
+                      disabled={liveJobsPage === 1}
+                      className="font-bold text-xs"
+                    >
+                      Prev
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => {
+                        setLiveJobsPage(p => p + 1)
+                        liveJobsListRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+                      }}
+                      disabled={liveJobsPage === liveJobsTotalPages}
+                      className="font-bold text-xs"
+                    >
+                      Next
+                    </Button>
+                  </div>
                 </div>
-              </Card>
-            ))
+              )}
+            </>
           )}
         </div>
       )}
