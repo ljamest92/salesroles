@@ -91,6 +91,7 @@ export function ProfileEditPage() {
 
   // Sales career
   const [targetRoles, setTargetRoles] = useState<string[]>([])
+  const [targetingRoles, setTargetingRoles] = useState<string[]>([])
   const [yearsExperience, setYearsExperience] = useState('')
   const [currentRole, setCurrentRole] = useState('')
   const [currentOte, setCurrentOte] = useState('')
@@ -148,6 +149,7 @@ export function ProfileEditPage() {
         try { setIndustries(JSON.parse(data.industries || '[]')) } catch {}
         try { setDealSizes(JSON.parse(data.deal_sizes || '[]')) } catch {}
         try { setSalesMethodology(JSON.parse(data.sales_methodology || '[]')) } catch {}
+        try { setTargetingRoles(JSON.parse(data.targeting_roles || '[]')) } catch {}
       })
       .catch(() => {})
   }, [user])
@@ -207,6 +209,7 @@ export function ProfileEditPage() {
           headline, location, phone, linkedin_url: linkedinUrl,
           target_role: JSON.stringify(targetRoles), years_experience: yearsExperience ? parseInt(yearsExperience) : null,
           current_role: currentRole, current_ote: currentOte, target_salary: targetSalary, availability,
+          targeting_roles: targetingRoles,
           industries, deal_sizes: dealSizes, sales_methodology: salesMethodology, skills,
           bio, achievements, is_public: isPublic,
           years_in_sales: yearsInSales ? parseInt(yearsInSales) : null,
@@ -321,8 +324,12 @@ export function ProfileEditPage() {
             </Field>
           </div>
 
-          <Field label="Target Roles">
+          <Field label="Experience">
             <TagSelect options={TARGET_ROLES} value={targetRoles} onChange={setTargetRoles} />
+          </Field>
+
+          <Field label="Target Roles">
+            <TagSelect options={TARGET_ROLES} value={targetingRoles} onChange={setTargetingRoles} />
           </Field>
 
           <Field label="Industries">

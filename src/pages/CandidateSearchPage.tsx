@@ -24,6 +24,7 @@ interface Candidate {
   achievements: string
   current_ote: string
   linkedin_url: string
+  targeting_roles: string
 }
 
 const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Senior Account Executive', 'Enterprise Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'BDM']
@@ -438,6 +439,7 @@ export function CandidateSearchPage() {
                 const industries = safeList(c.industries)
                 const dealSizes = safeList(c.deal_sizes)
                 const roles = safeList(c.target_role)
+                const targetingRoles = safeList(c.targeting_roles)
                 const slug = c.profile_slug || String(c.id)
 
                 return (
@@ -468,6 +470,11 @@ export function CandidateSearchPage() {
                         {c.location && (
                           <p className="text-white/30 text-xs flex items-center gap-1 mt-0.5">
                             <MapPin size={10} /> {c.location}
+                          </p>
+                        )}
+                        {targetingRoles.length > 0 && (
+                          <p className="text-white/30 text-xs mt-0.5 truncate">
+                            Targeting: {targetingRoles.join(', ')}
                           </p>
                         )}
                       </div>

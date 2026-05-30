@@ -34,6 +34,7 @@ interface CandidateProfile {
   avatar_url: string
   linkedin_url: string
   target_role: string
+  targeting_roles: string
   skills: string
   target_salary: string
   current_ote: string
@@ -189,11 +190,11 @@ export function CandidateProfilePage() {
                 <p className="text-white/70 font-medium text-lg leading-snug">{profile.headline}</p>
               )}
 
-              {/* Target roles if set */}
-              {safeList(profile.target_role).length > 0 && (
+              {/* Targeting (next roles) */}
+              {safeList(profile.targeting_roles).length > 0 && (
                 <p className="text-sm text-white/40 flex items-center gap-1.5">
                   <Target size={13} className="text-emerald-500/60" />
-                  Targeting: <span className="text-white/60 font-medium">{safeList(profile.target_role).join(', ')}</span>
+                  Targeting: <span className="text-white/60 font-medium">{safeList(profile.targeting_roles).join(', ')}</span>
                 </p>
               )}
 
@@ -299,6 +300,18 @@ export function CandidateProfilePage() {
                 </div>
               </div>
             )}
+          </div>
+        )}
+
+        {/* Experience (roles worked in) */}
+        {safeList(profile.target_role).length > 0 && (
+          <div className="space-y-2">
+            <p className="text-[10px] font-bold tracking-widest text-white/30">EXPERIENCE</p>
+            <div className="flex flex-wrap gap-2">
+              {safeList(profile.target_role).map(r => (
+                <span key={r} className="text-xs bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2.5 py-1 rounded-full font-medium">{r}</span>
+              ))}
+            </div>
           </div>
         )}
 

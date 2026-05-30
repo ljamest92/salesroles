@@ -113,6 +113,7 @@ try {
   pool.execute(`ALTER TABLE users ADD COLUMN sales_methodology TEXT`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN current_role VARCHAR(255)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN targeting_roles TEXT`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN profile_slug VARCHAR(100)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_name VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_size VARCHAR(50)`).catch(() => {})
@@ -1588,7 +1589,7 @@ app.put('/api/candidate/profile', async (c) => {
         current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
         phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
         target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
-        sales_methodology=?, current_ote=?, current_role=?${providedAvatar ? ', avatar_url=?' : ''}
+        sales_methodology=?, current_ote=?, current_role=?, targeting_roles=?${providedAvatar ? ', avatar_url=?' : ''}
        WHERE id=?`,
       [
         data.headline || null,
@@ -1614,6 +1615,7 @@ app.put('/api/candidate/profile', async (c) => {
         JSON.stringify(data.sales_methodology || []),
         data.current_ote || null,
         data.current_role || null,
+        JSON.stringify(data.targeting_roles || []),
         ...(providedAvatar ? [providedAvatar] : []),
         userId,
       ]
@@ -1635,7 +1637,7 @@ app.get('/api/candidate/me', async (c) => {
       `SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed,
               current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro,
               phone, linkedin_url, target_role, years_experience, skills, target_salary, availability,
-              achievements, industries, deal_sizes, sales_methodology, current_ote, current_role, profile_slug
+              achievements, industries, deal_sizes, sales_methodology, current_ote, current_role, targeting_roles, profile_slug
        FROM users WHERE id = ?`,
       [userId]
     ) as any[]
@@ -1752,7 +1754,7 @@ app.get('/api/candidates', async (c) => {
       SELECT u.id, u.name, u.headline, u.location, u.target_role, u.years_experience,
              u.skills, u.target_salary, u.availability, u.industries, u.deal_sizes,
              u.sales_methodology, u.avatar_url, u.cv_filename, u.is_pro, u.profile_slug,
-             u.achievements, u.current_ote, u.linkedin_url, u.created_at
+             u.achievements, u.current_ote, u.linkedin_url, u.targeting_roles, u.created_at
       FROM users u
       ${where}
       ${orderBy}
