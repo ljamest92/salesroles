@@ -50,6 +50,10 @@ export function JobDetailPage() {
   }
 
   useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [])
+
+  useEffect(() => {
     const loadJob = async () => {
       try {
         const pJobs = await fetchPartnerJobs()
