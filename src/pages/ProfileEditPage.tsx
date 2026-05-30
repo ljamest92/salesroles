@@ -86,6 +86,7 @@ export function ProfileEditPage() {
   const [headline, setHeadline] = useState('')
   const [location, setLocation] = useState('')
   const [phone, setPhone] = useState('')
+  const [emailContact, setEmailContact] = useState('')
   const [linkedinUrl, setLinkedinUrl] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
 
@@ -130,6 +131,7 @@ export function ProfileEditPage() {
         setHeadline(data.headline || '')
         setLocation(data.location || '')
         setPhone(data.phone || '')
+        setEmailContact(data.email_contact || '')
         setLinkedinUrl(data.linkedin_url || '')
         try { setTargetRoles(JSON.parse(data.target_role || '[]')) } catch { setTargetRoles(data.target_role ? [data.target_role] : []) }
         setYearsExperience(data.years_experience != null ? String(data.years_experience) : '')
@@ -204,7 +206,7 @@ export function ProfileEditPage() {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
-          headline, location, phone, linkedin_url: linkedinUrl,
+          headline, location, phone, email_contact: emailContact, linkedin_url: linkedinUrl,
           target_role: JSON.stringify(targetRoles), years_experience: yearsExperience ? parseInt(yearsExperience) : null,
           current_role: currentRole, current_ote: currentOte, target_salary: targetSalary, availability,
           industries, deal_sizes: dealSizes, sales_methodology: salesMethodology, skills,
@@ -279,6 +281,9 @@ export function ProfileEditPage() {
             </Field>
             <Field label="Phone">
               <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="+44 7700 900000" className={inputCls} />
+            </Field>
+            <Field label="Contact Email">
+              <input value={emailContact} onChange={e => setEmailContact(e.target.value)} placeholder="contact@example.com" className={inputCls} />
             </Field>
             <Field label="LinkedIn URL">
               <input value={linkedinUrl} onChange={e => setLinkedinUrl(e.target.value)} placeholder="https://linkedin.com/in/yourname" className={inputCls} />

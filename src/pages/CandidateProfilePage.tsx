@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from '@tanstack/react-router'
+import { useParams, useNavigate } from '@tanstack/react-router'
 import { Container, Card, Badge } from '@blinkdotnew/ui'
-import { MapPin, Star, Share2, Briefcase, TrendingUp, Building2, FileText, Link2, DollarSign, Target, Zap, Award } from 'lucide-react'
+import { MapPin, Star, Share2, Briefcase, TrendingUp, Building2, FileText, Link2, DollarSign, Target, Zap, Award, Phone, Mail, Copy, Check, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 interface WorkEntry {
@@ -69,12 +69,18 @@ function AvailabilityBadge({ status }: { status: string }) {
 export function CandidateProfilePage() {
   const { identifier } = useParams({ strict: false }) as { identifier: string }
   const { user } = useAuth()
+  const navigate = useNavigate()
   const [profile, setProfile] = useState<CandidateProfile | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [copied, setCopied] = useState(false)
   const [cvMsg, setCvMsg] = useState('')
   const [avatarError, setAvatarError] = useState(false)
+  const [contactOpen, setContactOpen] = useState(false)
+  const [contactLoading, setContactLoading] = useState(false)
+  const [contactData, setContactData] = useState<{ phone?: string; email_contact?: string } | null>(null)
+  const [contactError, setContactError] = useState('')
+  const [copiedField, setCopiedField] = useState<'phone' | 'email' | null>(null)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -115,6 +121,33 @@ export function CandidateProfilePage() {
     } else {
       setCvMsg(data.error || 'No CV available')
     }
+  }
+
+  const handleContact = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) { navigate({ to: '/login' as any }); return }
+    if (contactData) { setContactOpen(true); return }
+    setContactLoading(true)
+    setContactError('')
+    try {
+      const res = await fetch(`/api/candidates/${identifier}/contact`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      const data = await res.json()
+      if (!res.ok) { setContactError(data.error || 'Failed to load contact details'); setContactLoading(false); return }
+      setContactData(data)
+      setContactOpen(true)
+    } catch {
+      setContactError('Failed to load contact details')
+    } finally {
+      setContactLoading(false)
+    }
+  }
+
+  const copyToClipboard = (text: string, field: 'phone' | 'email') => {
+    navigator.clipboard.writeText(text)
+    setCopiedField(field)
+    setTimeout(() => setCopiedField(null), 2000)
   }
 
   if (loading) return (
@@ -229,10 +262,58 @@ export function CandidateProfilePage() {
                 <Link2 size={13} /> LinkedIn
               </a>
             )}
+            {(!user || user.role === 'company') && (
+              <button
+                onClick={handleContact}
+                disabled={contactLoading}
+                className="flex items-center gap-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <Mail size={13} /> {contactLoading ? 'Loading…' : 'Contact Candidate'}
+              </button>
+            )}
           </div>
         </div>
 
         {cvMsg && <p className="text-xs text-white/40 -mt-2">{cvMsg}</p>}
+
+        {/* Contact modal */}
+        {contactOpen && contactData && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" onClick={() => setContactOpen(false)}>
+            <div className="bg-[#111] border border-white/10 rounded-2xl p-6 w-full max-w-sm space-y-4 shadow-2xl" onClick={e => e.stopPropagation()}>
+              <div className="flex items-center justify-between">
+                <h3 className="font-black text-base tracking-tight">Contact Details</h3>
+                <button onClick={() => setContactOpen(false)} className="text-white/40 hover:text-white transition-colors"><X size={16} /></button>
+              </div>
+              {contactData.phone ? (
+                <div className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Phone size={14} className="text-emerald-400 shrink-0" />
+                    <span className="text-sm font-medium truncate">{contactData.phone}</span>
+                  </div>
+                  <button onClick={() => copyToClipboard(contactData.phone!, 'phone')} className="shrink-0 text-white/40 hover:text-emerald-400 transition-colors">
+                    {copiedField === 'phone' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-white/30 bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2"><Phone size={14} /> No phone listed</p>
+              )}
+              {contactData.email_contact ? (
+                <div className="flex items-center justify-between gap-3 bg-white/5 rounded-xl px-4 py-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Mail size={14} className="text-emerald-400 shrink-0" />
+                    <span className="text-sm font-medium truncate">{contactData.email_contact}</span>
+                  </div>
+                  <button onClick={() => copyToClipboard(contactData.email_contact!, 'email')} className="shrink-0 text-white/40 hover:text-emerald-400 transition-colors">
+                    {copiedField === 'email' ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                  </button>
+                </div>
+              ) : (
+                <p className="text-sm text-white/30 bg-white/5 rounded-xl px-4 py-3 flex items-center gap-2"><Mail size={14} /> No email listed</p>
+              )}
+            </div>
+          </div>
+        )}
+        {contactError && <p className="text-xs text-red-400 -mt-2">{contactError}</p>}
 
         {/* Stats grid */}
         {(yearsExp != null || profile.target_salary || profile.current_ote || profile.total_revenue || profile.companies_closed != null) && (

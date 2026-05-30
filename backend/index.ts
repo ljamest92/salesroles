@@ -113,6 +113,7 @@ try {
   pool.execute(`ALTER TABLE users ADD COLUMN sales_methodology TEXT`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN current_ote VARCHAR(100)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN current_role VARCHAR(255)`).catch(() => {})
+  pool.execute(`ALTER TABLE users ADD COLUMN email_contact VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN profile_slug VARCHAR(100)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_name VARCHAR(255)`).catch(() => {})
   pool.execute(`ALTER TABLE users ADD COLUMN company_size VARCHAR(50)`).catch(() => {})
@@ -1588,7 +1589,7 @@ app.put('/api/candidate/profile', async (c) => {
         current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
         phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
         target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
-        sales_methodology=?, current_ote=?, \`current_role\`=?${providedAvatar ? ', avatar_url=?' : ''}
+        sales_methodology=?, current_ote=?, \`current_role\`=?, email_contact=?${providedAvatar ? ', avatar_url=?' : ''}
        WHERE id=?`,
       [
         data.headline || null,
@@ -1614,6 +1615,7 @@ app.put('/api/candidate/profile', async (c) => {
         JSON.stringify(data.sales_methodology || []),
         data.current_ote || null,
         data.current_role || null,
+        data.email_contact || null,
         ...(providedAvatar ? [providedAvatar] : []),
         userId,
       ]
@@ -1636,7 +1638,7 @@ app.get('/api/candidate/me', async (c) => {
       `SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed,
               current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro,
               phone, linkedin_url, target_role, years_experience, skills, target_salary, availability,
-              achievements, industries, deal_sizes, sales_methodology, current_ote, \`current_role\`, profile_slug
+              achievements, industries, deal_sizes, sales_methodology, current_ote, \`current_role\`, email_contact, profile_slug
        FROM users WHERE id = ?`,
       [userId]
     ) as any[]
@@ -1792,13 +1794,41 @@ app.get('/api/candidates/:id/download-cv', async (c) => {
   }
 })
 
+app.get('/api/candidates/:id/contact', async (c) => {
+  if (!pool) return c.json({ error: 'Database not configured' }, 503)
+  const auth = c.req.header('Authorization')
+  if (!auth?.startsWith('Bearer ')) return c.json({ error: 'Unauthorized' }, 401)
+  try {
+    const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET)
+    const [viewerRows] = await pool.execute('SELECT role FROM users WHERE id = ?', [String(payload.id)]) as any[]
+    if (!(viewerRows as any[]).length || (viewerRows as any[])[0].role !== 'company') {
+      return c.json({ error: 'Company account required' }, 403)
+    }
+  } catch {
+    return c.json({ error: 'Unauthorized' }, 401)
+  }
+  const id = c.req.param('id')
+  const isNumeric = /^\d+$/.test(id)
+  try {
+    const [rows] = await pool.execute(
+      `SELECT phone, email_contact FROM users WHERE ${isNumeric ? 'id' : 'profile_slug'} = ? AND (is_public = 1 OR is_public IS NULL)`,
+      [id]
+    ) as any[]
+    if (!(rows as any[]).length) return c.json({ error: 'Not found' }, 404)
+    return c.json((rows as any[])[0])
+  } catch (err: any) {
+    console.error('/api/candidates/:id/contact error:', err?.message || err)
+    return c.json({ error: 'Failed' }, 500)
+  }
+})
+
 app.get('/api/candidates/:id', async (c) => {
   if (!pool) return c.json({ error: 'Database not configured' }, 503)
   const id = c.req.param('id')
   const isNumeric = /^\d+$/.test(id)
   try {
     const [rows] = await pool.execute(
-      `SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro, email,
+      `SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro,
               target_role, \`current_role\`, years_experience, skills, target_salary, availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug, avatar_url, linkedin_url
        FROM users WHERE ${isNumeric ? 'id' : 'profile_slug'} = ? AND (is_public = 1 OR is_public IS NULL)`,
       [id]
