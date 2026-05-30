@@ -45,7 +45,7 @@ export function AppLayout() {
 
           <NavbarContent className="hidden md:flex items-center gap-10">
             <NavbarItem>
-              <Link to="/jobs" className="text-sm font-bold tracking-tight hover:text-primary transition-colors">Find Jobs</Link>
+              <Link to="/jobs" onClick={() => sessionStorage.removeItem('jobsPage')} className="text-sm font-bold tracking-tight hover:text-primary transition-colors">Find Jobs</Link>
             </NavbarItem>
             {(user as any)?.role === 'company' && (
               <NavbarItem>
@@ -111,7 +111,7 @@ export function AppLayout() {
               style={{ backgroundColor: 'rgba(10, 15, 30, 0.99)' }}
             >
               <nav className="max-w-7xl mx-auto px-4 py-4 flex flex-col gap-1">
-                <Link to="/jobs" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
+                <Link to="/jobs" onClick={() => sessionStorage.removeItem('jobsPage')} className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
                   Find Jobs
                 </Link>
                 <Link to="/pricing" className="px-4 py-3 text-sm font-bold rounded-lg hover:bg-white/5 hover:text-primary transition-colors">
@@ -197,7 +197,7 @@ export function AppLayout() {
             <div>
               <h4 className="font-black mb-8 text-[11px] tracking-[0.2em] text-foreground/30">For Candidates</h4>
               <ul className="space-y-4 text-[13px] font-bold text-muted-foreground">
-                <li><Link to="/jobs" className="hover:text-primary transition-colors flex items-center gap-2 group">Find Sales Jobs <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" /></Link></li>
+                <li><Link to="/jobs" onClick={() => sessionStorage.removeItem('jobsPage')} className="hover:text-primary transition-colors flex items-center gap-2 group">Find Sales Jobs <ArrowRight size={12} className="opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all" /></Link></li>
                 <li><Link to="/remote-sales-jobs" className="hover:text-primary transition-colors">Remote Sales Jobs</Link></li>
                 <li><Link to="/dashboard" search={{ mode: 'candidate' } as any} className="hover:text-primary transition-colors">Candidate Dashboard</Link></li>
                 <li><Link to="/blog" className="hover:text-primary transition-colors">Career Advice</Link></li>

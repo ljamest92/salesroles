@@ -17,9 +17,8 @@ import {
 } from '@blinkdotnew/ui'
 import AnimatedCounter from '../components/AnimatedCounter'
 import { Search, MapPin, Briefcase, SlidersHorizontal, Building2, ShieldAlert, Share2 } from 'lucide-react'
-import { type Job } from '../lib/jobs'
+import { type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
-import { getDomain } from '../utils/getDomain'
 import { motion } from 'framer-motion'
 import { ReportModal } from '../components/ReportModal'
 import { useAuth } from '../hooks/useAuth'
@@ -30,19 +29,9 @@ const SelectItem = UISelectItem as any
 
 const JOBS_PER_PAGE = 10
 
-const LOGO_BLOCKLIST = new Set(['adzuna.com', 'adzuna.com.au', 'remotive.com', 'linkedin.com', 'indeed.com'])
-
-function getDomainFromUrl(url: string): string | null {
-  try { return new URL(url).hostname.replace('www.', '') } catch { return null }
-}
-
 function resolveJobDomain(job: any): string {
-  const d1 = getDomain(job.company_website || '')
-  if (d1 && d1.includes('.') && !LOGO_BLOCKLIST.has(d1)) return d1
-  const d2 = typeof job.domain === 'string' ? job.domain : ''
-  if (d2 && d2.includes('.') && !LOGO_BLOCKLIST.has(d2)) return d2
-  const raw = getDomainFromUrl((job as any).redirect_url || job.application_url || '')
-  return (raw && raw.includes('.') && !LOGO_BLOCKLIST.has(raw)) ? raw : ''
+  const companySlug = (job.company || '').toLowerCase().replace(/[^a-z0-9]/g, '')
+  return SEED_COMPANY_DOMAINS[companySlug] || `${companySlug}.com`
 }
 
 export function JobsPage() {
