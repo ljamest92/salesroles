@@ -1591,10 +1591,18 @@ app.post('/api/candidate/upload-cv', async (c) => {
     const formData = await c.req.formData()
     const file = formData.get('cv') as File | null
     if (!file) return c.json({ error: 'No file' }, 400)
-    const filename = file.name
+    const ext = file.name.includes('.') ? file.name.split('.').pop()?.toLowerCase() || 'pdf' : 'pdf'
+    const allowedExts = ['pdf', 'doc', 'docx']
+    if (!allowedExts.includes(ext)) return c.json({ error: 'Invalid file type. Use PDF, DOC, or DOCX.' }, 400)
+    const filename = `cv-${userId}-${Date.now()}.${ext}`
+    const uploadsDir = path.join(__dirname, '..', 'uploads', 'cvs')
+    await fsPromises.mkdir(uploadsDir, { recursive: true })
+    const arrayBuffer = await file.arrayBuffer()
+    await fsPromises.writeFile(path.join(uploadsDir, filename), Buffer.from(arrayBuffer))
     await pool.execute('UPDATE users SET cv_filename = ? WHERE id = ?', [filename, userId])
     return c.json({ ok: true, filename })
-  } catch {
+  } catch (err) {
+    console.error('CV upload error:', err)
     return c.json({ error: 'Upload failed' }, 500)
   }
 })
@@ -1869,16 +1877,32 @@ app.get('/api/candidates/:id/download-cv', async (c) => {
     const viewerId = String(payload.id)
     const candidateId = c.req.param('id')
     const isNumericId = /^\d+$/.test(candidateId)
-  const [rows] = await pool.execute(`SELECT cv_filename FROM users WHERE ${isNumericId ? 'id' : 'profile_slug'} = ?`, [candidateId]) as any[]
+    const [rows] = await pool.execute(`SELECT cv_filename FROM users WHERE ${isNumericId ? 'id' : 'profile_slug'} = ?`, [candidateId]) as any[]
     const user = (rows as any[])[0]
     if (!user?.cv_filename) return c.json({ error: 'No CV on file' }, 404)
+    const cvFilename = user.cv_filename
+    const filePath = path.join(__dirname, '..', 'uploads', 'cvs', cvFilename)
+    if (!existsSync(filePath)) return c.json({ error: 'CV file not found on server' }, 404)
     const [vRows2] = await pool.execute('SELECT name, company_name FROM users WHERE id = ?', [viewerId]) as any[]
     const vi2 = (vRows2 as any[])[0]
     await pool.execute(
       'INSERT INTO profile_views (viewer_id, candidate_id, action, viewer_name, viewer_company) VALUES (?, ?, ?, ?, ?)',
       [viewerId, candidateId, 'cv_download', vi2?.company_name || vi2?.name || null, vi2?.company_name || null]
     ).catch(() => {})
-    return c.json({ filename: user.cv_filename })
+    const ext = path.extname(cvFilename).toLowerCase()
+    const cvMimeTypes: Record<string, string> = {
+      '.pdf': 'application/pdf',
+      '.doc': 'application/msword',
+      '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+    }
+    const mime = cvMimeTypes[ext] || 'application/octet-stream'
+    const stream = createReadStream(filePath)
+    return new Response(stream as any, {
+      headers: {
+        'Content-Type': mime,
+        'Content-Disposition': `attachment; filename="${cvFilename}"`,
+      }
+    })
   } catch {
     return c.json({ error: 'Unauthorized' }, 401)
   }

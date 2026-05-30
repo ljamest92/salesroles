@@ -141,6 +141,15 @@ export function DashboardPage() {
         }
       })
       .catch(() => {})
+    // Eagerly load applications + saved candidates so tab count is accurate
+    fetch('/api/company/applications', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => setApplications(Array.isArray(data) ? data : []))
+      .catch(() => {})
+    fetch('/api/saved-candidates', { headers: { Authorization: `Bearer ${token}` } })
+      .then(r => r.json())
+      .then(data => { if (Array.isArray(data)) { setSavedCandidates(data); setSavedCandidatesLoaded(true) } })
+      .catch(() => {})
   }, [user, role])
 
   const fetchApplications = async () => {
@@ -604,7 +613,7 @@ export function DashboardPage() {
               <TabsList className="bg-card border border-border p-2 rounded-xl flex flex-nowrap gap-1 w-max min-w-full">
                 <TabsTrigger value="jobs" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
                 <TabsTrigger value="pending" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
-                <TabsTrigger value="candidates" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap" onClick={() => { fetchApplications(); setCandidatesSubTab('applied') }}>Candidates</TabsTrigger>
+                <TabsTrigger value="candidates" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap" onClick={() => { fetchApplications(); setCandidatesSubTab('applied') }}>Candidates{(applications.length + savedCandidates.length) > 0 ? ` (${applications.length + savedCandidates.length})` : ''}</TabsTrigger>
                 <TabsTrigger value="expired" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
                 <TabsTrigger value="billing" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
                 <TabsTrigger value="settings" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>

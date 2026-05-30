@@ -113,15 +113,27 @@ export function CandidateProfilePage() {
 
   const handleDownloadCV = async () => {
     const token = localStorage.getItem('salesroles_token')
-    if (!token) { setCvMsg('Please log in to download CV'); return }
-    const res = await fetch(`/api/candidates/${identifier}/download-cv`, {
-      headers: { Authorization: `Bearer ${token}` }
-    })
-    const data = await res.json()
-    if (data.filename) {
-      setCvMsg(`CV: ${data.filename}`)
-    } else {
-      setCvMsg(data.error || 'No CV available')
+    if (!token) { navigate({ to: '/login' as any }); return }
+    try {
+      const res = await fetch(`/api/candidates/${identifier}/download-cv`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      if (!res.ok) {
+        const data = await res.json()
+        setCvMsg(data.error || 'CV not available')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = profile?.cv_filename || 'cv.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      setCvMsg('Download failed')
     }
   }
 
@@ -275,54 +287,60 @@ export function CandidateProfilePage() {
           </div>
 
           {/* Action buttons */}
-          <div className="flex flex-row md:flex-col gap-2 shrink-0 items-start md:items-end">
-            <button
-              onClick={handleShare}
-              className="flex items-center gap-2 text-xs font-bold border border-white/10 px-4 py-2 rounded-lg text-white/60 hover:text-white hover:border-white/30 transition-colors"
-            >
-              <Share2 size={13} /> {copied ? 'Copied!' : 'Share'}
-            </button>
-            {profile.cv_filename && (
-              <button
-                onClick={handleDownloadCV}
-                className="flex items-center gap-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <FileText size={13} /> Download CV
-              </button>
-            )}
-            {profile.linkedin_url && (
-              <a
-                href={profile.linkedin_url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 text-xs font-bold border border-white/10 px-4 py-2 rounded-lg text-white/60 hover:text-white hover:border-white/30 transition-colors"
-              >
-                <Link2 size={13} /> LinkedIn
-              </a>
-            )}
+          <div className="flex flex-col gap-2 shrink-0 w-full md:w-48">
+            {/* Primary actions — company/logged-out only */}
             {(!user || user.role === 'company') && (
               <button
                 onClick={handleContact}
                 disabled={contactLoading}
-                className="flex items-center gap-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2 rounded-lg transition-colors"
+                className="flex items-center justify-center gap-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2.5 rounded-lg transition-colors w-full"
               >
                 <Mail size={13} /> {contactLoading ? 'Loading…' : 'Contact Candidate'}
               </button>
             )}
+            {(!user || user.role === 'company') && profile.cv_filename && (
+              <button
+                onClick={handleDownloadCV}
+                className="flex items-center justify-center gap-2 text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-lg transition-colors w-full"
+              >
+                <FileText size={13} /> Download CV
+              </button>
+            )}
+            {/* Save Candidate — company only */}
             {user?.role === 'company' && (
               <button
                 onClick={handleSaveCandidate}
                 disabled={saveLoading}
-                className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-60 ${
+                className={`flex items-center justify-center gap-2 text-xs font-bold px-4 py-2.5 rounded-lg transition-colors disabled:opacity-60 w-full ${
                   isSaved
                     ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30'
-                    : 'border border-white/10 text-white/60 hover:text-white hover:border-white/30'
+                    : 'border border-white/10 text-white/50 hover:text-white hover:border-white/30'
                 }`}
               >
                 {isSaved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
                 {saveLoading ? 'Saving…' : isSaved ? 'Saved' : 'Save Candidate'}
               </button>
             )}
+            {/* Secondary row: Share + LinkedIn */}
+            <div className="flex gap-2">
+              <button
+                onClick={handleShare}
+                className="flex items-center justify-center gap-1.5 text-xs font-bold border border-white/10 px-3 py-2 rounded-lg text-white/50 hover:text-white hover:border-white/30 transition-colors flex-1"
+              >
+                <Share2 size={12} /> {copied ? 'Copied!' : 'Share'}
+              </button>
+              {profile.linkedin_url && (!user || user.role === 'company') && (
+                <button
+                  onClick={() => {
+                    if (!user) { navigate({ to: '/login' as any }); return }
+                    window.open(profile.linkedin_url, '_blank', 'noopener,noreferrer')
+                  }}
+                  className="flex items-center justify-center gap-1.5 text-xs font-bold border border-white/10 px-3 py-2 rounded-lg text-white/50 hover:text-white hover:border-white/30 transition-colors flex-1"
+                >
+                  <Link2 size={12} /> LinkedIn
+                </button>
+              )}
+            </div>
           </div>
         </div>
 
