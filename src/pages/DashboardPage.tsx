@@ -94,6 +94,7 @@ export function DashboardPage() {
   const [savedCandidates, setSavedCandidates] = useState<any[]>([])
   const [savedCandidatesLoading, setSavedCandidatesLoading] = useState(false)
   const [savedCandidatesLoaded, setSavedCandidatesLoaded] = useState(false)
+  const [collapsedJobs, setCollapsedJobs] = useState<Set<string>>(new Set())
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -806,73 +807,109 @@ export function DashboardPage() {
                         'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
                         'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
                       }
-                      const visible = candidateStatusFilter === 'All'
+                      const normStatus = (a: any) => a.status === 'new' ? 'New' : (a.status || 'New')
+                      const filtered = candidateStatusFilter === 'All'
                         ? [...applications]
-                        : applications.filter((a: any) => {
-                            const s = a.status === 'new' ? 'New' : (a.status || 'New')
-                            return s === candidateStatusFilter
-                          })
-                      const sorted = visible.sort((a: any, b: any) => {
+                        : applications.filter((a: any) => normStatus(a) === candidateStatusFilter)
+                      const sorted = [...filtered].sort((a: any, b: any) => {
                         if (candidateSort === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
                         if (candidateSort === 'name_az') return (a.candidate_name || '').localeCompare(b.candidate_name || '')
                         if (candidateSort === 'name_za') return (b.candidate_name || '').localeCompare(a.candidate_name || '')
                         return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
                       })
-                      return sorted.map((a: any) => (
-                        <Card key={a.id} className="p-5 border border-white/5 bg-card/30 rounded-2xl">
-                          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
-                            <div className="space-y-1 flex-1 min-w-0">
-                              <div className="flex items-center gap-2 flex-wrap">
-                                <p className="font-bold">{a.candidate_name}</p>
-                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${statusColors[a.status] || statusColors['New']}`}>
-                                  {a.status === 'new' ? 'New' : (a.status || 'New')}
-                                </span>
-                              </div>
-                              <p className="text-sm text-muted-foreground">{a.candidate_email}</p>
-                              <p className="text-xs text-muted-foreground">Applied for <span className="font-bold text-foreground">{a.job_title}</span> · {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                              {a.cover_note && (
-                                <p className="text-sm text-muted-foreground mt-2">
-                                  {expandedNotes.has(a.id) ? a.cover_note : a.cover_note.slice(0, 120)}
-                                  {a.cover_note.length > 120 && (
-                                    <button
-                                      onClick={() => setExpandedNotes(prev => {
-                                        const next = new Set(prev)
-                                        next.has(a.id) ? next.delete(a.id) : next.add(a.id)
-                                        return next
-                                      })}
-                                      className="ml-1 text-primary text-xs font-bold"
-                                    >
-                                      {expandedNotes.has(a.id) ? 'Show less' : '...more'}
-                                    </button>
-                                  )}
-                                </p>
-                              )}
-                            </div>
-                            <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
-                              <select
-                                value={a.status === 'new' ? 'New' : (a.status || 'New')}
-                                onChange={e => updateApplicationStatus(a.id, e.target.value)}
-                                className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
-                              >
-                                {['New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
-                                  <option key={s} value={s}>{s}</option>
-                                ))}
-                              </select>
+                      const groups: Record<string, any[]> = {}
+                      const groupOrder: string[] = []
+                      for (const a of sorted) {
+                        const title = a.job_title || 'Unknown Role'
+                        if (!groups[title]) { groups[title] = []; groupOrder.push(title) }
+                        groups[title].push(a)
+                      }
+                      const totalByJob: Record<string, number> = {}
+                      for (const a of applications) {
+                        const title = a.job_title || 'Unknown Role'
+                        totalByJob[title] = (totalByJob[title] || 0) + 1
+                      }
+                      return groupOrder.map(jobTitle => {
+                        const group = groups[jobTitle]
+                        const isCollapsed = collapsedJobs.has(jobTitle)
+                        const filteredCount = group.length
+                        const totalCount = totalByJob[jobTitle] || filteredCount
+                        const showOf = candidateStatusFilter !== 'All' && filteredCount !== totalCount
+                        return (
+                          <div key={jobTitle} className="space-y-3">
+                            <div className="flex items-center justify-between border border-white/10 bg-card/50 rounded-xl px-4 py-3">
+                              <span className="text-sm font-black text-white tracking-tight">
+                                {jobTitle} - {showOf ? `${filteredCount} of ${totalCount}` : filteredCount} {filteredCount === 1 ? 'applicant' : 'applicants'}
+                              </span>
                               <button
-                                onClick={() => {
-                                  const url = a.candidate_slug
-                                    ? `/profile/${a.candidate_slug}`
-                                    : `/candidates/${a.candidate_id}`
-                                  window.open(url, '_blank')
-                                }}
-                                className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold w-full sm:w-auto text-center"
+                                onClick={() => setCollapsedJobs(prev => {
+                                  const next = new Set(prev)
+                                  next.has(jobTitle) ? next.delete(jobTitle) : next.add(jobTitle)
+                                  return next
+                                })}
+                                className="text-xs text-white/40 hover:text-white transition-colors font-bold"
                               >
-                                View Profile
+                                {isCollapsed ? 'Expand' : 'Collapse'}
                               </button>
                             </div>
+                            {!isCollapsed && group.map((a: any) => (
+                              <Card key={a.id} className="p-5 border border-white/5 bg-card/30 rounded-2xl">
+                                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                                  <div className="space-y-1 flex-1 min-w-0">
+                                    <div className="flex items-center gap-2 flex-wrap">
+                                      <p className="font-bold">{a.candidate_name}</p>
+                                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${statusColors[a.status] || statusColors['New']}`}>
+                                        {a.status === 'new' ? 'New' : (a.status || 'New')}
+                                      </span>
+                                    </div>
+                                    <p className="text-sm text-muted-foreground">{a.candidate_email}</p>
+                                    <p className="text-xs text-muted-foreground">Applied for <span className="font-bold text-foreground">{a.job_title}</span> · {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                                    {a.cover_note && (
+                                      <p className="text-sm text-muted-foreground mt-2">
+                                        {expandedNotes.has(a.id) ? a.cover_note : a.cover_note.slice(0, 120)}
+                                        {a.cover_note.length > 120 && (
+                                          <button
+                                            onClick={() => setExpandedNotes(prev => {
+                                              const next = new Set(prev)
+                                              next.has(a.id) ? next.delete(a.id) : next.add(a.id)
+                                              return next
+                                            })}
+                                            className="ml-1 text-primary text-xs font-bold"
+                                          >
+                                            {expandedNotes.has(a.id) ? 'Show less' : '...more'}
+                                          </button>
+                                        )}
+                                      </p>
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+                                    <select
+                                      value={a.status === 'new' ? 'New' : (a.status || 'New')}
+                                      onChange={e => updateApplicationStatus(a.id, e.target.value)}
+                                      className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                                    >
+                                      {['New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
+                                        <option key={s} value={s}>{s}</option>
+                                      ))}
+                                    </select>
+                                    <button
+                                      onClick={() => {
+                                        const url = a.candidate_slug
+                                          ? `/profile/${a.candidate_slug}`
+                                          : `/candidates/${a.candidate_id}`
+                                        window.open(url, '_blank')
+                                      }}
+                                      className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold w-full sm:w-auto text-center"
+                                    >
+                                      View Profile
+                                    </button>
+                                  </div>
+                                </div>
+                              </Card>
+                            ))}
                           </div>
-                        </Card>
-                      ))
+                        )
+                      })
                     })()}
                   </>
                 )
