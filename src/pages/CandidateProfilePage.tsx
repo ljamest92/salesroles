@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { useParams, useNavigate } from '@tanstack/react-router'
 import { Container, Card, Badge } from '@blinkdotnew/ui'
-import { MapPin, Star, Share2, Briefcase, TrendingUp, Building2, FileText, Link2, DollarSign, Target, Zap, Award, Phone, Mail, Copy, Check, X } from 'lucide-react'
+import { MapPin, Star, Share2, Briefcase, TrendingUp, Building2, FileText, Link2, DollarSign, Target, Zap, Award, Phone, Mail, Copy, Check, X, Bookmark, BookmarkCheck } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 
 interface WorkEntry {
@@ -81,6 +81,8 @@ export function CandidateProfilePage() {
   const [contactData, setContactData] = useState<{ phone?: string; email_contact?: string } | null>(null)
   const [contactError, setContactError] = useState('')
   const [copiedField, setCopiedField] = useState<'phone' | 'email' | null>(null)
+  const [isSaved, setIsSaved] = useState(false)
+  const [saveLoading, setSaveLoading] = useState(false)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -142,6 +144,42 @@ export function CandidateProfilePage() {
     } finally {
       setContactLoading(false)
     }
+  }
+
+  useEffect(() => {
+    if (!profile || !user || user.role !== 'company') return
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    fetch(`/api/saved-candidates/status/${profile.id}`, {
+      headers: { Authorization: `Bearer ${token}` }
+    })
+      .then(r => r.json())
+      .then(data => { if (typeof data.saved === 'boolean') setIsSaved(data.saved) })
+      .catch(() => {})
+  }, [profile, user])
+
+  const handleSaveCandidate = async () => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) { navigate({ to: '/login' as any }); return }
+    if (!profile) return
+    setSaveLoading(true)
+    try {
+      if (isSaved) {
+        await fetch(`/api/saved-candidates/${profile.id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` }
+        })
+        setIsSaved(false)
+      } else {
+        await fetch('/api/saved-candidates', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ candidateId: profile.id })
+        })
+        setIsSaved(true)
+      }
+    } catch {}
+    setSaveLoading(false)
   }
 
   const copyToClipboard = (text: string, field: 'phone' | 'email') => {
@@ -269,6 +307,20 @@ export function CandidateProfilePage() {
                 className="flex items-center gap-2 text-xs font-bold bg-emerald-500 hover:bg-emerald-400 disabled:opacity-60 text-white px-4 py-2 rounded-lg transition-colors"
               >
                 <Mail size={13} /> {contactLoading ? 'Loading…' : 'Contact Candidate'}
+              </button>
+            )}
+            {user?.role === 'company' && (
+              <button
+                onClick={handleSaveCandidate}
+                disabled={saveLoading}
+                className={`flex items-center gap-2 text-xs font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-60 ${
+                  isSaved
+                    ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 hover:bg-red-500/10 hover:text-red-400 hover:border-red-500/30'
+                    : 'border border-white/10 text-white/60 hover:text-white hover:border-white/30'
+                }`}
+              >
+                {isSaved ? <BookmarkCheck size={13} /> : <Bookmark size={13} />}
+                {saveLoading ? 'Saving…' : isSaved ? 'Saved' : 'Save Candidate'}
               </button>
             )}
           </div>

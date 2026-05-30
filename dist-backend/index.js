@@ -181,6 +181,15 @@ try {
       INDEX idx_job_visitor (job_id, visitor_hash, viewed_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => { });
+    pool.execute(`
+    CREATE TABLE IF NOT EXISTS saved_candidates (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      company_id INT NOT NULL,
+      candidate_id INT NOT NULL,
+      saved_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY unique_save (company_id, candidate_id)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `).catch(() => { });
 }
 catch { }
 const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || 'salesroles-dev-secret-change-in-prod');
@@ -881,6 +890,86 @@ app.post('/api/saved-jobs', async (c) => {
     }
     catch {
         return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+// --- Saved Candidates ---
+app.get('/api/saved-candidates/status/:candidateId', async (c) => {
+    if (!pool)
+        return c.json({ saved: false });
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ saved: false });
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company')
+            return c.json({ saved: false });
+        const companyId = String(payload.id);
+        const candidateId = c.req.param('candidateId');
+        const [rows] = await pool.execute('SELECT id FROM saved_candidates WHERE company_id = ? AND candidate_id = ?', [companyId, candidateId]);
+        return c.json({ saved: rows.length > 0 });
+    }
+    catch {
+        return c.json({ saved: false });
+    }
+});
+app.get('/api/saved-candidates', async (c) => {
+    if (!pool)
+        return c.json([]);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company')
+            return c.json({ error: 'Company account required' }, 403);
+        const companyId = String(payload.id);
+        const [rows] = await pool.execute(`SELECT u.id, u.name, u.headline, u.location, u.availability, u.profile_slug, u.avatar_url, sc.saved_at
+       FROM saved_candidates sc
+       JOIN users u ON sc.candidate_id = u.id
+       WHERE sc.company_id = ?
+       ORDER BY sc.saved_at DESC`, [companyId]);
+        return c.json(rows);
+    }
+    catch {
+        return c.json({ error: 'Unauthorized' }, 401);
+    }
+});
+app.post('/api/saved-candidates', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company')
+            return c.json({ error: 'Company account required' }, 403);
+        const companyId = String(payload.id);
+        const { candidateId } = await c.req.json();
+        await pool.execute('INSERT IGNORE INTO saved_candidates (company_id, candidate_id) VALUES (?, ?)', [companyId, candidateId]);
+        return c.json({ saved: true });
+    }
+    catch {
+        return c.json({ error: 'Failed to save candidate' }, 500);
+    }
+});
+app.delete('/api/saved-candidates/:candidateId', async (c) => {
+    if (!pool)
+        return c.json({ error: 'Database not configured' }, 503);
+    const auth = c.req.header('Authorization');
+    if (!auth?.startsWith('Bearer '))
+        return c.json({ error: 'Unauthorized' }, 401);
+    try {
+        const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
+        if (payload.role !== 'company')
+            return c.json({ error: 'Company account required' }, 403);
+        const companyId = String(payload.id);
+        const candidateId = c.req.param('candidateId');
+        await pool.execute('DELETE FROM saved_candidates WHERE company_id = ? AND candidate_id = ?', [companyId, candidateId]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Failed to unsave candidate' }, 500);
     }
 });
 // --- Create Job ---

@@ -90,6 +90,10 @@ export function DashboardPage() {
   const [appliedLoading, setAppliedLoading] = useState(false)
   const [candidateSort, setCandidateSort] = useState('newest')
   const [candidateStatusFilter, setCandidateStatusFilter] = useState('All')
+  const [candidatesSubTab, setCandidatesSubTab] = useState<'applied' | 'saved'>('applied')
+  const [savedCandidates, setSavedCandidates] = useState<any[]>([])
+  const [savedCandidatesLoading, setSavedCandidatesLoading] = useState(false)
+  const [savedCandidatesLoaded, setSavedCandidatesLoaded] = useState(false)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -146,6 +150,32 @@ export function DashboardPage() {
       const res = await fetch('/api/company/applications', { headers: { Authorization: `Bearer ${token}` } })
       const data = await res.json()
       setApplications(Array.isArray(data) ? data : [])
+    } catch {}
+  }
+
+  const fetchSavedCandidates = async () => {
+    if (savedCandidatesLoaded) return
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    setSavedCandidatesLoading(true)
+    try {
+      const res = await fetch('/api/saved-candidates', { headers: { Authorization: `Bearer ${token}` } })
+      const data = await res.json()
+      setSavedCandidates(Array.isArray(data) ? data : [])
+      setSavedCandidatesLoaded(true)
+    } catch {}
+    setSavedCandidatesLoading(false)
+  }
+
+  const handleUnsaveCandidate = async (candidateId: number) => {
+    const token = localStorage.getItem('salesroles_token')
+    if (!token) return
+    try {
+      await fetch(`/api/saved-candidates/${candidateId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      setSavedCandidates(prev => prev.filter((c: any) => c.id !== candidateId))
     } catch {}
   }
 
@@ -574,7 +604,7 @@ export function DashboardPage() {
               <TabsList className="bg-card border border-border p-2 rounded-xl flex flex-nowrap gap-1 w-max min-w-full">
                 <TabsTrigger value="jobs" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Active Listings</TabsTrigger>
                 <TabsTrigger value="pending" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Pending {pendingJobs.length > 0 && `(${pendingJobs.length})`}</TabsTrigger>
-                <TabsTrigger value="candidates" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap" onClick={fetchApplications}>Candidates {applications.length > 0 && `(${applications.length})`}</TabsTrigger>
+                <TabsTrigger value="candidates" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap" onClick={() => { fetchApplications(); setCandidatesSubTab('applied') }}>Candidates</TabsTrigger>
                 <TabsTrigger value="expired" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Expired</TabsTrigger>
                 <TabsTrigger value="billing" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Billing</TabsTrigger>
                 <TabsTrigger value="settings" className="px-4 sm:px-6 py-2.5 font-bold tracking-tight text-sm whitespace-nowrap">Company Profile</TabsTrigger>
@@ -665,131 +695,225 @@ export function DashboardPage() {
 
             {/* Candidates */}
             <TabsContent value="candidates" className="mt-10 space-y-4">
-              {applications.length === 0 ? (
-                <EmptyState
-                  icon={<Users size={40} />}
-                  title="No Applications Yet"
-                  description="No applications yet. Share your job listing to start receiving candidates."
-                  className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
-                />
-              ) : (
-                <>
-                  <div className="flex flex-wrap gap-3 mb-4 items-center justify-between">
-                    <div className="flex gap-3">
-                      <button onClick={downloadCandidatesCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                        Download CSV
-                      </button>
-                      <button onClick={downloadBlindedCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
-                        Download Blinded CSV
-                      </button>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3">
-                      <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-black tracking-widest text-white/40">FILTER</label>
-                        <select
-                          value={candidateStatusFilter}
-                          onChange={e => setCandidateStatusFilter(e.target.value)}
-                          className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
-                        >
-                          {['All', 'New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
-                            <option key={s} value={s}>{s}</option>
-                          ))}
-                        </select>
+              {/* Sub-tab switcher */}
+              <div className="flex gap-2 mb-6">
+                <button
+                  onClick={() => { setCandidatesSubTab('applied'); fetchApplications() }}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                    candidatesSubTab === 'applied'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'border border-white/10 text-white/50 hover:text-white'
+                  }`}
+                >
+                  Applied Candidates{applications.length > 0 ? ` (${applications.length})` : ''}
+                </button>
+                <button
+                  onClick={() => { setCandidatesSubTab('saved'); fetchSavedCandidates() }}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold transition-colors ${
+                    candidatesSubTab === 'saved'
+                      ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                      : 'border border-white/10 text-white/50 hover:text-white'
+                  }`}
+                >
+                  Saved Candidates{savedCandidates.length > 0 ? ` (${savedCandidates.length})` : ''}
+                </button>
+              </div>
+
+              {/* Applied Candidates */}
+              {candidatesSubTab === 'applied' && (
+                applications.length === 0 ? (
+                  <EmptyState
+                    icon={<Users size={40} />}
+                    title="No Applications Yet"
+                    description="No applications yet. Share your job listing to start receiving candidates."
+                    className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
+                  />
+                ) : (
+                  <>
+                    <div className="flex flex-wrap gap-3 mb-4 items-center justify-between">
+                      <div className="flex gap-3">
+                        <button onClick={downloadCandidatesCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                          Download CSV
+                        </button>
+                        <button onClick={downloadBlindedCSV} className="border border-white/20 text-white/60 hover:text-white px-4 py-2 rounded-lg text-sm transition-colors">
+                          Download Blinded CSV
+                        </button>
                       </div>
-                      <div className="flex items-center gap-2">
-                        <label className="text-[10px] font-black tracking-widest text-white/40">SORT</label>
-                        <select
-                          value={candidateSort}
-                          onChange={e => setCandidateSort(e.target.value)}
-                          className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
-                        >
-                          <option value="newest">Apply date (newest)</option>
-                          <option value="oldest">Apply date (oldest)</option>
-                          <option value="name_az">Name A–Z</option>
-                          <option value="name_za">Name Z–A</option>
-                        </select>
+                      <div className="flex flex-wrap items-center gap-3">
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] font-black tracking-widest text-white/40">FILTER</label>
+                          <select
+                            value={candidateStatusFilter}
+                            onChange={e => setCandidateStatusFilter(e.target.value)}
+                            className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-emerald-500/50 transition-all appearance-none cursor-pointer"
+                          >
+                            {['All', 'New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
+                              <option key={s} value={s}>{s}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <label className="text-[10px] font-black tracking-widest text-white/40">SORT</label>
+                          <select
+                            value={candidateSort}
+                            onChange={e => setCandidateSort(e.target.value)}
+                            className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                          >
+                            <option value="newest">Apply date (newest)</option>
+                            <option value="oldest">Apply date (oldest)</option>
+                            <option value="name_az">Name A–Z</option>
+                            <option value="name_za">Name Z–A</option>
+                          </select>
+                        </div>
                       </div>
                     </div>
+                    {(() => {
+                      const statusColors: Record<string, string> = {
+                        'New': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                        'new': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
+                        'Reviewing': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
+                        'Contacting': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
+                        'Interviewing': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
+                        'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
+                        'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
+                      }
+                      const visible = candidateStatusFilter === 'All'
+                        ? [...applications]
+                        : applications.filter((a: any) => {
+                            const s = a.status === 'new' ? 'New' : (a.status || 'New')
+                            return s === candidateStatusFilter
+                          })
+                      const sorted = visible.sort((a: any, b: any) => {
+                        if (candidateSort === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                        if (candidateSort === 'name_az') return (a.candidate_name || '').localeCompare(b.candidate_name || '')
+                        if (candidateSort === 'name_za') return (b.candidate_name || '').localeCompare(a.candidate_name || '')
+                        return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+                      })
+                      return sorted.map((a: any) => (
+                        <Card key={a.id} className="p-5 border border-white/5 bg-card/30 rounded-2xl">
+                          <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                            <div className="space-y-1 flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <p className="font-bold">{a.candidate_name}</p>
+                                <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${statusColors[a.status] || statusColors['New']}`}>
+                                  {a.status === 'new' ? 'New' : (a.status || 'New')}
+                                </span>
+                              </div>
+                              <p className="text-sm text-muted-foreground">{a.candidate_email}</p>
+                              <p className="text-xs text-muted-foreground">Applied for <span className="font-bold text-foreground">{a.job_title}</span> · {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
+                              {a.cover_note && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {expandedNotes.has(a.id) ? a.cover_note : a.cover_note.slice(0, 120)}
+                                  {a.cover_note.length > 120 && (
+                                    <button
+                                      onClick={() => setExpandedNotes(prev => {
+                                        const next = new Set(prev)
+                                        next.has(a.id) ? next.delete(a.id) : next.add(a.id)
+                                        return next
+                                      })}
+                                      className="ml-1 text-primary text-xs font-bold"
+                                    >
+                                      {expandedNotes.has(a.id) ? 'Show less' : '...more'}
+                                    </button>
+                                  )}
+                                </p>
+                              )}
+                            </div>
+                            <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
+                              <select
+                                value={a.status === 'new' ? 'New' : (a.status || 'New')}
+                                onChange={e => updateApplicationStatus(a.id, e.target.value)}
+                                className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
+                              >
+                                {['New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
+                                  <option key={s} value={s}>{s}</option>
+                                ))}
+                              </select>
+                              <button
+                                onClick={() => {
+                                  const url = a.candidate_slug
+                                    ? `/profile/${a.candidate_slug}`
+                                    : `/candidates/${a.candidate_id}`
+                                  window.open(url, '_blank')
+                                }}
+                                className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold w-full sm:w-auto text-center"
+                              >
+                                View Profile
+                              </button>
+                            </div>
+                          </div>
+                        </Card>
+                      ))
+                    })()}
+                  </>
+                )
+              )}
+
+              {/* Saved Candidates */}
+              {candidatesSubTab === 'saved' && (
+                savedCandidatesLoading ? (
+                  <div className="space-y-3">
+                    {Array(2).fill(0).map((_, i) => (
+                      <Card key={i} className="p-5 h-20 animate-pulse bg-card/20 rounded-2xl" />
+                    ))}
                   </div>
-                  {(() => {
-                    const statusColors: Record<string, string> = {
-                      'New': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                      'new': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                      'Reviewing': 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30',
-                      'Contacting': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
-                      'Interviewing': 'bg-purple-500/20 text-purple-400 border-purple-500/30',
-                      'Rejected': 'bg-red-500/20 text-red-400 border-red-500/30',
-                      'Hired': 'bg-green-500/20 text-green-400 border-green-500/30',
-                    }
-                    const visible = candidateStatusFilter === 'All'
-                      ? [...applications]
-                      : applications.filter((a: any) => {
-                          const s = a.status === 'new' ? 'New' : (a.status || 'New')
-                          return s === candidateStatusFilter
-                        })
-                    const sorted = visible.sort((a: any, b: any) => {
-                      if (candidateSort === 'oldest') return new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                      if (candidateSort === 'name_az') return (a.candidate_name || '').localeCompare(b.candidate_name || '')
-                      if (candidateSort === 'name_za') return (b.candidate_name || '').localeCompare(a.candidate_name || '')
-                      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-                    })
-                    return sorted.map((a: any) => (
-                      <Card key={a.id} className="p-5 border border-white/5 bg-card/30 rounded-2xl">
+                ) : savedCandidates.length === 0 ? (
+                  <EmptyState
+                    icon={<Users size={40} />}
+                    title="No Saved Candidates"
+                    description="Browse candidates and click Save Candidate on a profile to add them here."
+                    action={{ label: 'Browse Candidates', onClick: () => { window.location.href = '/companies/candidates' } }}
+                    className="p-20 border border-dashed border-white/10 bg-card/20 rounded-[40px]"
+                  />
+                ) : (
+                  <div className="space-y-3">
+                    {savedCandidates.map((c: any) => (
+                      <Card key={c.id} className="p-5 border border-white/5 bg-card/30 rounded-2xl">
                         <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
                           <div className="space-y-1 flex-1 min-w-0">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <p className="font-bold">{a.candidate_name}</p>
-                              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${statusColors[a.status] || statusColors['New']}`}>
-                                {a.status === 'new' ? 'New' : (a.status || 'New')}
-                              </span>
+                            <p className="font-bold">{c.name}</p>
+                            {c.headline && <p className="text-sm text-muted-foreground truncate">{c.headline}</p>}
+                            <div className="flex flex-wrap items-center gap-2 mt-1">
+                              {c.location && (
+                                <p className="flex items-center gap-1 text-xs text-white/40">
+                                  <MapPin size={11} className="text-primary" /> {c.location}
+                                </p>
+                              )}
+                              {c.availability && c.availability !== 'Not looking' && (
+                                <span className={`inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                                  c.availability === 'Actively looking'
+                                    ? 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'
+                                    : 'bg-amber-500/15 text-amber-400 border-amber-500/30'
+                                }`}>
+                                  <span className={`w-1 h-1 rounded-full ${c.availability === 'Actively looking' ? 'bg-emerald-400 animate-pulse' : 'bg-amber-400'}`} />
+                                  {c.availability}
+                                </span>
+                              )}
                             </div>
-                            <p className="text-sm text-muted-foreground">{a.candidate_email}</p>
-                            <p className="text-xs text-muted-foreground">Applied for <span className="font-bold text-foreground">{a.job_title}</span> · {new Date(a.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</p>
-                            {a.cover_note && (
-                              <p className="text-sm text-muted-foreground mt-2">
-                                {expandedNotes.has(a.id) ? a.cover_note : a.cover_note.slice(0, 120)}
-                                {a.cover_note.length > 120 && (
-                                  <button
-                                    onClick={() => setExpandedNotes(prev => {
-                                      const next = new Set(prev)
-                                      next.has(a.id) ? next.delete(a.id) : next.add(a.id)
-                                      return next
-                                    })}
-                                    className="ml-1 text-primary text-xs font-bold"
-                                  >
-                                    {expandedNotes.has(a.id) ? 'Show less' : '...more'}
-                                  </button>
-                                )}
-                              </p>
-                            )}
                           </div>
-                          <div className="flex flex-col gap-2 shrink-0 w-full sm:w-auto">
-                            <select
-                              value={a.status === 'new' ? 'New' : (a.status || 'New')}
-                              onChange={e => updateApplicationStatus(a.id, e.target.value)}
-                              className="bg-[#0f1629] border border-white/10 rounded-lg px-3 py-1.5 text-xs font-bold text-white focus:outline-none focus:border-primary/50 transition-all appearance-none cursor-pointer"
-                            >
-                              {['New', 'Reviewing', 'Contacting', 'Interviewing', 'Rejected', 'Hired'].map(s => (
-                                <option key={s} value={s}>{s}</option>
-                              ))}
-                            </select>
+                          <div className="flex gap-2 shrink-0">
+                            {c.profile_slug && (
+                              <a
+                                href={`/profile/${c.profile_slug}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold"
+                              >
+                                View Profile
+                              </a>
+                            )}
                             <button
-                              onClick={() => {
-                                const url = a.candidate_slug
-                                  ? `/profile/${a.candidate_slug}`
-                                  : `/candidates/${a.candidate_id}`
-                                window.open(url, '_blank')
-                              }}
-                              className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-3 py-1.5 rounded-lg transition-colors font-bold w-full sm:w-auto text-center"
+                              onClick={() => handleUnsaveCandidate(c.id)}
+                              className="text-xs border border-red-500/20 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors font-bold"
                             >
-                              View Profile
+                              Unsave
                             </button>
                           </div>
                         </div>
                       </Card>
-                    ))
-                  })()}
-                </>
+                    ))}
+                  </div>
+                )
               )}
             </TabsContent>
 
