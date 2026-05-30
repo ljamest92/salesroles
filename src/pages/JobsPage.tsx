@@ -644,7 +644,7 @@ useEffect(() => {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' }), 100) }}
+                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
@@ -658,7 +658,7 @@ useEffect(() => {
                       <span className="text-white/30 px-2">...</span>
                     )}
                     <button
-                      onClick={() => { setCurrentPage(page); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' }), 100) }}
+                      onClick={() => { setCurrentPage(page); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === page
                           ? 'bg-emerald-500 text-white'
@@ -671,7 +671,7 @@ useEffect(() => {
                 ))
               }
               <button
-                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'instant', block: 'start' }), 100) }}
+                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
