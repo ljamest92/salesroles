@@ -54,12 +54,24 @@ export function JobsPage() {
   const [sortBy, setSortBy] = useState('latest')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedOTERange, setSelectedOTERange] = useState('')
-  const [currentPage, setCurrentPage] = useState(() => {
+  const getPageFromUrl = () => {
     const p = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10)
+    console.log('[JobsPage] getPageFromUrl:', window.location.search, '→ page', p)
     return isNaN(p) || p < 1 ? 1 : p
-  })
+  }
+  const [currentPage, setCurrentPage] = useState(getPageFromUrl)
   const listingsTopRef = useRef<HTMLDivElement>(null)
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
+
+  // Sync page state when browser Back/Forward restores a pushState URL entry
+  useEffect(() => {
+    const handlePopState = () => {
+      const p = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10)
+      setCurrentPage(isNaN(p) || p < 1 ? 1 : p)
+    }
+    window.addEventListener('popstate', handlePopState)
+    return () => window.removeEventListener('popstate', handlePopState)
+  }, [])
 
   useEffect(() => {
     const fetchAllJobs = async () => {
