@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { Helmet } from 'react-helmet-async'
 import { Link } from '@tanstack/react-router'
 import {
@@ -290,17 +290,10 @@ export function JobsPage() {
     toast.success('Link copied', { description: 'The job URL is now in your clipboard.' })
   }
 
-  const userPaginatedRef = useRef(false)
-
-  useEffect(() => {
+useEffect(() => {
     setCurrentPage(1)
   }, [searchTags, locationTags, workTypeFilters, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
 
-  useEffect(() => {
-    if (!userPaginatedRef.current) return
-    userPaginatedRef.current = false
-    window.scrollTo({ top: 0, behavior: 'smooth' })
-  }, [currentPage])
 
   const activeFilterCount = workTypeFilters.length + seniorityFilters.length + sectorFilters.length + locationTags.length
 
@@ -650,7 +643,7 @@ export function JobsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                onClick={() => { userPaginatedRef.current = true; setCurrentPage(p => Math.max(1, p - 1)) }}
+                onClick={() => { window.scrollTo(0, 0); setCurrentPage(p => Math.max(1, p - 1)) }}
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
@@ -664,7 +657,7 @@ export function JobsPage() {
                       <span className="text-white/30 px-2">...</span>
                     )}
                     <button
-                      onClick={() => { userPaginatedRef.current = true; setCurrentPage(page) }}
+                      onClick={() => { window.scrollTo(0, 0); setCurrentPage(page) }}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === page
                           ? 'bg-emerald-500 text-white'
@@ -677,7 +670,7 @@ export function JobsPage() {
                 ))
               }
               <button
-                onClick={() => { userPaginatedRef.current = true; setCurrentPage(p => Math.min(totalPages, p + 1)) }}
+                onClick={() => { window.scrollTo(0, 0); setCurrentPage(p => Math.min(totalPages, p + 1)) }}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
