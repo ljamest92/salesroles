@@ -1589,7 +1589,7 @@ app.put('/api/candidate/profile', async (c) => {
         current_roles=?, looking_for=?, bio=?, work_history=?, is_public=?,
         phone=?, linkedin_url=?, target_role=?, years_experience=?, skills=?,
         target_salary=?, availability=?, achievements=?, industries=?, deal_sizes=?,
-        sales_methodology=?, current_ote=?, current_role=?, targeting_roles=?${providedAvatar ? ', avatar_url=?' : ''}
+        sales_methodology=?, current_ote=?, \`current_role\`=?, targeting_roles=?${providedAvatar ? ', avatar_url=?' : ''}
        WHERE id=?`,
       [
         data.headline || null,
@@ -1638,7 +1638,7 @@ app.get('/api/candidate/me', async (c) => {
       `SELECT id, name, email, role, headline, location, years_in_sales, total_revenue, companies_closed,
               current_roles, looking_for, bio, work_history, cv_filename, avatar_url, is_public, is_pro,
               phone, linkedin_url, target_role, years_experience, skills, target_salary, availability,
-              achievements, industries, deal_sizes, sales_methodology, current_ote, current_role, targeting_roles, profile_slug
+              achievements, industries, deal_sizes, sales_methodology, current_ote, \`current_role\`, targeting_roles, profile_slug
        FROM users WHERE id = ?`,
       [userId]
     ) as any[]
@@ -1684,17 +1684,20 @@ app.get('/api/candidates', async (c) => {
     const params: any[] = []
 
     if (search) {
-      where += ` AND (u.name LIKE ? OR u.headline LIKE ? OR u.target_role LIKE ? OR u.skills LIKE ? OR u.bio LIKE ?)`
+      where += ` AND (u.name LIKE ? OR u.headline LIKE ? OR u.target_role LIKE ? OR u.\`current_role\` LIKE ? OR u.skills LIKE ? OR u.bio LIKE ?)`
       const s = `%${search}%`
-      params.push(s, s, s, s, s)
+      params.push(s, s, s, s, s, s)
     }
+    // target_role stores the candidate's experience (roles worked in, labeled "Experience" in the UI).
+    // targeting_roles stores aspirational target roles and must never affect search results.
     if (targetRole) {
       const roleList = targetRole.split(',').map((s: string) => s.trim()).filter(Boolean)
       if (roleList.length === 1) {
-        where += ` AND u.target_role LIKE ?`; params.push(`%${roleList[0]}%`)
+        where += ` AND (u.target_role LIKE ? OR u.\`current_role\` LIKE ?)`
+        params.push(`%${roleList[0]}%`, `%${roleList[0]}%`)
       } else if (roleList.length > 1) {
-        where += ` AND (${roleList.map(() => `u.target_role LIKE ?`).join(' OR ')})`
-        roleList.forEach((r: string) => params.push(`%${r}%`))
+        where += ` AND (${roleList.map(() => `u.target_role LIKE ? OR u.\`current_role\` LIKE ?`).join(' OR ')})`
+        roleList.forEach((r: string) => params.push(`%${r}%`, `%${r}%`))
       }
     }
     if (expMin !== '') {
@@ -1799,7 +1802,7 @@ app.get('/api/candidates/:id', async (c) => {
   try {
     const [rows] = await pool.execute(
       `SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro, email,
-              target_role, targeting_roles, current_role, years_experience, skills, target_salary, availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug, avatar_url, linkedin_url
+              target_role, targeting_roles, \`current_role\`, years_experience, skills, target_salary, availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug, avatar_url, linkedin_url
        FROM users WHERE ${isNumeric ? 'id' : 'profile_slug'} = ? AND (is_public = 1 OR is_public IS NULL)`,
       [id]
     ) as any[]
