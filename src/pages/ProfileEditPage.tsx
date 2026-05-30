@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Container, Card } from '@blinkdotnew/ui'
 import { useAuth } from '../hooks/useAuth'
+import { CandidateAvatar } from '../components/CandidateAvatar'
 import { CheckCircle2, Camera } from 'lucide-react'
 
 const TOKEN_KEY = 'salesroles_token'
@@ -250,11 +251,12 @@ export function ProfileEditPage() {
           {/* Avatar */}
           <div className="flex items-center gap-6">
             <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 flex items-center justify-center overflow-hidden shrink-0 shadow-xl">
-              {avatarUrl ? (
-                <img src={`/uploads/avatars/${avatarUrl}`} alt="Avatar" className="w-full h-full object-cover" />
-              ) : (
-                <span className="text-white font-black text-2xl">{(name || '?')[0]?.toUpperCase()}</span>
-              )}
+              <CandidateAvatar
+                key={avatarUrl}
+                avatarUrl={avatarUrl}
+                name={name}
+                initialsClassName="text-white font-black text-2xl"
+              />
               <label className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center cursor-pointer rounded-full">
                 <Camera size={20} className="text-white" />
                 <input type="file" accept="image/*" className="hidden" onChange={handleAvatarUpload} />

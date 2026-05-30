@@ -3,6 +3,7 @@ import { useParams, useNavigate } from '@tanstack/react-router'
 import { Container, Card, Badge } from '@blinkdotnew/ui'
 import { MapPin, Star, Share2, Briefcase, TrendingUp, Building2, FileText, Link2, DollarSign, Target, Zap, Award, Phone, Mail, Copy, Check, X, Bookmark, BookmarkCheck } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { CandidateAvatar } from '../components/CandidateAvatar'
 
 interface WorkEntry {
   title: string
@@ -74,7 +75,6 @@ export function CandidateProfilePage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [avatarError, setAvatarError] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
   const [contactLoading, setContactLoading] = useState(false)
   const [contactData, setContactData] = useState<{ phone?: string; email_contact?: string } | null>(null)
@@ -232,22 +232,12 @@ export function CandidateProfilePage() {
           <div className="flex items-start gap-5">
             {/* Avatar */}
             <div className="shrink-0 w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500/30 to-emerald-500/10 border border-emerald-500/20 flex items-center justify-center overflow-hidden">
-              {profile.avatar_url && !avatarError ? (
-                <img
-                  src={
-                    profile.avatar_url.startsWith('http')
-                      ? profile.avatar_url
-                      : profile.avatar_url.startsWith('/uploads/')
-                        ? profile.avatar_url
-                        : `/uploads/avatars/${profile.avatar_url}`
-                  }
-                  alt={profile.name}
-                  className="w-full h-full object-cover"
-                  onError={() => setAvatarError(true)}
-                />
-              ) : (
-                <span className="text-2xl font-black text-emerald-400">{initials}</span>
-              )}
+              <CandidateAvatar
+                key={profile.avatar_url}
+                avatarUrl={profile.avatar_url}
+                name={profile.name}
+                initialsClassName="text-2xl font-black text-emerald-400"
+              />
             </div>
 
             <div className="space-y-2 min-w-0">

@@ -3,6 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Container } from '@blinkdotnew/ui'
 import { Search, MapPin, Star, ChevronRight, FileText, Link2, SlidersHorizontal, X } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { CandidateAvatar } from '../components/CandidateAvatar'
 
 interface Candidate {
   id: number
@@ -449,11 +450,12 @@ export function CandidateSearchPage() {
                     {/* Header */}
                     <div className="flex items-start gap-3">
                       <div className="w-11 h-11 rounded-full bg-emerald-500/20 border border-emerald-500/30 flex items-center justify-center shrink-0 overflow-hidden">
-                        {c.avatar_url ? (
-                          <img src={`/uploads/avatars/${c.avatar_url}`} alt={c.name} className="w-full h-full object-cover" />
-                        ) : (
-                          <span className="text-emerald-400 font-bold text-sm">{c.name?.[0]?.toUpperCase()}</span>
-                        )}
+                        <CandidateAvatar
+                          key={c.avatar_url}
+                          avatarUrl={c.avatar_url}
+                          name={c.name}
+                          initialsClassName="text-emerald-400 font-bold text-sm"
+                        />
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-1.5 flex-wrap">

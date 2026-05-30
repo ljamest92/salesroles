@@ -16,6 +16,7 @@ import {
 } from '@blinkdotnew/ui'
 import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil, Trash2, ChevronRight } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { CandidateAvatar } from '../components/CandidateAvatar'
 
 const Separator = UISeparator as any
 const Tabs = UITabs as any
@@ -68,7 +69,7 @@ export function DashboardPage() {
   const [profileName, setProfileName] = useState('')
   const [headline, setHeadline] = useState('')
   const [avatarUrl, setAvatarUrl] = useState('')
-  const [avatarError, setAvatarError] = useState(false)
+  const [avatarCacheBust, setAvatarCacheBust] = useState(0)
   const [profileData, setProfileData] = useState<any>(null)
   const [redirectToast, setRedirectToast] = useState<string | null>(null)
   // Company-specific state
@@ -306,16 +307,12 @@ export function DashboardPage() {
       })
       const data = await res.json()
       if (data.ok && data.avatar_url) {
-        setAvatarError(false)
         setAvatarUrl(data.avatar_url)
+        setAvatarCacheBust(Date.now())
       }
     } catch {}
   }
 
-  // Reset avatar error state whenever a new URL is received so the image always retries
-  useEffect(() => {
-    if (avatarUrl) setAvatarError(false)
-  }, [avatarUrl])
 
   const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
@@ -1158,18 +1155,13 @@ export function DashboardPage() {
                 <label className="cursor-pointer group/avatar block w-20 h-20">
                   <input type="file" accept="image/*" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleAvatarUpload(f) }} />
                   <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-emerald-500 to-emerald-700 border-4 border-card flex items-center justify-center overflow-hidden shadow-xl">
-                    {avatarUrl && !avatarError ? (
-                      <img
-                        src={`/uploads/avatars/${avatarUrl}`}
-                        alt="Profile"
-                        width={80}
-                        height={80}
-                        className="w-full h-full object-cover"
-                        onError={() => setAvatarError(true)}
-                      />
-                    ) : (
-                      <span className="text-white font-black text-2xl">{(profileName || user?.displayName || '?')[0]?.toUpperCase()}</span>
-                    )}
+                    <CandidateAvatar
+                      key={avatarUrl}
+                      avatarUrl={avatarUrl}
+                      name={profileName || user?.displayName}
+                      initialsClassName="text-white font-black text-2xl"
+                      cacheBust={avatarCacheBust || undefined}
+                    />
                     <div className="absolute inset-0 bg-black/50 flex items-center justify-center opacity-0 group-hover/avatar:opacity-100 transition-opacity rounded-full">
                       <Camera size={18} className="text-white" />
                     </div>
