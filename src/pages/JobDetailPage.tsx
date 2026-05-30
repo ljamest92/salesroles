@@ -368,26 +368,40 @@ export function JobDetailPage() {
               <Card className="p-8 border-emerald-500/20 bg-emerald-500/5 space-y-6">
                 <div className="space-y-4">
                   <h4 className="font-bold text-foreground">Compensation Details</h4>
-                  <ul className="space-y-3">
-                    <li className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Base Salary</span>
-                      <span className="font-bold">{formatSalary(job.base_salary)}</span>
-                    </li>
-                    <li className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">On-Target Earnings (OTE)</span>
-                      <span className="font-bold text-emerald-400">{formatSalary(job.ote)}</span>
-                    </li>
-                    <li className="flex justify-between items-center text-sm">
-                      <span className="text-muted-foreground">Commission Structure</span>
-                      <span className="font-bold">{job.commission_structure}</span>
-                    </li>
-                    {job.quota && (
+                  {/* Partner job salary display only - do not apply to company-posted jobs */}
+                  {(job.via_partner || job.is_partner) && (!job.base_salary || job.base_salary === job.ote) ? (
+                    <ul className="space-y-3">
                       <li className="flex justify-between items-center text-sm">
-                        <span className="text-muted-foreground">Quota</span>
-                        <span className="font-bold">{job.quota}</span>
+                        <span className="text-muted-foreground">Salary Range</span>
+                        <span className="font-bold">{formatSalary(job.base_salary || job.ote)}</span>
                       </li>
-                    )}
-                  </ul>
+                      <li className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Commission Structure</span>
+                        <span className="font-bold">{job.commission_structure}</span>
+                      </li>
+                    </ul>
+                  ) : (
+                    <ul className="space-y-3">
+                      <li className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Base Salary</span>
+                        <span className="font-bold">{formatSalary(job.base_salary)}</span>
+                      </li>
+                      <li className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">On-Target Earnings (OTE)</span>
+                        <span className="font-bold text-emerald-400">{formatSalary(job.ote)}</span>
+                      </li>
+                      <li className="flex justify-between items-center text-sm">
+                        <span className="text-muted-foreground">Commission Structure</span>
+                        <span className="font-bold">{job.commission_structure}</span>
+                      </li>
+                      {job.quota && (
+                        <li className="flex justify-between items-center text-sm">
+                          <span className="text-muted-foreground">Quota</span>
+                          <span className="font-bold">{job.quota}</span>
+                        </li>
+                      )}
+                    </ul>
+                  )}
                 </div>
               </Card>
             </div>
