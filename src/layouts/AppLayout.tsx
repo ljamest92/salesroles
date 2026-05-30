@@ -191,8 +191,7 @@ export function AppLayout() {
                 <span className="text-primary transition-all duration-300 drop-shadow-[0_0_14px_rgba(16,185,129,0.55)] group-hover:drop-shadow-none">SalesRoles.co</span>
               </Link>
               <p className="text-sm text-muted-foreground leading-relaxed font-medium">
-                The ultimate premium job board dedicated exclusively to sales professionals.
-                Transparency in compensation is mandatory.
+                The only job board built exclusively for sales professionals where every listing shows salary upfront. No hidden comp. No surprises.
               </p>
             </div>
             <div>

@@ -197,15 +197,15 @@ export function HomePage() {
     <div className="flex flex-col page-transition overflow-x-hidden">
       <Helmet>
         <title>SalesRoles.co | Sales Jobs With Full Comp Transparency</title>
-        <meta name="description" content="The only job board built for sales professionals. Every role shows base salary, OTE, and commission upfront. No guessing. No surprises at offer stage." />
+        <meta name="description" content="The only job board built for sales professionals. Every listing shows salary upfront. No hidden comp. No surprises at offer stage." />
         <meta property="og:title" content="SalesRoles.co | Sales Jobs With Full Comp Transparency" />
-        <meta property="og:description" content="The only job board built for sales professionals. Every role shows base salary, OTE, and commission upfront. No guessing. No surprises at offer stage." />
+        <meta property="og:description" content="The only job board built for sales professionals. Every listing shows salary upfront. No hidden comp. No surprises at offer stage." />
         <meta property="og:url" content="https://salesroles.co" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://salesroles.co/logo.svg" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="SalesRoles.co | Sales Jobs With Full Comp Transparency" />
-        <meta name="twitter:description" content="The only job board built for sales professionals. Every role shows base salary, OTE, and commission upfront. No guessing. No surprises at offer stage." />
+        <meta name="twitter:description" content="The only job board built for sales professionals. Every listing shows salary upfront. No hidden comp. No surprises at offer stage." />
         <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
       </Helmet>
       {/* Hero Section */}
@@ -228,8 +228,7 @@ export function HomePage() {
               With Full <span className="text-emerald-400 drop-shadow-[0_0_15px_rgba(16,185,129,0.3)]">Transparency.</span>
             </h1>
             <p className="text-lg md:text-3xl text-muted-foreground max-w-3xl mx-auto font-medium leading-relaxed opacity-80">
-              Find global remote and on-site sales roles with mandatory compensation transparency.
-              No more guessing base, OTE, or commission.
+              Every listing shows compensation upfront. No hidden salaries, no surprises at offer stage.
             </p>
           </motion.div>
 

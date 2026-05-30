@@ -314,15 +314,15 @@ export function JobsPage() {
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-16 animate-fade-in overflow-x-hidden">
       <Helmet>
         <title>Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co</title>
-        <meta name="description" content="Search 100+ sales jobs with full compensation transparency. Filter by role, location, and seniority. Base salary, OTE, and commission shown on every listing. No surprises at offer stage." />
+        <meta name="description" content="Search 100+ sales jobs where every listing shows salary upfront. Filter by role, location, and seniority. No hidden comp, no surprises at offer stage." />
         <meta property="og:title" content="Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co" />
-        <meta property="og:description" content="Search 100+ sales jobs with full compensation transparency. Filter by role, location, and seniority. Base salary, OTE, and commission shown on every listing. No surprises at offer stage." />
+        <meta property="og:description" content="Search 100+ sales jobs where every listing shows salary upfront. Filter by role, location, and seniority. No hidden comp, no surprises at offer stage." />
         <meta property="og:url" content="https://salesroles.co/jobs" />
         <meta property="og:type" content="website" />
         <meta property="og:image" content="https://salesroles.co/logo.svg" />
         <meta name="twitter:card" content="summary" />
         <meta name="twitter:title" content="Browse Sales Jobs | Base Salary & OTE on Every Listing | SalesRoles.co" />
-        <meta name="twitter:description" content="Search 100+ sales jobs with full compensation transparency. Filter by role, location, and seniority. Base salary, OTE, and commission shown on every listing. No surprises at offer stage." />
+        <meta name="twitter:description" content="Search 100+ sales jobs where every listing shows salary upfront. Filter by role, location, and seniority. No hidden comp, no surprises at offer stage." />
         <meta name="twitter:image" content="https://salesroles.co/logo.svg" />
       </Helmet>
       <div className="flex flex-col md:flex-row justify-between items-start gap-12">
@@ -331,7 +331,7 @@ export function JobsPage() {
             Find Your Next <span className="text-primary">Sales Role.</span>
           </h1>
           <p className="text-muted-foreground text-lg md:text-xl font-medium leading-relaxed">
-            Browse {stats.liveRoles} verified live sales roles with mandatory transparent compensation.
+            Browse {stats.liveRoles} verified live sales roles. Every listing shows what it pays.
           </p>
         </div>
         <Card className="p-6 sm:p-8 bg-card/50 border border-white/5 backdrop-blur-xl w-full md:w-auto shrink-0 shadow-2xl relative group">
