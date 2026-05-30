@@ -9,6 +9,8 @@ export function CompanyApplicantPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     const token = localStorage.getItem('salesroles_token')
     if (!token) { setError('Sign in required'); setLoading(false); return }

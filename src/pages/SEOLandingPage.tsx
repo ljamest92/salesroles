@@ -17,6 +17,8 @@ export function SEOLandingPage({ title, description, keyword }: SEOLandingPagePr
   const [jobs, setJobs] = useState<Job[]>([])
   const [isLoading, setIsLoading] = useState(true)
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     fetchPartnerJobs().then(allJobs => {
       const filtered = allJobs.filter(j =>

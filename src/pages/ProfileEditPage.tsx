@@ -116,6 +116,8 @@ export function ProfileEditPage() {
   const [saved, setSaved] = useState(false)
   const [error, setError] = useState('')
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     if (!user) return
     setName(user.displayName || '')

@@ -81,6 +81,8 @@ export function DashboardPage() {
   const [candidateSort, setCandidateSort] = useState('newest')
   const [candidateStatusFilter, setCandidateStatusFilter] = useState('All')
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   // FIX 2: once user loads, derive role from URL param first, then user.role
   useEffect(() => {
     if (!user) return

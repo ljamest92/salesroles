@@ -72,6 +72,8 @@ export function HomePage() {
   const [subscribeEmail, setSubscribeEmail] = useState('')
   const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle')
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     const loadData = async () => {
       try {

@@ -15,6 +15,8 @@ export function RegistrationPage() {
   const { register, loginWithCredentials } = useAuth()
   const navigate = useNavigate()
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     const params = new URLSearchParams(window.location.search)
     const roleParam = params.get('role')

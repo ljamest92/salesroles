@@ -1,7 +1,8 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Container, Card, Badge } from '@blinkdotnew/ui'
 
 export function FAQPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   const [activeSection, setActiveSection] = useState('companies')
 
   const faqs: Record<string, { q: string; a: string }[]> = {

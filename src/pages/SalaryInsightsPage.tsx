@@ -1,8 +1,9 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Container, Card, StatGroup, Stat, Badge } from '@blinkdotnew/ui'
 import { TrendingUp, DollarSign, Globe, Briefcase } from 'lucide-react'
 
 export function SalaryInsightsPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   return (
     <div className="pt-20 pb-12 md:py-24 space-y-24 animate-fade-in">
       <Container className="text-center space-y-8">

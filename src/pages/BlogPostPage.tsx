@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Link, useParams } from '@tanstack/react-router'
 import { Container, Badge } from '@blinkdotnew/ui'
 import { ArrowLeft, Calendar, Clock, TrendingUp, UserCheck, BookOpen } from 'lucide-react'
@@ -40,6 +40,7 @@ function renderContent(raw: string) {
 }
 
 export function BlogPostPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   const { slug } = useParams({ from: '/blog/$slug' })
   const post = blogPosts.find(p => p.slug === slug)
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Container, Card } from '@blinkdotnew/ui'
 import { Mail, MapPin, ShieldCheck, CheckCircle2 } from 'lucide-react'
 
@@ -32,6 +32,7 @@ function validate(f: FormFields): FormErrors {
 }
 
 export function ContactPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   const [form, setForm] = useState<FormFields>(EMPTY)
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitting, setSubmitting] = useState(false)

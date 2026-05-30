@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Container, Card, Badge, Separator as UISeparator } from '@blinkdotnew/ui'
 
 const Separator = UISeparator as any;
 
 export function AboutPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   return (
     <div className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-24">
       <Container className="text-center space-y-8">

@@ -1,9 +1,10 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge } from '@blinkdotnew/ui'
 import { CheckCircle2 } from 'lucide-react'
 
 export function PostJobSuccessPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   return (
     <Container className="min-h-[70vh] flex items-center justify-center py-24">
       <Card className="w-full max-w-lg p-12 border border-white/5 bg-card/50 backdrop-blur-xl text-center space-y-8 rounded-[40px]">

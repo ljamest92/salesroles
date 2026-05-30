@@ -27,6 +27,8 @@ export function CompanyProfilePage() {
   // Resolve the correct domain for Apistemic — seed map first, then generic fallback
   const companyDomain = SEED_COMPANY_DOMAINS[id.toLowerCase()] || `${id}.com`
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     const loadData = async () => {
       try {

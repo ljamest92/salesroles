@@ -36,6 +36,8 @@ export function AdminPage() {
 
   const isAuth = typeof window !== 'undefined' && sessionStorage.getItem('admin_auth') === 'true'
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     if (!isAuth) {
       navigate({ to: '/admin/login' })

@@ -67,6 +67,8 @@ export function CandidateSearchPage() {
   const [showFilters, setShowFilters] = useState(false)
   const searchTimer = useRef<any>(null)
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   // Gate: company accounts only
   useEffect(() => {
     if (authLoading) return

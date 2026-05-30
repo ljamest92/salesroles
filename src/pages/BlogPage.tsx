@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, Input, Separator } from '@blinkdotnew/ui'
 import { Search, Clock, ArrowRight, BookOpen, TrendingUp, UserCheck, Calendar } from 'lucide-react'
@@ -6,6 +6,7 @@ import { motion } from 'framer-motion'
 import { blogPosts } from '../data/blogPosts'
 
 export function BlogPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   const [activeCategory, setActiveCategory] = useState('All')
   const [searchQuery, setSearchQuery] = useState('')
   const [subEmail, setSubEmail] = useState('')

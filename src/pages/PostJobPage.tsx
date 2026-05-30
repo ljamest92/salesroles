@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { Link, useNavigate } from '@tanstack/react-router'
 import {
   Button,
@@ -37,6 +37,7 @@ interface FormData {
 const isTestMode = import.meta.env.DEV
 
 export function PostJobPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   const navigate = useNavigate()
   const [step, setStep] = useState(1)
   const [plan, setPlan] = useState<'standard' | 'featured'>('standard')

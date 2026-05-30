@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Link } from '@tanstack/react-router'
 import { Button, Container, Card, Badge, Separator as UISeparator } from '@blinkdotnew/ui'
 import { Check, Rocket, Zap } from 'lucide-react'
@@ -6,6 +6,7 @@ import { Check, Rocket, Zap } from 'lucide-react'
 const Separator = UISeparator as any;
 
 export function PricingPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   return (
     <div className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-24">
       <Container className="text-center space-y-6">

@@ -1,7 +1,8 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Container, Card } from '@blinkdotnew/ui'
 
 export function TermsPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   return (
     <Container className="pt-20 pb-12 md:py-24 max-w-4xl space-y-12">
       <h1 className="text-4xl md:text-6xl font-black tracking-tighter">Terms of <span className="text-primary">Service</span></h1>

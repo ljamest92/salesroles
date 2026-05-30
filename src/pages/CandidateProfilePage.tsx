@@ -76,6 +76,8 @@ export function CandidateProfilePage() {
   const [cvMsg, setCvMsg] = useState('')
   const [avatarError, setAvatarError] = useState(false)
 
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+
   useEffect(() => {
     if (!identifier) return
     fetch(`/api/candidates/${identifier}`)

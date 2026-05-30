@@ -1,10 +1,11 @@
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { Button, Card, Container, Input } from '@blinkdotnew/ui'
 import { ShieldCheck, Lock, AlertCircle } from 'lucide-react'
 import { Link } from '@tanstack/react-router'
 
 export function AdminLoginPage() {
+  useEffect(() => { window.scrollTo(0, 0) }, [])
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
   const navigate = useNavigate()
