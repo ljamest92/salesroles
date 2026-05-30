@@ -18,6 +18,8 @@ export function CompanyApplicantPage() {
   const [profile, setProfile] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [cvDownloading, setCvDownloading] = useState(false)
+  const [cvDownloadError, setCvDownloadError] = useState<string | null>(null)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
 
@@ -35,6 +37,34 @@ export function CompanyApplicantPage() {
       })
       .catch(() => { setError('Failed to load profile'); setLoading(false) })
   }, [id])
+
+  const handleDownloadCV = async () => {
+    setCvDownloadError(null)
+    setCvDownloading(true)
+    const token = localStorage.getItem('salesroles_token')
+    try {
+      const res = await fetch(`/api/candidates/${id}/download-cv`, {
+        headers: { Authorization: `Bearer ${token || ''}` }
+      })
+      if (!res.ok) {
+        setCvDownloadError('CV download failed. The file may no longer be available.')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = profile?.cv_filename || 'cv.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      setCvDownloadError('CV download failed. Please try again.')
+    } finally {
+      setCvDownloading(false)
+    }
+  }
 
   const skills: string[] = (() => {
     if (!profile?.skills) return []
@@ -171,14 +201,16 @@ export function CompanyApplicantPage() {
         {/* Actions */}
         <div className="flex flex-wrap gap-3">
           {profile.cv_filename && (
-            <a
-              href={`/api/candidates/${id}/download-cv`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-2 bg-primary text-primary-foreground font-black text-xs tracking-widest px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors"
+            <button
+              onClick={handleDownloadCV}
+              disabled={cvDownloading}
+              className="flex items-center gap-2 bg-primary text-primary-foreground font-black text-xs tracking-widest px-6 py-3 rounded-xl hover:bg-primary/90 transition-colors disabled:opacity-60"
             >
-              <Download size={14} /> Download CV
-            </a>
+              <Download size={14} /> {cvDownloading ? 'Downloading…' : 'Download CV'}
+            </button>
+          )}
+          {cvDownloadError && (
+            <p className="w-full text-xs text-red-400">{cvDownloadError}</p>
           )}
           {profile.profile_slug && (
             <a

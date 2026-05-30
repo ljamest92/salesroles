@@ -295,6 +295,33 @@ export function DashboardPage() {
     setCvFilename('')
   }
 
+  const [cvDownloadError, setCvDownloadError] = useState<string | null>(null)
+
+  const handleCandidateCVDownload = async (candidateId: number, filename: string) => {
+    setCvDownloadError(null)
+    const token = localStorage.getItem('salesroles_token')
+    try {
+      const res = await fetch(`/api/candidates/${candidateId}/download-cv`, {
+        headers: { Authorization: `Bearer ${token || ''}` }
+      })
+      if (!res.ok) {
+        setCvDownloadError('CV download failed. The file may no longer be available.')
+        return
+      }
+      const blob = await res.blob()
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = filename || 'cv.pdf'
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } catch {
+      setCvDownloadError('CV download failed. Please try again.')
+    }
+  }
+
   const handleAvatarUpload = async (file: File) => {
     const token = localStorage.getItem('salesroles_token')
     const formData = new FormData()
@@ -1609,14 +1636,15 @@ export function DashboardPage() {
                     )}
                     <div className="flex flex-wrap gap-2 pt-1">
                       {(d?.cv_filename || app?.cv_filename) && (
-                        <a
-                          href={`/api/candidates/${profileModal.candidateId}/download-cv`}
-                          target="_blank"
-                          rel="noopener noreferrer"
+                        <button
+                          onClick={() => handleCandidateCVDownload(profileModal.candidateId!, d?.cv_filename || app?.cv_filename)}
                           className="text-xs border border-primary/30 text-primary hover:bg-primary/10 px-4 py-2 rounded-lg transition-colors font-bold"
                         >
                           Download CV
-                        </a>
+                        </button>
+                      )}
+                      {cvDownloadError && (
+                        <p className="w-full text-xs text-red-400 mt-1">{cvDownloadError}</p>
                       )}
                       {d?.profile_slug && (
                         <a

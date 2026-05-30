@@ -81,6 +81,8 @@ export function CandidateProfilePage() {
   const [contactError, setContactError] = useState('')
   const [copiedField, setCopiedField] = useState<'phone' | 'email' | null>(null)
   const [isSaved, setIsSaved] = useState(false)
+  const [cvDownloadError, setCvDownloadError] = useState<string | null>(null)
+  const [cvDownloading, setCvDownloading] = useState(false)
   const [saveLoading, setSaveLoading] = useState(false)
 
   useEffect(() => { window.scrollTo(0, 0) }, [])
@@ -111,13 +113,18 @@ export function CandidateProfilePage() {
   }
 
   const handleDownloadCV = async () => {
+    setCvDownloadError(null)
     const token = localStorage.getItem('salesroles_token')
     if (!token) { navigate({ to: '/login' as any }); return }
+    setCvDownloading(true)
     try {
       const res = await fetch(`/api/candidates/${identifier}/download-cv`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      if (!res.ok) return
+      if (!res.ok) {
+        setCvDownloadError('CV download failed. The file may no longer be available.')
+        return
+      }
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -127,8 +134,11 @@ export function CandidateProfilePage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-    } catch {}
-
+    } catch {
+      setCvDownloadError('CV download failed. Please try again.')
+    } finally {
+      setCvDownloading(false)
+    }
   }
 
   const handleContact = async () => {
@@ -285,10 +295,14 @@ export function CandidateProfilePage() {
             {(!user || user.role === 'company') && profile.cv_filename && (
               <button
                 onClick={handleDownloadCV}
-                className="flex items-center justify-center gap-2 text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-lg transition-colors w-full"
+                disabled={cvDownloading}
+                className="flex items-center justify-center gap-2 text-xs font-bold bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 px-4 py-2.5 rounded-lg transition-colors w-full disabled:opacity-60"
               >
-                <FileText size={13} /> Download CV
+                <FileText size={13} /> {cvDownloading ? 'Downloading…' : 'Download CV'}
               </button>
+            )}
+            {cvDownloadError && (
+              <p className="text-xs text-red-400">{cvDownloadError}</p>
             )}
             {/* Save Candidate — company only */}
             {user?.role === 'company' && (
