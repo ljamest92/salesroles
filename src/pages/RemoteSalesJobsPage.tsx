@@ -41,8 +41,7 @@ export function RemoteSalesJobsPage() {
   const [selectedOTERange, setSelectedOTERange] = useState('')
   const [showFilters, setShowFilters] = useState(false)
   const [currentPage, setCurrentPage] = useState(() => {
-    const p = parseInt(new URLSearchParams(window.location.search).get('page') || '1', 10)
-    return isNaN(p) || p < 1 ? 1 : p
+    return parseInt(sessionStorage.getItem('remoteJobsPage') || '1', 10)
   })
   const listingsTopRef = useRef<HTMLDivElement>(null)
 
@@ -208,11 +207,8 @@ export function RemoteSalesJobsPage() {
   })
 
   useEffect(() => {
+    sessionStorage.removeItem('remoteJobsPage')
     setCurrentPage(1)
-    const params = new URLSearchParams(window.location.search)
-    params.delete('page')
-    const newUrl = params.toString() ? `${window.location.pathname}?${params.toString()}` : window.location.pathname
-    window.history.replaceState(null, '', newUrl)
   }, [searchTags, locationTags, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
 
 
@@ -547,7 +543,7 @@ export function RemoteSalesJobsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                onClick={() => { const next = Math.max(1, currentPage - 1); setCurrentPage(next); const params = new URLSearchParams(window.location.search); params.set('page', String(next)); window.history.pushState(null, '', `${window.location.pathname}?${params.toString()}`); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
+                onClick={() => { const next = Math.max(1, currentPage - 1); sessionStorage.setItem('remoteJobsPage', String(next)); setCurrentPage(next); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
@@ -561,7 +557,7 @@ export function RemoteSalesJobsPage() {
                       <span className="text-white/30 px-2">...</span>
                     )}
                     <button
-                      onClick={() => { setCurrentPage(page); const params = new URLSearchParams(window.location.search); params.set('page', String(page)); window.history.pushState(null, '', `${window.location.pathname}?${params.toString()}`); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
+                      onClick={() => { sessionStorage.setItem('remoteJobsPage', String(page)); setCurrentPage(page); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === page
                           ? 'bg-emerald-500 text-white'
@@ -574,7 +570,7 @@ export function RemoteSalesJobsPage() {
                 ))
               }
               <button
-                onClick={() => { const next = Math.min(totalPages, currentPage + 1); setCurrentPage(next); const params = new URLSearchParams(window.location.search); params.set('page', String(next)); window.history.pushState(null, '', `${window.location.pathname}?${params.toString()}`); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
+                onClick={() => { const next = Math.min(totalPages, currentPage + 1); sessionStorage.setItem('remoteJobsPage', String(next)); setCurrentPage(next); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >

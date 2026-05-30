@@ -1,5 +1,8 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
+
+// Disable browser native scroll restoration so our manual scrollTo(0,0) on mount isn't overridden
+if (typeof history !== 'undefined') history.scrollRestoration = 'manual'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { BlinkUIProvider, Toaster } from '@blinkdotnew/ui'
 import { HelmetProvider } from 'react-helmet-async'
