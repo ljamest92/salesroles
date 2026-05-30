@@ -3,24 +3,13 @@ import { Helmet } from 'react-helmet-async'
 import { Link, useParams, useNavigate } from '@tanstack/react-router'
 import { Container, Card, Badge, Skeleton } from '@blinkdotnew/ui'
 import { MapPin, Briefcase, Share2, ShieldAlert, CheckCircle, ArrowLeft, Building2, Check, ChevronRight, Bookmark, BookmarkCheck, BookmarkX, XCircle, Loader2 } from 'lucide-react'
-import { fetchPartnerJobs, type Job } from '../lib/jobs'
+import { fetchPartnerJobs, type Job, SEED_COMPANY_DOMAINS } from '../lib/jobs'
 import { CompanyLogo } from '../components/CompanyLogo'
 import { formatSalary, getCurrency } from '../utils/formatSalary'
-import { getDomain } from '../utils/getDomain'
 import { useAuth } from '../hooks/useAuth'
 
 function sanitizeDescription(html: string): string {
   return html.replace(/\s*style="[^"]*"/gi, '')
-}
-
-const LOGO_BLOCKLIST = new Set(['adzuna.com', 'remotive.com', 'linkedin.com', 'indeed.com'])
-
-function getDomainFromUrl(url: string): string | null {
-  try {
-    return new URL(url).hostname.replace('www.', '')
-  } catch {
-    return null
-  }
 }
 
 export function JobDetailPage() {
@@ -283,17 +272,14 @@ export function JobDetailPage() {
   const isExternal = !!(job.via_partner || job.is_partner)
   const externalApplyUrl = (job as any).url || job.application_url || ''
 
-  const companyDomain = (() => {
-    const canonical = getDomain(job.company_website || job.domain, job.company)
-    if (canonical && canonical.includes('.')) {
-      console.log('[JobDetailPage] companyDomain (canonical):', canonical)
-      return canonical
-    }
-    const raw = getDomainFromUrl((job as any).redirect_url || (job as any).company_url || '')
-    const result = raw && !LOGO_BLOCKLIST.has(raw) ? raw : ''
-    console.log('[JobDetailPage] companyDomain:', result || '(none)', '| tried canonical:', canonical || '(empty)', '| company_website:', job.company_website, '| domain:', job.domain)
-    return result
-  })()
+  const companySlug = job.company.toLowerCase().replace(/[^a-z0-9]/g, '')
+  const companyDomain = SEED_COMPANY_DOMAINS[companySlug] || `${companySlug}.com`
+
+  console.log('[JobDetailPage] job.company_website:', job.company_website)
+  console.log('[JobDetailPage] job.domain:', job.domain)
+  console.log('[JobDetailPage] redirect_url:', (job as any).redirect_url)
+  console.log('[JobDetailPage] application_url:', (job as any).application_url)
+  console.log('[JobDetailPage] final companyDomain:', companyDomain)
 
   const jobMetaTitle = `${job.title} at ${job.company} | SalesRoles.co`
   const jobMetaDescription = `${job.title} at ${job.company} — ${job.location}. Salary shown upfront. No hidden comp. Apply on SalesRoles.co.`
