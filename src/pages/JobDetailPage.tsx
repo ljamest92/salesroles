@@ -12,6 +12,16 @@ function sanitizeDescription(html: string): string {
   return html.replace(/\s*style="[^"]*"/gi, '')
 }
 
+const LOGO_BLOCKLIST = new Set(['adzuna.com', 'remotive.com', 'linkedin.com', 'indeed.com'])
+
+function getDomainFromUrl(url: string): string | null {
+  try {
+    return new URL(url).hostname.replace('www.', '')
+  } catch {
+    return null
+  }
+}
+
 export function JobDetailPage() {
   const { slug } = useParams({ from: '/jobs/$slug' })
   const { user } = useAuth()
@@ -272,6 +282,13 @@ export function JobDetailPage() {
   const isExternal = !!(job.via_partner || job.is_partner)
   const externalApplyUrl = (job as any).url || job.application_url || ''
 
+  const companyDomain = (() => {
+    const canonical = getDomain(job.company_website || job.domain, job.company)
+    if (canonical) return canonical
+    const raw = getDomainFromUrl((job as any).redirect_url || (job as any).company_url || '')
+    return raw && !LOGO_BLOCKLIST.has(raw) ? raw : ''
+  })()
+
   return (
     <Container className="pt-12 pb-12 md:pt-16 md:pb-24 space-y-12 animate-fade-in overflow-x-hidden">
       {/* Breadcrumbs */}
@@ -290,7 +307,7 @@ export function JobDetailPage() {
             {/* Row 1: Logo + company meta */}
             <div className="flex items-center gap-4 md:gap-6">
               <div className="w-14 h-14 md:w-16 md:h-16 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground shrink-0 border border-white/5 shadow-2xl overflow-hidden relative">
-                <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} uploadedLogoUrl={(job as any).company_logo_url} />
+                <CompanyLogo domain={companyDomain} name={job.company} uploadedLogoUrl={(job as any).company_logo_url} />
               </div>
               <div className="flex flex-wrap gap-3 md:gap-6 text-muted-foreground font-bold text-sm items-center">
                 <Link to={`/company/${job.company.toLowerCase().replace(/[^a-z0-9]/g, '')}`} className="text-foreground hover:text-primary transition-colors">{job.company}</Link>
@@ -475,7 +492,7 @@ export function JobDetailPage() {
               <h4 className="text-[10px] font-black text-muted-foreground/50">Company Profile</h4>
               <div className="flex items-center gap-4">
                 <div className="w-14 h-14 rounded-2xl bg-secondary flex items-center justify-center text-muted-foreground border border-white/5 shadow-lg overflow-hidden">
-                  <CompanyLogo domain={getDomain(job.company_website || job.domain, job.company)} name={job.company} uploadedLogoUrl={(job as any).company_logo_url} />
+                  <CompanyLogo domain={companyDomain} name={job.company} uploadedLogoUrl={(job as any).company_logo_url} />
                 </div>
                 <div>
                   <p className="font-bold text-lg">{job.company}</p>

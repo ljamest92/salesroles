@@ -56,6 +56,7 @@ export function JobsPage() {
   const [selectedOTERange, setSelectedOTERange] = useState('')
   const [currentPage, setCurrentPage] = useState(() => {
     const saved = sessionStorage.getItem('jobsPage')
+    console.log('[JobsPage] mount - sessionStorage jobsPage:', saved, '| location.search:', window.location.search)
     return saved ? parseInt(saved, 10) : 1
   })
   const listingsTopRef = useRef<HTMLDivElement>(null)
@@ -153,6 +154,7 @@ export function JobsPage() {
 
 
   const handlePageChange = (page: number) => {
+    console.log('[JobsPage] handlePageChange:', page, '- saving to sessionStorage')
     sessionStorage.setItem('jobsPage', String(page))
     setCurrentPage(page)
     setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
