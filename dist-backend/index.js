@@ -1610,8 +1610,15 @@ app.get('/api/candidates', async (c) => {
             params.push(s, s, s, s, s);
         }
         if (targetRole) {
-            where += ` AND u.target_role = ?`;
-            params.push(targetRole);
+            const roleList = targetRole.split(',').map((s) => s.trim()).filter(Boolean);
+            if (roleList.length === 1) {
+                where += ` AND u.target_role = ?`;
+                params.push(roleList[0]);
+            }
+            else if (roleList.length > 1) {
+                where += ` AND u.target_role IN (${roleList.map(() => '?').join(',')})`;
+                roleList.forEach((r) => params.push(r));
+            }
         }
         if (expMin !== '') {
             const min = parseInt(expMin, 10);
@@ -1632,8 +1639,15 @@ app.get('/api/candidates', async (c) => {
             params.push(availability);
         }
         if (industry) {
-            where += ` AND u.industries LIKE ?`;
-            params.push(`%${industry}%`);
+            const industryList = industry.split(',').map((s) => s.trim()).filter(Boolean);
+            if (industryList.length === 1) {
+                where += ` AND u.industries LIKE ?`;
+                params.push(`%${industryList[0]}%`);
+            }
+            else if (industryList.length > 1) {
+                where += ` AND (${industryList.map(() => `u.industries LIKE ?`).join(' OR ')})`;
+                industryList.forEach((i) => params.push(`%${i}%`));
+            }
         }
         if (dealSize) {
             where += ` AND u.deal_sizes LIKE ?`;

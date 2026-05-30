@@ -1683,7 +1683,15 @@ app.get('/api/candidates', async (c) => {
       const s = `%${search}%`
       params.push(s, s, s, s, s)
     }
-    if (targetRole) { where += ` AND u.target_role = ?`; params.push(targetRole) }
+    if (targetRole) {
+      const roleList = targetRole.split(',').map((s: string) => s.trim()).filter(Boolean)
+      if (roleList.length === 1) {
+        where += ` AND u.target_role = ?`; params.push(roleList[0])
+      } else if (roleList.length > 1) {
+        where += ` AND u.target_role IN (${roleList.map(() => '?').join(',')})`
+        roleList.forEach((r: string) => params.push(r))
+      }
+    }
     if (expMin !== '') {
       const min = parseInt(expMin, 10)
       const max = expMax !== '' ? parseInt(expMax, 10) : null
@@ -1698,7 +1706,15 @@ app.get('/api/candidates', async (c) => {
       }
     }
     if (availability) { where += ` AND u.availability = ?`; params.push(availability) }
-    if (industry) { where += ` AND u.industries LIKE ?`; params.push(`%${industry}%`) }
+    if (industry) {
+      const industryList = industry.split(',').map((s: string) => s.trim()).filter(Boolean)
+      if (industryList.length === 1) {
+        where += ` AND u.industries LIKE ?`; params.push(`%${industryList[0]}%`)
+      } else if (industryList.length > 1) {
+        where += ` AND (${industryList.map(() => `u.industries LIKE ?`).join(' OR ')})`
+        industryList.forEach((i: string) => params.push(`%${i}%`))
+      }
+    }
     if (dealSize) { where += ` AND u.deal_sizes LIKE ?`; params.push(`%${dealSize}%`) }
     if (methodology) { where += ` AND u.sales_methodology LIKE ?`; params.push(`%${methodology}%`) }
     if (location) { where += ` AND u.location LIKE ?`; params.push(`%${location}%`) }
