@@ -1013,7 +1013,7 @@ export function DashboardPage() {
                   {profileData?.target_role && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <TrendingUp size={14} className="text-primary shrink-0" />
-                      <span className="truncate">Target: <span className="text-foreground font-medium">{profileData.target_role}</span></span>
+                      <span className="truncate">Target: <span className="text-foreground font-medium">{(() => { try { const r = JSON.parse(profileData.target_role); return Array.isArray(r) ? r.join(', ') : profileData.target_role } catch { return profileData.target_role } })()}</span></span>
                     </div>
                   )}
                   {profileData?.years_experience && (
@@ -1398,7 +1398,7 @@ export function DashboardPage() {
                       {d?.target_role && (
                         <div className="bg-white/5 rounded-xl p-3">
                           <p className="text-[10px] text-white/40 font-black tracking-widest mb-0.5">TARGET ROLE</p>
-                          <p className="font-bold text-xs">{d.target_role}</p>
+                          <p className="font-bold text-xs">{(() => { try { const r = JSON.parse(d.target_role); return Array.isArray(r) ? r.join(', ') : d.target_role } catch { return d.target_role } })()}</p>
                         </div>
                       )}
                       {d?.target_salary && (
