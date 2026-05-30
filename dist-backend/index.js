@@ -1548,8 +1548,9 @@ app.put('/api/candidate/profile', async (c) => {
         ]);
         return c.json({ ok: true });
     }
-    catch {
-        return c.json({ error: 'Update failed' }, 500);
+    catch (err) {
+        console.error('Profile update error:', err?.message || err);
+        return c.json({ error: err?.message || 'Update failed' }, 500);
     }
 });
 app.get('/api/candidate/me', async (c) => {
@@ -1737,7 +1738,7 @@ app.get('/api/candidates/:id', async (c) => {
     const isNumeric = /^\d+$/.test(id);
     try {
         const [rows] = await pool.execute(`SELECT id, name, headline, location, years_in_sales, total_revenue, companies_closed, current_roles, looking_for, bio, work_history, cv_filename, is_pro, email,
-              target_role, years_experience, skills, target_salary, availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug, avatar_url, linkedin_url
+              target_role, targeting_roles, current_role, years_experience, skills, target_salary, availability, achievements, industries, deal_sizes, sales_methodology, current_ote, profile_slug, avatar_url, linkedin_url
        FROM users WHERE ${isNumeric ? 'id' : 'profile_slug'} = ? AND (is_public = 1 OR is_public IS NULL)`, [id]);
         if (!rows.length)
             return c.json({ error: 'Not found' }, 404);
