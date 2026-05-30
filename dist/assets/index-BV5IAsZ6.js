@@ -109,7 +109,7 @@ ${n.map(([e,n])=>{let r=n.theme?.[t]||n.color;return r?`  --color-${e}: ${r};`:n
 
 Entry level AEs in the US are typically earning a base of $55k to $75k with OTE of $100k to $130k. Mid-market AEs command $80k to $110k base with OTE of $160k to $200k. Enterprise AEs sit at $120k to $160k base with OTE ranging from $240k to $350k and above.
 
-In the UK, entry AEs earn Â£35k to Â£50k base with OTE of Â£65k to Â£90k. Senior and enterprise AEs reach Â£80k to Â£120k base with OTE pushing Â£160k to Â£220k.
+In the UK, entry AEs earn £35k to £50k base with OTE of £65k to £90k. Senior and enterprise AEs reach £80k to £120k base with OTE pushing £160k to £220k.
 
 Australian AEs typically earn AUD $80k to $120k base at the mid level with OTE of AUD $150k to $200k.
 
@@ -117,15 +117,15 @@ Australian AEs typically earn AUD $80k to $120k base at the mid level with OTE o
 
 SDRs in the US earn $45k to $65k base with OTE of $70k to $90k. The role is heavily variable market to market. San Francisco and New York command a premium of 15 to 20 percent over national averages.
 
-UK SDRs earn Â£28k to Â£40k base with OTE of Â£45k to Â£60k. Australian SDRs earn AUD $55k to $75k base.
+UK SDRs earn £28k to £40k base with OTE of £45k to £60k. Australian SDRs earn AUD $55k to $75k base.
 
 ## Business Development Manager (BDM)
 
-BDMs sit between SDR and AE in most organisations. US BDMs earn $70k to $95k base with OTE of $130k to $180k. UK equivalents earn Â£50k to Â£75k base with OTE of Â£90k to Â£130k.
+BDMs sit between SDR and AE in most organisations. US BDMs earn $70k to $95k base with OTE of $130k to $180k. UK equivalents earn £50k to £75k base with OTE of £90k to £130k.
 
 ## Sales Manager
 
-First line sales managers in the US earn $100k to $140k base with OTE of $160k to $220k. UK sales managers earn Â£65k to Â£95k base with OTE of Â£110k to Â£160k.
+First line sales managers in the US earn $100k to $140k base with OTE of $160k to $220k. UK sales managers earn £65k to £95k base with OTE of £110k to £160k.
 
 ## VP of Sales
 
@@ -305,7 +305,7 @@ Geography adds a significant premium. San Francisco and New York AEs earn 20 to 
 
 The UK AE market has seen consistent growth over the past three years as US SaaS companies expanded European GTM operations out of London.
 
-Entry-level AEs earn a base of Â£35k to Â£50k with OTE of Â£65k to Â£90k. Mid-market AEs earn a base of Â£55k to Â£80k with OTE of Â£100k to Â£150k. Enterprise AEs earn a base of Â£85k to Â£120k with OTE of Â£160k to Â£220k.
+Entry-level AEs earn a base of £35k to £50k with OTE of £65k to £90k. Mid-market AEs earn a base of £55k to £80k with OTE of £100k to £150k. Enterprise AEs earn a base of £85k to £120k with OTE of £160k to £220k.
 
 London commands a premium of 15 to 20 percent over Manchester, Edinburgh, and other UK cities. Remote-first UK roles have moved toward London-adjacent comp in the last two years as competition for talent intensified.
 
@@ -425,7 +425,7 @@ SDR stands for Sales Development Representative. The role is almost always focus
 
 In most organisations, SDR is the entry point into a sales career. The expectation is high activity volume: cold calls, cold emails, LinkedIn outreach. The success metric is booked meetings that convert to pipeline.
 
-US SDRs earn a base of $45k to $65k with OTE of $70k to $90k. UK SDRs earn Â£28k to Â£42k base with OTE of Â£45k to Â£65k. Australian SDRs earn AUD $55k to $75k base with OTE of AUD $85k to $110k.
+US SDRs earn a base of $45k to $65k with OTE of $70k to $90k. UK SDRs earn £28k to £42k base with OTE of £45k to £65k. Australian SDRs earn AUD $55k to $75k base with OTE of AUD $85k to $110k.
 
 ## What a BDR Actually Is
 
@@ -435,7 +435,7 @@ The distinction matters at companies where BDR is used to describe a more senior
 
 If you see a BDR role, read the job description carefully. If the responsibilities are booking meetings and passing to AEs, it is an SDR by another name. If the role involves managing accounts or running multi-stakeholder outreach campaigns, it may sit higher in the seniority structure.
 
-BDR comp where it is differentiated from SDR: US $55k to $75k base with OTE $90k to $120k. UK Â£35k to Â£50k base with OTE Â£60k to Â£85k.
+BDR comp where it is differentiated from SDR: US $55k to $75k base with OTE $90k to $120k. UK £35k to £50k base with OTE £60k to £85k.
 
 ## What a BDM Actually Is
 
@@ -443,7 +443,7 @@ BDM stands for Business Development Manager. This is where the title diverges si
 
 Think of BDM as the equivalent of an Account Executive. The difference is often that BDM skews toward smaller deal sizes, SMB segments, or channel and partnership relationships. Some companies use BDM for what others call AE. Some use it for a hybrid role that combines prospecting and closing.
 
-The comp reflects the closing responsibility. US BDMs earn $70k to $100k base with OTE of $130k to $200k depending on deal size and market. UK BDMs earn Â£50k to Â£75k base with OTE of Â£90k to Â£140k. Australian BDMs earn AUD $90k to $130k base with OTE of AUD $170k to $250k.
+The comp reflects the closing responsibility. US BDMs earn $70k to $100k base with OTE of $130k to $200k depending on deal size and market. UK BDMs earn £50k to £75k base with OTE of £90k to £140k. Australian BDMs earn AUD $90k to $130k base with OTE of AUD $170k to $250k.
 
 ## How to Decode Any Sales Title Before You Apply
 
