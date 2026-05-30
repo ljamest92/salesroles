@@ -61,7 +61,7 @@ export function PrivacyPage() {
             <li><strong>Essential cookies:</strong> Required for authentication, session management, and core functionality. These cannot be disabled without impairing the Service.</li>
             <li><strong>Analytics cookies:</strong> Optional cookies that help us understand how users interact with the Service. You may decline these via our cookie consent banner.</li>
           </ul>
-          <p>For full details on the cookies we use and how to manage them, please see our <a href="/cookie-policy" className="text-primary hover:underline">Cookie Policy</a>.</p>
+          <p>For full details on the cookies we use and how to manage them, please see our <a href="https://salesroles.co/cookies" className="text-primary hover:underline">Cookie Policy</a>.</p>
         </section>
 
         <section>
