@@ -1097,6 +1097,17 @@ app.get('/api/admin/subscribers', async (c) => {
   }
 })
 
+app.delete('/api/admin/subscribers/:email', async (c) => {
+  if (!pool) return c.json({ error: 'No DB' }, 500)
+  const email = decodeURIComponent(c.req.param('email'))
+  try {
+    await pool.execute('DELETE FROM subscribers WHERE email = ?', [email])
+    return c.json({ ok: true })
+  } catch {
+    return c.json({ error: 'Delete failed' }, 500)
+  }
+})
+
 app.get('/api/admin/users', async (c) => {
   if (!pool) return c.json([])
   try {

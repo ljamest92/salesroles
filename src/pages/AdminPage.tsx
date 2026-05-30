@@ -177,6 +177,14 @@ export function AdminPage() {
     URL.revokeObjectURL(url)
   }
 
+  const handleDeleteSubscriber = async (email: string) => {
+    if (!window.confirm('Remove this subscriber?')) return
+    try {
+      const res = await fetch(`/api/admin/subscribers/${encodeURIComponent(email)}`, { method: 'DELETE' })
+      if (res.ok) setSubscribers(prev => prev.filter(s => s.email !== email))
+    } catch {}
+  }
+
   const downloadSubscribersCSV = () => {
     const headers = ['Email', 'Subscribed Date']
     const rows = subscribers.map(s => [s.email, new Date(s.created_at).toLocaleDateString('en-GB')])
@@ -662,6 +670,7 @@ export function AdminPage() {
                   <tr className="border-b border-white/10 text-left">
                     <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Email</th>
                     <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest">Subscribed Date</th>
+                    <th className="pb-4 font-black text-muted-foreground text-[10px] tracking-widest"></th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/5">
@@ -669,6 +678,15 @@ export function AdminPage() {
                     <tr key={i} className="hover:bg-white/5 transition-colors">
                       <td className="py-4 font-medium">{s.email}</td>
                       <td className="py-4 text-muted-foreground">{new Date(s.created_at).toLocaleDateString('en-GB')}</td>
+                      <td className="py-4 text-right">
+                        <button
+                          onClick={() => handleDeleteSubscriber(s.email)}
+                          className="text-destructive hover:bg-destructive/10 p-1.5 rounded-lg transition-colors"
+                          title="Remove subscriber"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
