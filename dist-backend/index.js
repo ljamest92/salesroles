@@ -2026,6 +2026,30 @@ app.patch('/api/admin/reports/:id', async (c) => {
         return c.json({ error: 'Failed to update report' }, 500);
     }
 });
+app.delete('/api/admin/reports/job/:jobId', async (c) => {
+    if (!pool)
+        return c.json({ error: 'No DB' }, 500);
+    const jobId = c.req.param('jobId');
+    try {
+        await pool.execute('DELETE FROM job_reports WHERE job_id = ?', [jobId]);
+        await pool.execute('DELETE FROM jobs WHERE id = ?', [jobId]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Delete failed' }, 500);
+    }
+});
+app.delete('/api/admin/reports/:id', async (c) => {
+    if (!pool)
+        return c.json({ error: 'No DB' }, 500);
+    try {
+        await pool.execute('DELETE FROM job_reports WHERE id = ?', [c.req.param('id')]);
+        return c.json({ ok: true });
+    }
+    catch {
+        return c.json({ error: 'Delete failed' }, 500);
+    }
+});
 // --- Profile view notification test ---
 app.get('/api/test/profile-view-notification', async (c) => {
     if (!pool)

@@ -52,18 +52,20 @@ export function AdminPage() {
         } catch { return {} }
       }
 
-      const [adminStats, jobsData, pendingData, usersData, subscribersData] = await Promise.all([
+      const [adminStats, jobsData, pendingData, usersData, subscribersData, reportsData] = await Promise.all([
         fetchSafe('/api/admin/stats'),
         fetchSafe('/api/jobs'),
         fetchSafe('/api/admin/pending-jobs'),
         fetchSafe('/api/admin/candidates'),
         fetchSafe('/api/admin/subscribers'),
+        fetchSafe('/api/admin/reports'),
       ])
 
       const allJobs: any[] = jobsData.jobs || []
       const pendingList: any[] = Array.isArray(pendingData) ? pendingData : []
       const userList: any[] = Array.isArray(usersData) ? usersData : []
       const subscriberList: any[] = Array.isArray(subscribersData) ? subscribersData : []
+      const reportList: any[] = Array.isArray(reportsData) ? reportsData : []
 
       setStats({
         listings: adminStats.liveListings || 0,
@@ -76,6 +78,7 @@ export function AdminPage() {
       setPendingJobs(pendingList)
       setUsers(userList)
       setSubscribers(subscriberList)
+      setReports(reportList)
     }
 
     loadData()
@@ -136,6 +139,25 @@ export function AdminPage() {
         body: JSON.stringify({ status })
       })
       setReports(prev => prev.map(r => r.id === id ? { ...r, status } : r))
+    } catch {}
+  }
+
+  const handleDismissReport = async (id: number) => {
+    if (!window.confirm('Remove this report?')) return
+    try {
+      const res = await fetch(`/api/admin/reports/${id}`, { method: 'DELETE' })
+      if (res.ok) setReports(prev => prev.filter(r => r.id !== id))
+    } catch {}
+  }
+
+  const handleDeleteJobFromReport = async (jobId: string) => {
+    if (!window.confirm('Permanently delete this job listing?')) return
+    try {
+      const res = await fetch(`/api/admin/reports/job/${jobId}`, { method: 'DELETE' })
+      if (res.ok) {
+        setReports(prev => prev.filter(r => r.job_id !== jobId))
+        setStats(prev => ({ ...prev, listings: Math.max(0, prev.listings - 1) }))
+      }
     } catch {}
   }
 
@@ -468,20 +490,26 @@ export function AdminPage() {
                       View Job
                     </a>
                     {report.status === 'pending' && (
-                      <>
-                        <button
-                          onClick={() => updateReportStatus(report.id, 'reviewed')}
-                          className="text-xs border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg transition-colors"
-                        >
-                          Mark Reviewed
-                        </button>
-                        <button
-                          onClick={() => updateReportStatus(report.id, 'dismissed')}
-                          className="text-xs border border-white/10 text-white/30 hover:text-white/50 px-3 py-1.5 rounded-lg transition-colors"
-                        >
-                          Dismiss
-                        </button>
-                      </>
+                      <button
+                        onClick={() => updateReportStatus(report.id, 'reviewed')}
+                        className="text-xs border border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/10 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Mark Reviewed
+                      </button>
+                    )}
+                    <button
+                      onClick={() => handleDismissReport(report.id)}
+                      className="text-xs border border-white/10 text-white/40 hover:text-white/70 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Dismiss Report
+                    </button>
+                    {report.job_id && (
+                      <button
+                        onClick={() => handleDeleteJobFromReport(report.job_id)}
+                        className="text-xs border border-red-500/30 text-red-400 hover:bg-red-500/10 px-3 py-1.5 rounded-lg transition-colors"
+                      >
+                        Delete Job
+                      </button>
                     )}
                   </div>
                 </div>
