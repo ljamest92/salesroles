@@ -1612,12 +1612,12 @@ app.get('/api/candidates', async (c) => {
         if (targetRole) {
             const roleList = targetRole.split(',').map((s) => s.trim()).filter(Boolean);
             if (roleList.length === 1) {
-                where += ` AND u.target_role = ?`;
-                params.push(roleList[0]);
+                where += ` AND u.target_role LIKE ?`;
+                params.push(`%${roleList[0]}%`);
             }
             else if (roleList.length > 1) {
-                where += ` AND u.target_role IN (${roleList.map(() => '?').join(',')})`;
-                roleList.forEach((r) => params.push(r));
+                where += ` AND (${roleList.map(() => `u.target_role LIKE ?`).join(' OR ')})`;
+                roleList.forEach((r) => params.push(`%${r}%`));
             }
         }
         if (expMin !== '') {

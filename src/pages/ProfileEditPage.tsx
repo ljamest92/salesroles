@@ -6,7 +6,7 @@ import { CheckCircle2, Camera } from 'lucide-react'
 
 const TOKEN_KEY = 'salesroles_token'
 
-const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'Head of Sales', 'CSM', 'Full Cycle AE', 'RevOps', 'Closer']
+const TARGET_ROLES = ['SDR', 'BDR', 'Account Executive', 'Senior Account Executive', 'Enterprise Account Executive', 'Account Manager', 'Sales Manager', 'VP of Sales', 'Sales Director', 'BDM']
 const AVAILABILITY_OPTIONS = ['Actively looking', 'Open to opportunities']
 const INDUSTRY_OPTIONS = ['SaaS', 'FinTech', 'HealthTech', 'EdTech', 'HR Tech', 'MarTech', 'Cybersecurity', 'Enterprise Software', 'E-commerce', 'Logistics', 'Real Estate Tech', 'InsurTech']
 const DEAL_SIZE_OPTIONS = ['<$10K', '$10K–$50K', '$50K–$100K', '$100K–$500K', '$500K–$1M', '$1M+']
@@ -90,7 +90,7 @@ export function ProfileEditPage() {
   const [avatarUrl, setAvatarUrl] = useState('')
 
   // Sales career
-  const [targetRole, setTargetRole] = useState('')
+  const [targetRoles, setTargetRoles] = useState<string[]>([])
   const [yearsExperience, setYearsExperience] = useState('')
   const [currentOte, setCurrentOte] = useState('')
   const [targetSalary, setTargetSalary] = useState('')
@@ -130,7 +130,7 @@ export function ProfileEditPage() {
         setLocation(data.location || '')
         setPhone(data.phone || '')
         setLinkedinUrl(data.linkedin_url || '')
-        setTargetRole(data.target_role || '')
+        try { setTargetRoles(JSON.parse(data.target_role || '[]')) } catch { setTargetRoles(data.target_role ? [data.target_role] : []) }
         setYearsExperience(data.years_experience != null ? String(data.years_experience) : '')
         setCurrentOte(data.current_ote || '')
         setTargetSalary(data.target_salary || '')
@@ -203,7 +203,7 @@ export function ProfileEditPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
         body: JSON.stringify({
           headline, location, phone, linkedin_url: linkedinUrl,
-          target_role: targetRole, years_experience: yearsExperience ? parseInt(yearsExperience) : null,
+          target_role: JSON.stringify(targetRoles), years_experience: yearsExperience ? parseInt(yearsExperience) : null,
           current_ote: currentOte, target_salary: targetSalary, availability,
           industries, deal_sizes: dealSizes, sales_methodology: salesMethodology, skills,
           bio, achievements, is_public: isPublic,
@@ -289,12 +289,6 @@ export function ProfileEditPage() {
           <h2 className="text-sm font-black tracking-widest text-muted-foreground">SALES CAREER</h2>
 
           <div className="grid md:grid-cols-2 gap-4">
-            <Field label="Target Role">
-              <select value={targetRole} onChange={e => setTargetRole(e.target.value)} className={inputCls}>
-                <option value="">Select a role</option>
-                {TARGET_ROLES.map(r => <option key={r} value={r}>{r}</option>)}
-              </select>
-            </Field>
             <Field label="Years of Sales Experience">
               <input type="number" min="0" max="40" value={yearsExperience} onChange={e => setYearsExperience(e.target.value)} placeholder="e.g. 5" className={inputCls} />
             </Field>
@@ -321,6 +315,10 @@ export function ProfileEditPage() {
               </div>
             </Field>
           </div>
+
+          <Field label="Target Roles">
+            <TagSelect options={TARGET_ROLES} value={targetRoles} onChange={setTargetRoles} />
+          </Field>
 
           <Field label="Industries">
             <TagSelect options={INDUSTRY_OPTIONS} value={industries} onChange={setIndustries} />

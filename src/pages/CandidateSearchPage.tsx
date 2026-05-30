@@ -422,6 +422,7 @@ export function CandidateSearchPage() {
                 const skills = safeList(c.skills)
                 const industries = safeList(c.industries)
                 const dealSizes = safeList(c.deal_sizes)
+                const roles = safeList(c.target_role)
                 const slug = c.profile_slug || String(c.id)
 
                 return (
@@ -448,7 +449,7 @@ export function CandidateSearchPage() {
                             </span>
                           )}
                         </div>
-                        <p className="text-white/50 text-xs truncate mt-0.5">{c.headline || c.target_role || 'Sales Professional'}</p>
+                        <p className="text-white/50 text-xs truncate mt-0.5">{c.headline || roles.join(', ') || 'Sales Professional'}</p>
                         {c.location && (
                           <p className="text-white/30 text-xs flex items-center gap-1 mt-0.5">
                             <MapPin size={10} /> {c.location}

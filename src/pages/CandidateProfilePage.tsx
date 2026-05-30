@@ -189,11 +189,11 @@ export function CandidateProfilePage() {
                 <p className="text-white/70 font-medium text-lg leading-snug">{profile.headline}</p>
               )}
 
-              {/* Target role if different from headline */}
-              {profile.target_role && profile.target_role !== profile.headline && (
+              {/* Target roles if set */}
+              {safeList(profile.target_role).length > 0 && (
                 <p className="text-sm text-white/40 flex items-center gap-1.5">
                   <Target size={13} className="text-emerald-500/60" />
-                  Targeting: <span className="text-white/60 font-medium">{profile.target_role}</span>
+                  Targeting: <span className="text-white/60 font-medium">{safeList(profile.target_role).join(', ')}</span>
                 </p>
               )}
 
