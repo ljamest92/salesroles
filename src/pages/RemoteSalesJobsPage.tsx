@@ -539,7 +539,7 @@ export function RemoteSalesJobsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                onClick={() => { window.scrollTo(0, 0); setCurrentPage(p => Math.max(1, p - 1)) }}
+                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); setTimeout(() => window.scrollTo(0, 0), 0) }}
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
@@ -553,7 +553,7 @@ export function RemoteSalesJobsPage() {
                       <span className="text-white/30 px-2">...</span>
                     )}
                     <button
-                      onClick={() => { window.scrollTo(0, 0); setCurrentPage(page) }}
+                      onClick={() => { setCurrentPage(page); setTimeout(() => window.scrollTo(0, 0), 0) }}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === page
                           ? 'bg-emerald-500 text-white'
@@ -566,7 +566,7 @@ export function RemoteSalesJobsPage() {
                 ))
               }
               <button
-                onClick={() => { window.scrollTo(0, 0); setCurrentPage(p => Math.min(totalPages, p + 1)) }}
+                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); setTimeout(() => window.scrollTo(0, 0), 0) }}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
