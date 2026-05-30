@@ -3,6 +3,16 @@ import { useParams } from '@tanstack/react-router'
 import { Container, Card } from '@blinkdotnew/ui'
 import { ArrowLeft, MapPin, Link2, Download } from 'lucide-react'
 
+function parseRoles(val: string | null | undefined): string {
+  if (!val) return ''
+  try {
+    const parsed = JSON.parse(val)
+    return Array.isArray(parsed) ? parsed.join(', ') : val
+  } catch {
+    return val
+  }
+}
+
 export function CompanyApplicantPage() {
   const { id } = useParams({ strict: false }) as { id: string }
   const [profile, setProfile] = useState<any>(null)
@@ -109,7 +119,7 @@ export function CompanyApplicantPage() {
               {profile.target_role && (
                 <div className="bg-white/5 rounded-xl p-3 text-center">
                   <p className="text-[10px] text-white/40 font-black tracking-widest mb-1">TARGET ROLE</p>
-                  <p className="font-black text-xs leading-snug">{(() => { try { const r = JSON.parse(profile.target_role); return Array.isArray(r) ? r.join(', ') : profile.target_role } catch { return profile.target_role } })()}</p>
+                  <p className="font-black text-xs leading-snug">{parseRoles(profile.target_role)}</p>
                 </div>
               )}
               {profile.target_salary && (
