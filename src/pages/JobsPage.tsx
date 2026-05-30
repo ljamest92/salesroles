@@ -61,12 +61,7 @@ export function JobsPage() {
   const [sortBy, setSortBy] = useState('latest')
   const [showFilters, setShowFilters] = useState(false)
   const [selectedOTERange, setSelectedOTERange] = useState('')
-  const [currentPage, setCurrentPage] = useState(() => {
-    if (urlPage && urlPage > 1) return urlPage
-    const saved = sessionStorage.getItem('jobsPage')
-    console.log('[JobsPage] mount - sessionStorage jobsPage:', saved, '| location.search:', window.location.search)
-    return saved ? parseInt(saved, 10) : 1
-  })
+  const currentPage = urlPage ?? 1
   const listingsTopRef = useRef<HTMLDivElement>(null)
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
 
@@ -162,9 +157,6 @@ export function JobsPage() {
 
 
   const handlePageChange = (page: number) => {
-    console.log('[JobsPage] handlePageChange:', page, '- saving to sessionStorage + URL')
-    sessionStorage.setItem('jobsPage', String(page))
-    setCurrentPage(page)
     navigate({ search: (prev: any) => ({ ...prev, page: page > 1 ? page : undefined }), replace: true } as any)
     setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
   }
@@ -278,8 +270,6 @@ export function JobsPage() {
       isFirstRender.current = false
       return
     }
-    sessionStorage.removeItem('jobsPage')
-    setCurrentPage(1)
     navigate({ search: (prev: any) => ({ ...prev, page: undefined }), replace: true } as any)
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchTags, locationTags, workTypeFilters, seniorityFilters, sectorFilters, selectedOTERange, sortBy])
