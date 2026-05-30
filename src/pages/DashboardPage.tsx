@@ -1176,7 +1176,7 @@ export function DashboardPage() {
                   {profileData?.target_role && (
                     <div className="flex items-center gap-2 text-muted-foreground">
                       <TrendingUp size={14} className="text-primary shrink-0" />
-                      <span className="truncate">Target: <span className="text-foreground font-medium">{parseRoles(profileData.target_role)}</span></span>
+                      <span className="truncate">Experience: <span className="text-foreground font-medium">{parseRoles(profileData.target_role)}</span></span>
                     </div>
                   )}
                   {profileData?.years_experience && (
