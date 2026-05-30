@@ -74,7 +74,6 @@ export function CandidateProfilePage() {
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
   const [copied, setCopied] = useState(false)
-  const [cvMsg, setCvMsg] = useState('')
   const [avatarError, setAvatarError] = useState(false)
   const [contactOpen, setContactOpen] = useState(false)
   const [contactLoading, setContactLoading] = useState(false)
@@ -118,11 +117,7 @@ export function CandidateProfilePage() {
       const res = await fetch(`/api/candidates/${identifier}/download-cv`, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      if (!res.ok) {
-        const data = await res.json()
-        setCvMsg(data.error || 'CV not available')
-        return
-      }
+      if (!res.ok) return
       const blob = await res.blob()
       const url = URL.createObjectURL(blob)
       const a = document.createElement('a')
@@ -132,9 +127,8 @@ export function CandidateProfilePage() {
       a.click()
       document.body.removeChild(a)
       URL.revokeObjectURL(url)
-    } catch {
-      setCvMsg('Download failed')
-    }
+    } catch {}
+
   }
 
   const handleContact = async () => {
@@ -343,8 +337,6 @@ export function CandidateProfilePage() {
             </div>
           </div>
         </div>
-
-        {cvMsg && <p className="text-xs text-white/40 -mt-2">{cvMsg}</p>}
 
         {/* Contact modal */}
         {contactOpen && contactData && (

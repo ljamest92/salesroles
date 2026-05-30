@@ -155,6 +155,7 @@ try {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `).catch(() => { });
     pool.execute(`ALTER TABLE applications ADD COLUMN screening_answers TEXT`).catch(() => { });
+    pool.execute(`ALTER TABLE applications ADD COLUMN seen_by_company TINYINT(1) DEFAULT 0`).catch(() => { });
     pool.execute(`ALTER TABLE jobs ADD COLUMN views INT DEFAULT 0`).catch(() => { });
     // Add viewer_name and viewer_company columns to profile_views if missing
     pool.execute(`ALTER TABLE profile_views ADD COLUMN viewer_name VARCHAR(255)`).catch(() => { });
@@ -1434,7 +1435,14 @@ app.get('/api/company/live-jobs', async (c) => {
     try {
         const { payload } = await jwtVerify(auth.slice(7), JWT_SECRET);
         const userId = String(payload.id);
-        const [jobs] = await pool.execute("SELECT * FROM jobs WHERE status = 'live' AND company_id = ? AND (expires_at IS NULL OR expires_at > NOW()) ORDER BY created_at DESC", [userId]);
+        const [jobs] = await pool.execute(`SELECT j.*,
+         COUNT(a.id) AS app_total,
+         SUM(CASE WHEN a.seen_by_company = 0 THEN 1 ELSE 0 END) AS app_new
+       FROM jobs j
+       LEFT JOIN applications a ON a.job_id = j.id
+       WHERE j.status = 'live' AND j.company_id = ? AND (j.expires_at IS NULL OR j.expires_at > NOW())
+       GROUP BY j.id
+       ORDER BY j.created_at DESC`, [userId]);
         return c.json(jobs);
     }
     catch {
@@ -1463,6 +1471,9 @@ app.get('/api/company/applications', async (c) => {
        LEFT JOIN users u ON a.candidate_id = u.id
        WHERE j.company_id = ?
        ORDER BY a.created_at DESC`, [userId]);
+        // Mark all fetched applications as seen
+        pool.execute(`UPDATE applications SET seen_by_company = 1
+       WHERE job_id IN (SELECT id FROM jobs WHERE company_id = ?) AND seen_by_company = 0`, [userId]).catch(() => { });
         return c.json(apps);
     }
     catch {
@@ -1822,8 +1833,11 @@ app.get('/api/candidates/:id/download-cv', async (c) => {
         if (!user?.cv_filename)
             return c.json({ error: 'No CV on file' }, 404);
         const cvFilename = user.cv_filename;
-        const filePath = path.join(__dirname, '..', 'uploads', 'cvs', cvFilename);
-        if (!existsSync(filePath))
+        // Try uploads/cvs/ first (current upload destination), then uploads/ as fallback
+        const primaryPath = path.join(__dirname, '..', 'uploads', 'cvs', cvFilename);
+        const fallbackPath = path.join(__dirname, '..', 'uploads', cvFilename);
+        const filePath = existsSync(primaryPath) ? primaryPath : existsSync(fallbackPath) ? fallbackPath : null;
+        if (!filePath)
             return c.json({ error: 'CV file not found on server' }, 404);
         const [vRows2] = await pool.execute('SELECT name, company_name FROM users WHERE id = ?', [viewerId]);
         const vi2 = vRows2[0];

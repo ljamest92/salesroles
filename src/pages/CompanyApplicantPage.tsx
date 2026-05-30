@@ -118,7 +118,7 @@ export function CompanyApplicantPage() {
               )}
               {profile.target_role && (
                 <div className="bg-white/5 rounded-xl p-3 text-center">
-                  <p className="text-[10px] text-white/40 font-black tracking-widest mb-1">TARGET ROLE</p>
+                  <p className="text-[10px] text-white/40 font-black tracking-widest mb-1">EXPERIENCE</p>
                   <p className="font-black text-xs leading-snug">{parseRoles(profile.target_role)}</p>
                 </div>
               )}
