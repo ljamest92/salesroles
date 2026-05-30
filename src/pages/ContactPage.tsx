@@ -37,10 +37,10 @@ export function ContactPage() {
   const [errors, setErrors] = useState<FormErrors>({})
   const [submitting, setSubmitting] = useState(false)
   const [submitted, setSubmitted] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const set = (key: keyof FormFields) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setForm(prev => ({ ...prev, [key]: e.target.value }))
-    // Clear field error on change
     if (errors[key]) setErrors(prev => ({ ...prev, [key]: undefined }))
   }
 
@@ -52,16 +52,23 @@ export function ContactPage() {
       return
     }
     setErrors({})
+    setSubmitError(null)
     setSubmitting(true)
     try {
-      await fetch('/api/contact', {
+      const res = await fetch('/api/contact', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form),
-      }).catch(() => {})
+      })
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        throw new Error(data.error || 'Something went wrong. Please try again.')
+      }
+      setSubmitted(true)
+    } catch (err: any) {
+      setSubmitError(err.message || 'Something went wrong. Please try again.')
     } finally {
       setSubmitting(false)
-      setSubmitted(true)
     }
   }
 
@@ -129,7 +136,7 @@ export function ContactPage() {
                 </p>
               </div>
               <button
-                onClick={() => { setForm(EMPTY); setSubmitted(false) }}
+                onClick={() => { setForm(EMPTY); setSubmitted(false); setSubmitError(null) }}
                 className="text-sm text-primary font-bold hover:underline"
               >
                 Send another message
@@ -203,6 +210,12 @@ export function ContactPage() {
               <div className="hidden" aria-hidden>
                 <input type="text" name="website" tabIndex={-1} autoComplete="off" />
               </div>
+
+              {submitError && (
+                <p className="text-sm text-red-400 font-medium bg-red-500/10 border border-red-500/20 rounded-lg px-4 py-3">
+                  {submitError}
+                </p>
+              )}
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
                 <button

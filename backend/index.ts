@@ -2619,6 +2619,49 @@ syncRemotiveJobs()
 setInterval(syncAdzunaJobs, 6 * 60 * 60 * 1000)
 setInterval(syncRemotiveJobs, 6 * 60 * 60 * 1000)
 
+// --- Contact Form ---
+
+app.post('/api/contact', async (c) => {
+  try {
+    const { name, email, subject, message } = await c.req.json()
+    if (!name?.trim() || !email?.trim() || !subject?.trim() || !message?.trim()) {
+      return c.json({ error: 'All fields are required.' }, 400)
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())) {
+      return c.json({ error: 'Invalid email address.' }, 400)
+    }
+
+    const internalHtml = `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>New Contact Form Submission</h2>
+<p><strong>From:</strong> ${name.trim()} &lt;${email.trim()}&gt;</p>
+<p><strong>Subject:</strong> ${subject.trim()}</p>
+<hr style="border:none;border-top:1px solid #eee;margin:16px 0;">
+<p>${message.trim().replace(/\n/g, '<br>')}</p>
+</body></html>`
+
+    const internalText = `New Contact Form Submission\n\nFrom: ${name.trim()} <${email.trim()}>\nSubject: ${subject.trim()}\n\n${message.trim()}`
+
+    const confirmHtml = `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
+<h2>We got your message.</h2>
+<p>Hi ${name.trim()},</p>
+<p>Thanks for reaching out. We'll get back to you within 1–2 business days.</p>
+<p>The SalesRoles.co team</p>
+</body></html>`
+
+    const confirmText = `Hi ${name.trim()},\n\nThanks for reaching out. We'll get back to you within 1–2 business days.\n\nThe SalesRoles.co team`
+
+    await Promise.all([
+      sendEmail('info@salesroles.co', `New Contact Form Submission: ${subject.trim()}`, internalHtml, internalText),
+      sendEmail(email.trim(), 'We received your message — SalesRoles.co', confirmHtml, confirmText),
+    ])
+
+    return c.json({ ok: true })
+  } catch (err: any) {
+    console.error('Contact form error:', err)
+    return c.json({ error: 'Failed to send message. Please try again.' }, 500)
+  }
+})
+
 // --- Server ---
 
 const port = parseInt(process.env.PORT || '4000')
