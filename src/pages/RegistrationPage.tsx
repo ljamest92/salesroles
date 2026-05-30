@@ -74,7 +74,7 @@ export function RegistrationPage() {
             </div>
             <div className="space-y-2">
               <h3 className="text-3xl font-black tracking-tighter">I'm a Candidate</h3>
-              <p className="text-muted-foreground font-medium">Find your next role with full OTE transparency.</p>
+              <p className="text-muted-foreground font-medium">Find your next sales role. Every comp package shown upfront.</p>
             </div>
             <Button variant="ghost" className="text-primary font-black tracking-widest text-xs gap-2 group-hover:gap-3 transition-all">
               Get Started <ArrowRight size={14} />
