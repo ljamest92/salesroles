@@ -73,7 +73,7 @@ const jobsRoute = createRoute({
   }),
 })
 const jobDetailRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/jobs/$slug', component: JobDetailPage })
-const postJobRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/post-job', component: PostJobPage })
+const postJobRoute = createRoute({ getParentRoute: () => dashboardLayoutRoute, path: '/post-job', component: PostJobPage })
 const pricingRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/pricing', component: PricingPage })
 const registerRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/register', component: RegistrationPage })
 const loginRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/login', component: RegistrationPage })
@@ -88,8 +88,8 @@ const termsRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, pat
 const privacyRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/privacy', component: PrivacyPage })
 const cookiesRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/cookies', component: CookiePolicyPage })
 const salaryInsightsRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/salary-insights', component: SalaryInsightsPage })
-const candidateProfileRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/profile/$identifier', component: CandidateProfilePage })
-const candidateSearchRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/companies/candidates', component: CandidateSearchPage })
+const candidateProfileRoute = createRoute({ getParentRoute: () => dashboardLayoutRoute, path: '/profile/$identifier', component: CandidateProfilePage })
+const candidateSearchRoute = createRoute({ getParentRoute: () => dashboardLayoutRoute, path: '/companies/candidates', component: CandidateSearchPage })
 const authCallbackRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/auth/callback', component: AuthCallbackPage })
 const companyApplicantRoute = createRoute({ getParentRoute: () => marketingLayoutRoute, path: '/candidates/$id', component: CompanyApplicantPage })
 
@@ -143,7 +143,6 @@ const routeTree = rootRoute.addChildren([
     indexRoute,
     jobsRoute,
     jobDetailRoute,
-    postJobRoute,
     pricingRoute,
     registerRoute,
     loginRoute,
@@ -158,8 +157,6 @@ const routeTree = rootRoute.addChildren([
     privacyRoute,
     cookiesRoute,
     salaryInsightsRoute,
-    candidateProfileRoute,
-    candidateSearchRoute,
     authCallbackRoute,
     companyApplicantRoute,
     remoteJobsRoute,
@@ -175,6 +172,9 @@ const routeTree = rootRoute.addChildren([
     companyDashboardRoute,
     candidateDashboardRoute,
     profileEditRoute,
+    postJobRoute,
+    candidateProfileRoute,
+    candidateSearchRoute,
     adminRoute,
     adminLoginRoute,
   ]),

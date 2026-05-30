@@ -14,7 +14,7 @@ import {
   Separator as UISeparator,
   EmptyState
 } from '@blinkdotnew/ui'
-import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil, Trash2, ChevronRight } from 'lucide-react'
+import { Briefcase, Eye, MousePointer2, Settings, CheckCircle2, Building2, MapPin, Users, Star, Link2, Phone, Globe, TrendingUp, Clock, Lock, Camera, Pencil, Trash2, ChevronRight, LogOut } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { CandidateAvatar } from '../components/CandidateAvatar'
 
@@ -52,7 +52,7 @@ function parseRoles(val: string | null | undefined): string {
 }
 
 export function DashboardPage() {
-  const { user, isLoading } = useAuth()
+  const { user, isLoading, logout } = useAuth()
   // FIX 2: default to candidate; set from user.role or URL param once user loads
   const [role, setRole] = useState<'candidate' | 'company'>('candidate')
   const [stats, setStats] = useState<DashboardStats>({ liveJobs: 0, totalViews: 0, applyClicks: 0, avgCtr: 0 })
@@ -606,8 +606,8 @@ export function DashboardPage() {
           <h1 className="text-4xl md:text-6xl font-black tracking-tighter leading-none">Dashboard</h1>
           <p className="text-muted-foreground font-medium text-lg">Welcome back, {profileName || user?.displayName || 'there'}.</p>
         </div>
-        <div className="flex flex-wrap gap-3">
-          {role === 'company' ? (
+        <div className="flex flex-wrap items-center gap-3">
+          {role === 'company' && (
             <>
               <Link to="/companies/candidates">
                 <Button size="sm" variant="outline" className="font-bold border-emerald-500/40 text-emerald-400 hover:bg-emerald-500/10">Browse Candidates</Button>
@@ -616,7 +616,13 @@ export function DashboardPage() {
                 <Button size="sm" className="bg-primary text-primary-foreground font-bold">Post New Job</Button>
               </Link>
             </>
-          ) : null}
+          )}
+          <button
+            onClick={logout}
+            className="flex items-center gap-1.5 text-xs border border-white/10 text-white/40 hover:text-white hover:border-white/20 px-3 py-2 rounded-lg font-bold transition-colors"
+          >
+            <LogOut size={13} /> Log Out
+          </button>
         </div>
       </div>
 
