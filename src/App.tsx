@@ -1,5 +1,5 @@
-import React from 'react'
-import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet } from '@tanstack/react-router'
+import React, { useEffect } from 'react'
+import { createRouter, createRoute, createRootRoute, RouterProvider, Outlet, useLocation } from '@tanstack/react-router'
 import { AppLayout } from './layouts/AppLayout'
 import { HomePage } from './pages/HomePage'
 import { JobsPage } from './pages/JobsPage'
@@ -29,8 +29,21 @@ import { CandidateSearchPage } from './pages/CandidateSearchPage'
 import { AuthCallbackPage } from './pages/AuthCallbackPage'
 import { CompanyApplicantPage } from './pages/CompanyApplicantPage'
 
+function ScrollToTop() {
+  const pathname = useLocation({ select: (l) => l.pathname })
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
+  return null
+}
+
 const rootRoute = createRootRoute({
-  component: () => <AppLayout />,
+  component: () => (
+    <>
+      <ScrollToTop />
+      <AppLayout />
+    </>
+  ),
 })
 
 const indexRoute = createRoute({ getParentRoute: () => rootRoute, path: '/', component: HomePage })

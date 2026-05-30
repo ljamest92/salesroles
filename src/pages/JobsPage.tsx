@@ -55,7 +55,8 @@ export function JobsPage() {
   const [showFilters, setShowFilters] = useState(false)
   const [selectedOTERange, setSelectedOTERange] = useState('')
   const [currentPage, setCurrentPage] = useState(() => {
-    return parseInt(sessionStorage.getItem('jobsPage') || '1', 10)
+    const saved = sessionStorage.getItem('jobsPage')
+    return saved ? parseInt(saved, 10) : 1
   })
   const listingsTopRef = useRef<HTMLDivElement>(null)
   const [appliedJobIds, setAppliedJobIds] = useState<Set<string>>(new Set())
@@ -150,44 +151,12 @@ export function JobsPage() {
       .catch(() => {})
   }, [user])
 
-  // Sync locationTags → ?location= URL param
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (locationTags.length > 0) { params.set('location', locationTags.join(',')) }
-    else { params.delete('location') }
-    const newUrl = params.toString()
-      ? `${window.location.pathname}?${params.toString()}`
-      : window.location.pathname
-    const scrollY = window.scrollY
-    const origScrollTo = window.scrollTo.bind(window)
-    ;(window as any).scrollTo = () => {}
-    window.history.replaceState(null, '', newUrl)
-    requestAnimationFrame(() => {
-      ;(window as any).scrollTo = origScrollTo
-      window.scrollTo(0, scrollY)
-    })
-  }, [locationTags])
 
-  // Sync searchTags → ?search= URL param
-  useEffect(() => {
-    const params = new URLSearchParams(window.location.search)
-    if (searchTags.length > 0) {
-      params.set('search', searchTags.join(','))
-    } else {
-      params.delete('search')
-    }
-    const newUrl = params.toString()
-      ? `${window.location.pathname}?${params.toString()}`
-      : window.location.pathname
-    const scrollY = window.scrollY
-    const origScrollTo = window.scrollTo.bind(window)
-    ;(window as any).scrollTo = () => {}
-    window.history.replaceState(null, '', newUrl)
-    requestAnimationFrame(() => {
-      ;(window as any).scrollTo = origScrollTo
-      window.scrollTo(0, scrollY)
-    })
-  }, [searchTags])
+  const handlePageChange = (page: number) => {
+    sessionStorage.setItem('jobsPage', String(page))
+    setCurrentPage(page)
+    setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
+  }
 
   const toggle = (arr: string[], val: string) =>
     arr.includes(val) ? arr.filter(x => x !== val) : [...arr, val]
@@ -647,7 +616,7 @@ export function JobsPage() {
           {totalPages > 1 && (
             <div className="flex items-center justify-center gap-2 mt-8 pb-8">
               <button
-                onClick={() => { const next = Math.max(1, currentPage - 1); sessionStorage.setItem('jobsPage', String(next)); setCurrentPage(next); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
+                onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
@@ -661,7 +630,7 @@ export function JobsPage() {
                       <span className="text-white/30 px-2">...</span>
                     )}
                     <button
-                      onClick={() => { sessionStorage.setItem('jobsPage', String(page)); setCurrentPage(page); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
+                      onClick={() => handlePageChange(page)}
                       className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
                         currentPage === page
                           ? 'bg-emerald-500 text-white'
@@ -674,7 +643,7 @@ export function JobsPage() {
                 ))
               }
               <button
-                onClick={() => { const next = Math.min(totalPages, currentPage + 1); sessionStorage.setItem('jobsPage', String(next)); setCurrentPage(next); setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150) }}
+                onClick={() => handlePageChange(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
                 className="px-4 py-2 rounded-lg border border-white/20 text-white/60 hover:text-white hover:border-white/40 disabled:opacity-30 disabled:cursor-not-allowed transition-colors text-sm"
               >
