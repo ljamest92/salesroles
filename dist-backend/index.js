@@ -2520,13 +2520,13 @@ app.post('/api/contact', async (c) => {
         const confirmHtml = `<html><head></head><body style="font-family:sans-serif;max-width:560px;margin:0 auto;padding:32px;color:#111;">
 <h2>We got your message.</h2>
 <p>Hi ${name.trim()},</p>
-<p>Thanks for reaching out. We'll get back to you within 1–2 business days.</p>
+<p>Thanks for reaching out. We'll get back to you shortly.</p>
 <p>The SalesRoles.co team</p>
 </body></html>`;
-        const confirmText = `Hi ${name.trim()},\n\nThanks for reaching out. We'll get back to you within 1–2 business days.\n\nThe SalesRoles.co team`;
+        const confirmText = `Hi ${name.trim()},\n\nThanks for reaching out. We'll get back to you shortly.\n\nThe SalesRoles.co team`;
         await Promise.all([
             sendEmail('info@salesroles.co', `New Contact Form Submission: ${subject.trim()}`, internalHtml, internalText),
-            sendEmail(email.trim(), 'We received your message — SalesRoles.co', confirmHtml, confirmText),
+            sendEmail(email.trim(), "We've received your message", confirmHtml, confirmText),
         ]);
         return c.json({ ok: true });
     }
