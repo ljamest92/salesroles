@@ -157,7 +157,7 @@ export function JobsPage() {
 
 
   const handlePageChange = (page: number) => {
-    navigate({ search: (prev: any) => ({ ...prev, page: page > 1 ? page : undefined }), replace: true } as any)
+    navigate({ search: (prev: any) => ({ ...prev, page: page > 1 ? page : undefined }) } as any)
     setTimeout(() => listingsTopRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 150)
   }
 
