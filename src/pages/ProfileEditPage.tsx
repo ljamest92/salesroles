@@ -303,9 +303,6 @@ export function ProfileEditPage() {
             <Field label="Target OTE / Salary">
               <input value={targetSalary} onChange={e => setTargetSalary(e.target.value)} placeholder="e.g. £100,000" className={inputCls} />
             </Field>
-            <Field label="Total Revenue Closed">
-              <input value={totalRevenue} onChange={e => setTotalRevenue(e.target.value)} placeholder="e.g. £2.4M" className={inputCls} />
-            </Field>
             <Field label="Availability">
               <select value={availability} onChange={e => setAvailability(e.target.value)} className={inputCls}>
                 <option value="">Select availability</option>
@@ -321,6 +318,9 @@ export function ProfileEditPage() {
                   Open to Opportunities: you appear in search as open but not urgently looking
                 </p>
               </div>
+            </Field>
+            <Field label="Total Revenue Closed">
+              <input value={totalRevenue} onChange={e => setTotalRevenue(e.target.value)} placeholder="e.g. $2.5M" className={inputCls} />
             </Field>
           </div>
 
