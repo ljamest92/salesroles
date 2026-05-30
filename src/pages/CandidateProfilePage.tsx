@@ -34,7 +34,6 @@ interface CandidateProfile {
   avatar_url: string
   linkedin_url: string
   target_role: string
-  targeting_roles: string
   skills: string
   target_salary: string
   current_ote: string
@@ -188,14 +187,6 @@ export function CandidateProfilePage() {
               {/* Headline */}
               {profile.headline && (
                 <p className="text-white/70 font-medium text-lg leading-snug">{profile.headline}</p>
-              )}
-
-              {/* Targeting (next roles) */}
-              {safeList(profile.targeting_roles).length > 0 && (
-                <p className="text-sm text-white/40 flex items-center gap-1.5">
-                  <Target size={13} className="text-emerald-500/60" />
-                  Targeting: <span className="text-white/60 font-medium">{safeList(profile.targeting_roles).join(', ')}</span>
-                </p>
               )}
 
               {/* Availability badge */}
