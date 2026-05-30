@@ -52,16 +52,18 @@ export function AdminPage() {
         } catch { return {} }
       }
 
-      const [adminStats, jobsData, pendingData, usersData] = await Promise.all([
+      const [adminStats, jobsData, pendingData, usersData, subscribersData] = await Promise.all([
         fetchSafe('/api/admin/stats'),
         fetchSafe('/api/jobs'),
         fetchSafe('/api/admin/pending-jobs'),
         fetchSafe('/api/admin/candidates'),
+        fetchSafe('/api/admin/subscribers'),
       ])
 
       const allJobs: any[] = jobsData.jobs || []
       const pendingList: any[] = Array.isArray(pendingData) ? pendingData : []
       const userList: any[] = Array.isArray(usersData) ? usersData : []
+      const subscriberList: any[] = Array.isArray(subscribersData) ? subscribersData : []
 
       setStats({
         listings: adminStats.liveListings || 0,
@@ -73,6 +75,7 @@ export function AdminPage() {
       setLiveJobs(allJobs)
       setPendingJobs(pendingList)
       setUsers(userList)
+      setSubscribers(subscriberList)
     }
 
     loadData()
